@@ -124,23 +124,6 @@ AS_IF([test "x$happy" = xyes],
     [$2])
 ])dnl
 
-# _COMEX_NETWORK_MPI3([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
-# ---------------------------------------------------------------------
-AC_DEFUN([_COMEX_NETWORK_MPI3], [
-AC_MSG_NOTICE([searching for MPI3...])
-happy=yes
-CPPFLAGS="$CPPFLAGS $MPI_CPPFLAGS"
-LDFLAGS="$LDFLAGS $MPI_LDFLAGS"
-LIBS="$LIBS $MPI_LIBS"
-AS_IF([test "x$happy" = xyes],
-    [AC_CHECK_HEADER([mpi.h], [], [happy=no])])
-AS_IF([test "x$happy" = xyes],
-    [AC_SEARCH_LIBS([MPI_Init], [], [], [happy=no])])
-AS_IF([test "x$happy" = xyes],
-    [comex_network=MPI3; with_mpi3=yes; $1],
-    [$2])
-])dnl
-
 # _COMEX_NETWORK_OFA([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
 # ------------------------------------------------------------------
 AC_DEFUN([_COMEX_NETWORK_OFA], [
@@ -204,30 +187,6 @@ AS_IF([test "x$happy" = xyes],
     [$2])
 ])dnl
 
-# _COMEX_NETWORK_OFI([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
-# -------------------------------------------------------------------
-AC_DEFUN([_COMEX_NETWORK_OFI], [
-AC_MSG_NOTICE([searching for OFI...])
-happy=yes
-AS_IF([test "x$happy" = xyes],
-    [AC_CHECK_HEADERS([rdma/fabric.h rdma/fi_domain.h], [], [happy=no])])
-AS_IF([test "x$happy" = xyes],
-    [AC_SEARCH_LIBS([fi_getinfo], [fabric], [], [happy=no])])
-AS_IF([test "x$happy" = xyes],
-    [AC_SEARCH_LIBS([fi_freeinfo], [fabric], [], [happy=no])])
-AS_IF([test "x$happy" = xyes],
-    [AC_SEARCH_LIBS([fi_dupinfo], [fabric], [], [happy=no])])
-AS_IF([test "x$happy" = xyes],
-    [AC_SEARCH_LIBS([fi_fabric], [fabric], [], [happy=no])])
-AS_IF([test "x$happy" = xyes],
-    [AC_SEARCH_LIBS([fi_strerror], [fabric], [], [happy=no])])
-AS_IF([test "x$happy" = xyes],
-    [AC_SEARCH_LIBS([fi_tostr], [fabric], [], [happy=no])])
-AS_IF([test "x$happy" = xyes],
-    [comex_network=OFI; with_ofi=yes; $1],
-    [$2])
-])dnl
-
 # COMEX_NETWORK_SETUP
 # -------------------
 # This macro allows user to choose the comex network but also allows the
@@ -247,11 +206,9 @@ _COMEX_NETWORK_WITH([mpi-ts],    [MPI-1 two-sided])
 _COMEX_NETWORK_WITH([mpi-mt],    [MPI-2 multi-threading])
 _COMEX_NETWORK_WITH([mpi-pt],    [MPI-2 multi-threading with progress thread])
 _COMEX_NETWORK_WITH([mpi-pr],    [MPI-1 two-sided with progress rank])
-_COMEX_NETWORK_WITH([mpi3],      [MPI-3 one-sided])
 _COMEX_NETWORK_WITH([ofa],       [Infiniband OpenIB])
 _COMEX_NETWORK_WITH([portals4],  [Portals4])
 _COMEX_NETWORK_WITH([dmapp],     [Cray DMAPP])
-_COMEX_NETWORK_WITH([ofi],       [OFI])
 # Temporarily add COMEX_NETWORK_CPPFLAGS to CPPFLAGS.
 comex_save_CPPFLAGS="$CPPFLAGS"; CPPFLAGS="$CPPFLAGS $COMEX_NETWORK_CPPFLAGS"
 # Temporarily add COMEX_NETWORK_LDFLAGS to LDFLAGS.
@@ -266,8 +223,6 @@ AS_IF([test "x$enable_autodetect" = xyes],
         [_COMEX_NETWORK_PORTALS4()])
      AS_IF([test "x$comex_network" = x && test "x$with_dmapp" != xno],
         [_COMEX_NETWORK_DMAPP()])
-     AS_IF([test "x$comex_network" = x && test "x$with_ofi" != xno],
-        [_COMEX_NETWORK_OFI()])
      AS_IF([test "x$comex_network" = x],
         [AC_MSG_WARN([!!!])
          AC_MSG_WARN([No COMEX_NETWORK detected, defaulting to MPI_TS])
@@ -290,9 +245,6 @@ AS_IF([test "x$enable_autodetect" = xyes],
               AS_IF([test "x$comex_network" = xMPI_PR],
                  [_COMEX_NETWORK_MPI_PR([],
                     [AC_MSG_ERROR([test for COMEX_NETWORK=MPI_PR failed])])])
-              AS_IF([test "x$comex_network" = xMPI3],
-                 [_COMEX_NETWORK_MPI3([],
-                    [AC_MSG_ERROR([test for COMEX_NETWORK=MPI3 failed])])])
               AS_IF([test "x$comex_network" = xOFA],
                  [_COMEX_NETWORK_OFA([],
                     [AC_MSG_ERROR([test for COMEX_NETWORK=OFA failed])])])
@@ -302,9 +254,6 @@ AS_IF([test "x$enable_autodetect" = xyes],
               AS_IF([test "x$comex_network" = xDMAPP],
                  [_COMEX_NETWORK_DMAPP([],
                     [AC_MSG_ERROR([test for COMEX_NETWORK=DMAPP failed])])])
-              AS_IF([test "x$comex_network" = xOFI],
-                 [_COMEX_NETWORK_OFI([],
-                    [AC_MSG_ERROR([test for COMEX_NETWORK=OFI failed])])])
              ],
         [AC_MSG_WARN([too many comex networks specified: $comex_network_count])
          AC_MSG_WARN([the following were specified:])
@@ -312,11 +261,9 @@ AS_IF([test "x$enable_autodetect" = xyes],
          _COMEX_NETWORK_WARN([mpi-mt])
          _COMEX_NETWORK_WARN([mpi-pt])
          _COMEX_NETWORK_WARN([mpi-pr])
-         _COMEX_NETWORK_WARN([mpi3])
          _COMEX_NETWORK_WARN([ofa])
          _COMEX_NETWORK_WARN([portals4])
          _COMEX_NETWORK_WARN([dmapp])
-         _COMEX_NETWORK_WARN([ofi])
          AC_MSG_ERROR([please select only one comex network])])])
 # Remove COMEX_NETWORK_CPPFLAGS from CPPFLAGS.
 CPPFLAGS="$comex_save_CPPFLAGS"
@@ -328,20 +275,16 @@ _COMEX_NETWORK_AM_CONDITIONAL([mpi-ts])
 _COMEX_NETWORK_AM_CONDITIONAL([mpi-mt])
 _COMEX_NETWORK_AM_CONDITIONAL([mpi-pt])
 _COMEX_NETWORK_AM_CONDITIONAL([mpi-pr])
-_COMEX_NETWORK_AM_CONDITIONAL([mpi3])
 _COMEX_NETWORK_AM_CONDITIONAL([ofa])
 _COMEX_NETWORK_AM_CONDITIONAL([portals4])
 _COMEX_NETWORK_AM_CONDITIONAL([dmapp])
-_COMEX_NETWORK_AM_CONDITIONAL([ofi])
 _COMEX_NETWORK_AC_DEFINE([mpi-ts])
 _COMEX_NETWORK_AC_DEFINE([mpi-mt])
 _COMEX_NETWORK_AC_DEFINE([mpi-pt])
 _COMEX_NETWORK_AC_DEFINE([mpi-pr])
-_COMEX_NETWORK_AC_DEFINE([mpi3])
 _COMEX_NETWORK_AC_DEFINE([ofa])
 _COMEX_NETWORK_AC_DEFINE([portals4])
 _COMEX_NETWORK_AC_DEFINE([dmapp])
-_COMEX_NETWORK_AC_DEFINE([ofi])
 AC_SUBST([COMEX_NETWORK_LDFLAGS])
 AC_SUBST([COMEX_NETWORK_LIBS])
 AC_SUBST([COMEX_NETWORK_CPPFLAGS])

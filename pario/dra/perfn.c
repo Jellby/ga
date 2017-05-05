@@ -75,7 +75,13 @@
 
 #define MULTFILES 0
 
+#ifdef SOLARIS
+#   if MULTFILES
+#       define USEMULTFILES 1
+#   endif
+#else
 #  define USEMULTFILES 0
+#endif
 
 #define IA 16807
 #define IM 2147483647
