@@ -888,6 +888,16 @@ GA::GlobalArray::setIrregDistr(int mapc[], int nblock[]) const {
 }
 
 void
+GA::GlobalArray::setRestricted(int list[], int nprocs) const {
+    GA_Set_restricted(mHandle, list, nprocs);
+}
+
+void
+GA::GlobalArray::setRestrictedRange(int lo_proc, int hi_proc) const {
+    GA_Set_restricted_range(mHandle, lo_proc, hi_proc);
+}
+
+void
 GA::GlobalArray::setPGroup(GA::PGroup *pHandle) const {
     GA_Set_pgroup(mHandle, pHandle->handle());
 }
@@ -983,6 +993,16 @@ GA::GlobalArray::updateGhosts()  const {
 int 
 GA::GlobalArray::updateGhostDir(int dimension, int idir, int cflag)  const {
   return NGA_Update_ghost_dir(mHandle, dimension, idir, cflag);
+}
+
+void
+GA::GlobalArray::getGhostBlock(int lo[], int hi[], void *buf, int ld[]) const {
+  NGA_Get_ghost_block(mHandle, lo, hi, buf, ld);
+}
+
+void
+GA::GlobalArray::getGhostBlock(int64_t lo[], int64_t hi[], void *buf, int64_t ld[]) const {
+  NGA_Get_ghost_block64(mHandle, lo, hi, buf, ld);
 }
 
 DoubleComplex 

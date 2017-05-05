@@ -5,7 +5,7 @@ ifndef MSG_COMMS
   MSG_COMMS=MPI
 endif
 LIBRARY = libarmci.a
-LIB_DISTRIB = $(ARMCI_HOME)/../lib
+LIB_DISTRIB = $(ARMCI_HOME)/../../lib
 #defines communication libs and symbols
 include $(ARMCI_HOME)/../config/makemp.h
 include $(ARMCI_HOME)/../config/makecoms.h
@@ -20,8 +20,11 @@ HARDCLEAN = yes
 .PHONY : all
 all: gpctest.x
 
-%.x:%.c $(FULL_LIBRARY_PATH)
-	$(CC) -g -I$(ARMCI_HOME) $(COPT_REN) $(MP_INCLUDES) $(MP_DEFINES) -o $@ $^ $(LIB_DISTRIB)/$(TARGET)/$(LIBRARY) $(LIBS) -lm
+%.o:%.c $(FULL_LIBRARY_PATH)
+	$(CC) -g -I$(ARMCI_HOME) $(COPT_REN) $(MP_INCLUDES) $(MP_DEFINES) -o $@ -c $^
+
+%.x:%.o $(FULL_LIBRARY_PATH)
+	$(FC) -g -I$(ARMCI_HOME) $(FOPT_REN) $(CLD_REN) $(MP_INCLUDES) $(MP_DEFINES) -o $@ $^ $(LIB_DISTRIB)/$(TARGET)/$(LIBRARY) $(LIBS) -lm
 
 .PHONY : clean
 clean: 

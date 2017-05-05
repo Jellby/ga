@@ -68,7 +68,7 @@ c
      $        a,lo,hi,ndim,dims,total,b,lo,hi,ndim,dims)
       else
 c     so that the random_range can be call the same number of times
-c     in other words, drand can generate the same number for the
+c     in other words, util_drand can generate the same number for the
 c     collective operations
          do loop=1, MAXLOOP
             call random_range(lo,hi,lop,hip,ndim)

@@ -8,9 +8,9 @@
 #include "sndrcv.h"
 #include "msgtypesc.h"
 
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) >= 0) ? (a) : (-(a)))
+#define TCG_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define TCG_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define TCG_ABS(a) (((a) >= 0) ? (a) : (-(a)))
 
 extern void free();
 
@@ -36,24 +36,24 @@ static void idoop(n, op, x, work)
       *x++ *= *work++;
   else if (strncmp(op,"max",3) == 0)
     while(n--) {
-      *x = MAX(*x, *work);
+      *x = TCG_MAX(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"min",3) == 0)
     while(n--) {
-      *x = MIN(*x, *work);
+      *x = TCG_MIN(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"absmax",6) == 0)
     while(n--) {
-      register long x1 = ABS(*x), x2 = ABS(*work);
-      *x = MAX(x1, x2);
+      register long x1 = TCG_ABS(*x), x2 = TCG_ABS(*work);
+      *x = TCG_MAX(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"absmin",6) == 0)
     while(n--) {
-      register long x1 = ABS(*x), x2 = ABS(*work);
-      *x = MIN(x1, x2);
+      register long x1 = TCG_ABS(*x), x2 = TCG_ABS(*work);
+      *x = TCG_MIN(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"or",2) == 0) 
@@ -78,24 +78,24 @@ static void ddoop(n, op, x, work)
       *x++ *= *work++;
   else if (strncmp(op,"max",3) == 0)
     while(n--) {
-      *x = MAX(*x, *work);
+      *x = TCG_MAX(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"min",3) == 0)
     while(n--) {
-      *x = MIN(*x, *work);
+      *x = TCG_MIN(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"absmax",6) == 0)
     while(n--) {
-      register double x1 = ABS(*x), x2 = ABS(*work);
-      *x = MAX(x1, x2);
+      register double x1 = TCG_ABS(*x), x2 = TCG_ABS(*work);
+      *x = TCG_MAX(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"absmin",6) == 0)
     while(n--) {
-      register double x1 = ABS(*x), x2 = ABS(*work);
-      *x = MIN(x1, x2);
+      register double x1 = TCG_ABS(*x), x2 = TCG_ABS(*work);
+      *x = TCG_MIN(x1, x2);
       x++; work++;
     }
   else
@@ -121,7 +121,7 @@ void DGOP_(ptype, x, pn, op)
   long synch = 1;
   long type = (*ptype & MSGDBL) ? *ptype : *ptype + MSGDBL;
   long nleft = *pn;
-  long buflen = MIN(nleft,GOP_BUF_SIZE); /* Try to get even sized buffers */
+  long buflen = TCG_MIN(nleft,GOP_BUF_SIZE); /* Try to get even sized buffers */
   long nbuf   = (nleft-1) / buflen + 1;
   long zero = 0;
   double *tmp = x;
@@ -139,7 +139,7 @@ void DGOP_(ptype, x, pn, op)
      having to provide workspace */
 
   while (nleft) {
-    ndo = MIN(nleft, buflen);
+    ndo = TCG_MIN(nleft, buflen);
     nb  = ndo * sizeof(double);
 
     /* Do summation amoung slaves in a cluster */
@@ -223,14 +223,14 @@ void IGOP_(ptype, x, pn, op)
 #endif
 
   if (!(work = (long *) 
-	malloc((unsigned) (MIN(nleft,GOP_BUF_SIZE)*sizeof(long)))))
+	malloc((unsigned) (TCG_MIN(nleft,GOP_BUF_SIZE)*sizeof(long)))))
      Error("IGOP: failed to malloc workspace", nleft);
 
   /* This loop for pipelining and to avoid caller
      having to provide workspace */
 
   while (nleft) {
-    ndo = MIN(nleft, GOP_BUF_SIZE);
+    ndo = TCG_MIN(nleft, GOP_BUF_SIZE);
     nb  = ndo * sizeof(long);
      /* Do summation amoung slaves in a cluster */
 

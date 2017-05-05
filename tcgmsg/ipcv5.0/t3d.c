@@ -16,9 +16,9 @@
 #include "evlog.h"
 #endif
 
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) >= 0) ? (a) : (-(a)))
+#define TCG_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define TCG_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define TCG_ABS(a) (((a) >= 0) ? (a) : (-(a)))
 #define MEMCPY(dst, src, n) memcpy(dst, src, (size_t) n)
 
 #define INCR 1                 /* increment for NXTVAL */
@@ -145,7 +145,7 @@ long NXTVAL_(mproc)
   mproc = 0 ... indicates to server that I am about to terminate
 */
 {
-  int server = MAX(0, (int) procs - 1);
+  int server = TCG_MAX(0, (int) procs - 1);
   long local; 
 
 #ifdef GA_USE_VAMPIR
@@ -219,7 +219,7 @@ void STATS_()
 
 /* global operation stuff */
 #define GPSZ 10000
-#define GOP_WORK_SIZE (MAX(GPSZ, _SHMEM_REDUCE_MIN_WRKDATA_SIZE))
+#define GOP_WORK_SIZE (TCG_MAX(GPSZ, _SHMEM_REDUCE_MIN_WRKDATA_SIZE))
 #define GOP_BUF_SIZE  (3*GOP_WORK_SIZE)
 
 /* gop_work buffer is partitioned into 3 even chunks in IGOP/DGOP */
@@ -269,7 +269,7 @@ void BRDCST_(type, x, bytes, originator)
 
 
   while (nleft) {
-    long ndo = MIN(nleft, buflen);
+    long ndo = TCG_MIN(nleft, buflen);
 
     barrier(); /* synchronize to make sure that nobody is accessing pSync */
     shmem_broadcast(brdcst_buf, (long*)x, ndo, (int)*originator, 0, 0, 
@@ -302,7 +302,7 @@ void DGOP_(ptype, x, pn, op)
   double *target    = gop_target_buf;
   double *source    = gop_source_buf;
   long nleft  = *pn;
-  long buflen = MIN(nleft,GOP_WORK_SIZE); /* Try to get even sized buffers */
+  long buflen = TCG_MIN(nleft,GOP_WORK_SIZE); /* Try to get even sized buffers */
   long nbuf   = (nleft-1) / buflen + 1;
   long n;
 
@@ -319,11 +319,11 @@ void DGOP_(ptype, x, pn, op)
 
   if (strncmp(op,"abs",3) == 0) {
     n = *pn;
-    while(n--) x[n] = ABS(x[n]);
+    while(n--) x[n] = TCG_ABS(x[n]);
   } 
   
   while (nleft) {
-    long ndo = MIN(nleft, buflen);
+    long ndo = TCG_MIN(nleft, buflen);
 
     MEMCPY(source,x,ndo*sizeof(double)); 
     barrier();
@@ -359,7 +359,7 @@ void IGOP_(ptype, x, pn, op)
   int *target     = (int*) gop_target_buf;
   int *source     = (int*) gop_source_buf;
   int nleft  = *pn;
-  int buflen = MIN(nleft,GOP_WORK_SIZE); /* Try to get even sized buffers */
+  int buflen = TCG_MIN(nleft,GOP_WORK_SIZE); /* Try to get even sized buffers */
   int nbuf   = (nleft-1) / buflen + 1;
   int n;
 
@@ -376,11 +376,11 @@ void IGOP_(ptype, x, pn, op)
 
   if (strncmp(op,"abs",3) == 0) {
     n = *pn;
-    while(n--) x[n] = ABS(x[n]);
+    while(n--) x[n] = TCG_ABS(x[n]);
   } 
   
   while (nleft) {
-    int ndo = MIN(nleft, buflen);
+    int ndo = TCG_MIN(nleft, buflen);
 
     MEMCPY(source,x,ndo*sizeof(int)); 
     barrier();

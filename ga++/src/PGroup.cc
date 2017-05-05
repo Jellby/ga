@@ -5,6 +5,13 @@ GA::PGroup* GA::PGroup::pgDefault = NULL;
 GA::PGroup* GA::PGroup::pgWorld   = NULL;
 
 /**
+ * Private -- never called.
+ */
+GA::PGroup::PGroup(void)
+{
+}
+
+/**
  * Constructors and Destructor of PGroup
  */
 GA::PGroup::PGroup(int *plist, int size) 

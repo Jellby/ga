@@ -459,12 +459,12 @@ extern void armci_elan_put_with_tracknotify(char *src,char *dst,int n,int proc, 
 #      define armci_put(src,dst,n,proc) \
             if(((proc)<=armci_clus_last) && ((proc>= armci_clus_first))){\
                armci_copy(src,dst,n);\
-            } else { ARMCI_Put((src), (dst),(n),(proc));}
+            } else { PARMCI_Put((src), (dst),(n),(proc));}
 
 #      define armci_get(src,dst,n,proc)\
             if(((proc)<=armci_clus_last) && ((proc>= armci_clus_first))){\
                armci_copy(src,dst,n);\
-            } else { ARMCI_Get((src), (dst),(n),(proc));}
+            } else { PARMCI_Get((src), (dst),(n),(proc));}
 
 #if 0
 #      define ARMCI_NB_PUT(src,dst,n,proc,cmplt)\
@@ -476,12 +476,12 @@ extern void armci_elan_put_with_tracknotify(char *src,char *dst,int n,int proc, 
 #endif                                                              
 
 #elif defined(BGML)
-#define armci_get(src, dst, n, p)   ARMCI_Get(src, dst, n, p)
-#define armci_put(src, dst, n, p)   ARMCI_Put(src, dst, n, p)
+#define armci_get(src, dst, n, p)   PARMCI_Get(src, dst, n, p)
+#define armci_put(src, dst, n, p)   PARMCI_Put(src, dst, n, p)
 
 #elif defined(ARMCIX)
-#define armci_get(src, dst, n, p)   ARMCI_Get(src, dst, n, p)
-#define armci_put(src, dst, n, p)   ARMCI_Put(src, dst, n, p)
+#define armci_get(src, dst, n, p)   PARMCI_Get(src, dst, n, p)
+#define armci_put(src, dst, n, p)   PARMCI_Put(src, dst, n, p)
 #define ARMCI_NB_WAIT(cmplt)        ARMCIX_Wait(&(cmplt))
 #else
 

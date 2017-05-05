@@ -32,10 +32,10 @@ typedef char * TableData;
  ** function types
  **/
 
-extern Integer table_allocate();
-extern void table_deallocate();
-extern TableData table_lookup();
-extern Integer table_lookup_assoc();
-extern Boolean table_verify();
+extern Integer ma_table_allocate();
+extern void ma_table_deallocate();
+extern TableData ma_table_lookup();
+extern Integer ma_table_lookup_assoc();
+extern Boolean ma_table_verify();
 
 #endif /* _table_h */

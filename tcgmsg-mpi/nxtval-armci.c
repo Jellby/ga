@@ -54,12 +54,7 @@ long NXTVAL_(mproc)
            if(rc!=MPI_SUCCESS)Error("nxtval: barrier failed",0);
      }
      if (*mproc > 0) {
-#ifndef XT3
        rc = ARMCI_Rmw(ARMCI_FETCH_AND_ADD_LONG,(int*)&local,(int*)pnxtval_counter,1,server);
-#else
-       extern  long shmem_long_fadd(long *target, long value, int pe);
-       local = shmem_long_fadd(pnxtval_counter, 1L, server);
-#endif
      }
    } else {
      /* Not running in parallel ... just do a simulation */
@@ -97,12 +92,10 @@ void install_nxtval(int *argc, char **argv[])
    if(me== server) bytes = sizeof(long);
    else bytes =0;
 
-#ifndef XT3
    rc = ARMCI_Malloc(ptr_ar,bytes);
    if(rc)Error("nxtv: armci_malloc failed",rc);
    
    pnxtval_counter = (long*) ptr_ar[server];
-#endif
    
    if(me==server)*pnxtval_counter = (long)0;
 
@@ -114,7 +107,12 @@ void install_nxtval(int *argc, char **argv[])
 
 void finalize_nxtval()
 {
-#ifndef XT3
+/**
+ * Cannot call ARMCI functions here as ARMCI might have been terminated
+ * by now. NOTE: finalize_nxtval is called in pend(), which is called after
+ * GA_Terminate/ARMCI_Finalize.
+ */    
+#if 0
     if(NODEID_() == NXTV_SERVER)ARMCI_Free(pnxtval_counter);
 #endif
     ARMCI_Finalize();

@@ -3,7 +3,7 @@
 
 #if defined(LINUX) || defined(CYGWIN) || defined(BGML) || defined(DCMF)
 
-#if defined(PPC) && !defined(XLCLINUX) || defined(BGML) || defined(DCMF)
+#if (defined(PPC) || defined(__PPC__) || defined(__PPC)) && !defined(XLCLINUX) || defined(BGML) || defined(DCMF)
 #  include "tas-ppc.h"
 #  define SPINLOCK  
 #  define TESTANDSET(x) (! __compare_and_swap((long int *)(x),0,1)) 
@@ -23,6 +23,7 @@
 #     define TESTANDSET gcc_testandset
 #     define RELEASE_SPINLOCK gcc_clear_spinlock
 #  endif
+
    extern int gcc_testandset();
    extern void gcc_clear_spinlock();
 #endif

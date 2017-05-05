@@ -742,9 +742,9 @@ void BRDCST_(type, buf, lenbuf, originator)
 }
 
 #define GOP_BUF_SIZE 10000
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) >= 0) ? (a) : (-(a)))
+#define TCG_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define TCG_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define TCG_ABS(a) (((a) >= 0) ? (a) : (-(a)))
 
 static double gop_work[GOP_BUF_SIZE];
 
@@ -756,7 +756,7 @@ void DGOP_(ptype, x, pn, op)
 {
   double *work = gop_work;
   long nleft  = *pn;
-  long buflen = MIN(nleft,GOP_BUF_SIZE); /* Try to get even sized buffers */
+  long buflen = TCG_MIN(nleft,GOP_BUF_SIZE); /* Try to get even sized buffers */
   long nbuf   = (nleft-1) / buflen + 1;
 
 #ifdef GA_USE_VAMPIR
@@ -771,11 +771,11 @@ void DGOP_(ptype, x, pn, op)
   if (strncmp(op,"abs",3) == 0) {
     long n = *pn;
     while(n--)
-      x[n] = ABS(x[n]);
+      x[n] = TCG_ABS(x[n]);
   }
   
   while (nleft) {
-    long ndo = MIN(nleft, buflen);
+    long ndo = TCG_MIN(nleft, buflen);
 
     if (strncmp(op,"+",1) == 0)
       gdsum(x, ndo, work);
@@ -804,7 +804,7 @@ void IGOP_(ptype, x, pn, op)
 {
   long *work = (long *) gop_work;
   long nleft  = *pn;
-  long buflen = MIN(nleft,2*GOP_BUF_SIZE); /* Try to get even sized buffers */
+  long buflen = TCG_MIN(nleft,2*GOP_BUF_SIZE); /* Try to get even sized buffers */
   long nbuf   = (nleft-1) / buflen + 1;
 
 #ifdef GA_USE_VAMPIR
@@ -819,11 +819,11 @@ void IGOP_(ptype, x, pn, op)
   if (strncmp(op,"abs",3) == 0) {
     long n = *pn;
     while(n--)
-      x[n] = ABS(x[n]);
+      x[n] = TCG_ABS(x[n]);
   }
   
   while (nleft) {
-    long ndo = MIN(nleft, buflen);
+    long ndo = TCG_MIN(nleft, buflen);
 
     if (strncmp(op,"+",1) == 0)
       gisum(x, ndo, work);

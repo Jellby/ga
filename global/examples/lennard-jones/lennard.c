@@ -36,7 +36,7 @@
 #define CLOCK_ TCGTIME_
 #endif
 
-#define ABS(a) ( ((a) > 0) ? (a) : -(a) )
+#define GA_ABS(a) ( ((a) > 0) ? (a) : -(a) )
 
 typedef struct {
   int x;

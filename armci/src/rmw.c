@@ -83,9 +83,18 @@ void armci_generic_rmw(int op, void *ploc, void *prem, int extra, int proc)
 
     switch (op) {
       case ARMCI_FETCH_AND_ADD:
-                armci_get(prem,ploc,sizeof(int),proc);
-                _a_temp = *(int*)ploc + extra;
-                armci_put(&_a_temp,prem,sizeof(int),proc);
+#if (defined(__GNUC__) || defined(__INTEL_COMPILER__) ||defined(__PGIC__)) && !defined(PORTALS) && !defined(NO_I386ASM) && !defined(__ia64)
+        if(SERVER_CONTEXT || SAMECLUSNODE(proc)){
+/* 	  *(int*)ploc = __sync_fetch_and_add((int*)prem, extra); */
+	  atomic_fetch_and_add(prem, ploc, extra, sizeof(int));
+	}
+	else 
+#endif
+	  {
+	    armci_get(prem,ploc,sizeof(int),proc);
+	    _a_temp = *(int*)ploc + extra;
+	    armci_put(&_a_temp,prem,sizeof(int),proc);
+	  }
            break;
       case ARMCI_FETCH_AND_ADD_LONG:
                 armci_get(prem,ploc,sizeof(long),proc);
@@ -94,7 +103,7 @@ void armci_generic_rmw(int op, void *ploc, void *prem, int extra, int proc)
            break;
       case ARMCI_SWAP:
 #if (defined(__i386__) || defined(__x86_64__)) && !defined(PORTALS) && !defined(NO_I386ASM)
-        if(SERVER_CONTEXT || armci_nclus==1){
+        if(SERVER_CONTEXT || SAMECLUSNODE(proc)){
 	  atomic_exchange(ploc, prem, sizeof(int));
         }
         else 
@@ -115,12 +124,12 @@ void armci_generic_rmw(int op, void *ploc, void *prem, int extra, int proc)
 #ifdef VAPI
     if(!SERVER_CONTEXT)
 #endif
-      ARMCI_Fence(proc); 
+      PARMCI_Fence(proc); 
     NATIVE_UNLOCK(lock,proc);
 }
 
 
-int ARMCI_Rmw(int op, int *ploc, int *prem, int extra, int proc)
+int PARMCI_Rmw(int op, int *ploc, int *prem, int extra, int proc)
 {
 #ifdef LAPI64
     extern int LAPI_Rmw64(lapi_handle_t hndl, RMW_ops_t op, uint tgt, 
@@ -155,7 +164,7 @@ if(op==ARMCI_FETCH_AND_ADD_LONG || op==ARMCI_SWAP_LONG){
 
 #if defined(CLUSTER) && !defined(LAPI) && !defined(QUADRICS) &&!defined(CYGWIN)\
     && !defined(HITACHI) && !defined(CRAY_SHMEM) && !defined(PORTALS)
-     if(!SAMECLUSNODE(proc)){
+ if(!SAMECLUSNODE(proc))  {
        armci_rem_rmw(op, ploc, prem,  extra, proc);
        return 0;
      }
@@ -205,7 +214,7 @@ if(op==ARMCI_FETCH_AND_ADD_LONG || op==ARMCI_SWAP_LONG){
          ARMCI_Error("Invalid operation for RMW", op);
    }
     
-   /* int ARMCI_Rmw(int op, int *ploc, int *prem, int extra, int proc) */
+   /* int PARMCI_Rmw(int op, int *ploc, int *prem, int extra, int proc) */
    /* assumes ploc will change
       dstbuf=prem, input=temp(extra), output=ploc
       val=ploc, arr[0]=prem, 1=extra */
@@ -269,7 +278,7 @@ if(op==ARMCI_FETCH_AND_ADD_LONG || op==ARMCI_SWAP_LONG){
           printf("before opcode=%d rem=%ld, loc=(%ld,%ld) extra=%ld\n",
                   opcode,*prem,*(long*)ploc,llval, lltmp);  
           rc= sizeof(long);
-          ARMCI_Get(prem, &llval, rc, proc);
+          PARMCI_Get(prem, &llval, rc, proc);
           printf("%d:rem val before %ld\n",armci_me, llval); fflush(stdout);
 #endif
           if( rc = LAPI_Setcntr(lapi_handle,&req_id,0))
@@ -282,7 +291,7 @@ if(op==ARMCI_FETCH_AND_ADD_LONG || op==ARMCI_SWAP_LONG){
           *(long*)ploc  = (long)llval;
 #if 0
           rc= sizeof(long);
-          ARMCI_Get(prem, &lltmp, rc, proc);
+          PARMCI_Get(prem, &lltmp, rc, proc);
           printf("%d:after rmw remote val from rmw=%ld and get=%ld extra=%d\n",
                   armci_me,llval, lltmp,extra);  
 #endif

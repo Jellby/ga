@@ -47,9 +47,9 @@ int main(int argc, char **argv)
   ReadEventFile(filename);
   
   scale = 1;
-  overview_scale = 499.0 / MAX((grid_x), (grid_y));
-  overview_width = ceil( (grid_x) * (500.0 / MAX((grid_x), (grid_y))) );
-  overview_height = ceil( (grid_y) * (500.0 / MAX((grid_x), (grid_y))) );
+  overview_scale = 499.0 / GA_MAX((grid_x), (grid_y));
+  overview_width = ceil( (grid_x) * (500.0 / GA_MAX((grid_x), (grid_y))) );
+  overview_height = ceil( (grid_y) * (500.0 / GA_MAX((grid_x), (grid_y))) );
 
   printf("overview_scale %lf\n", overview_scale);
   printf("overview_width %d\n", overview_width);

@@ -25,6 +25,7 @@ extern "C" {
 # define ARGS_(s) ()
 #endif
   
+#define C_LDBL MT_C_LDBL
 #define C_DBL MT_C_DBL
 #define C_INT MT_C_INT
 #define C_FLOAT MT_C_FLOAT
@@ -33,9 +34,6 @@ extern "C" {
 #define C_LONGLONG MT_C_LONGLONG
 #define C_SCPL MT_C_SCPL
   
-extern void *GA_Getmem(int type, int nelem, int grp_id);
-extern void GA_Freemem(void* ptr);
-extern int GA_Assemble_duplicate(int g_a, char *name, void *ptr);
 extern DoublePrecision FATR ga_wtime_ ARGS_((void));
 extern void    FATR ga_set_memory_limit_ ARGS_((Integer *mem_limit));
 extern logical FATR ga_valid_handle_ ARGS_((Integer *g_a));
@@ -91,13 +89,14 @@ extern void FATR ga_get_     ARGS_((Integer*, Integer*, Integer*, Integer*,
 extern void FATR ga_nbget_   ARGS_((Integer*, Integer*, Integer*, Integer*,
       Integer*, Void*, Integer*, Integer* ));
 extern void FATR ga_nbwait_  ARGS_((Integer*));
-extern void FATR ga_nbtest_  ARGS_((Integer*));
+extern Integer FATR ga_nbtest_  ARGS_((Integer*));
 extern void ga_dgop ARGS_((Integer, DoublePrecision*, Integer, char* ));
 extern void ga_gop ARGS_((Integer, void*, Integer, char* ));   
 extern void ga_pgroup_dgop ARGS_((Integer, Integer, DoublePrecision*, Integer, char* ));
 extern void ga_fgop     ARGS_((Integer, float*, Integer, char* ));
 extern void ga_pgroup_fgop     ARGS_((Integer, Integer, float*, Integer, char* ));
 extern void ga_igop     ARGS_((Integer, Integer*, Integer, char* ));
+extern void ga_c_igop(Integer, int*, Integer, char*);
 extern void ga_pgroup_igop     ARGS_((Integer, Integer, Integer*, Integer, char* ));
 extern void ga_lgop    ARGS_((Integer, long*,Integer, char* ));
 extern void ga_pgroup_lgop    ARGS_((Integer, Integer, long*,Integer, char* ));
@@ -169,6 +168,7 @@ extern void FATR ga_print_  ARGS_((Integer *));
 extern void FATR ga_print_stats_();
 extern void FATR ga_zero_   ARGS_((Integer *));
 extern void FATR ga_fill_   ARGS_((Integer *, void *));
+extern void FATR ga_randomize_   ARGS_((Integer *, void *));
 extern void FATR ga_scale_  ARGS_((Integer *, void *));
 extern void FATR ga_add_   ARGS_((Void *, Integer *, Void *, Integer *,
       Integer *));
@@ -305,6 +305,8 @@ extern void ga_set_irreg_flag(Integer *g_a, logical flag);
 extern void ga_set_ghost_corner_flag(Integer *g_a, logical flag);
 extern void ga_set_block_cyclic(Integer *g_a, Integer dims[]);
 extern void ga_set_block_cyclic_proc_grid(Integer *g_a, Integer block[], Integer proc_grid[]);
+extern void ga_set_restricted(Integer *g_a, Integer list[], Integer *size);
+extern void ga_set_restricted_range(Integer *g_a, Integer *lo_proc, Integer *hi_proc);
 extern Integer nga_get_dimension(Integer *g_a);
 extern logical ga_allocate(Integer *g_a);
 extern Integer ga_pgroup_create(Integer list[], Integer *count);
@@ -324,6 +326,8 @@ extern logical ga_set_update4_info(Integer *g_a);
 extern logical ga_set_update5_info(Integer *g_a);
 extern logical nga_update_ghost_dir(Integer *g_a, Integer *idim, 
                                     Integer *idir, logical *flag);
+extern void FATR nga_get_ghost_block_(Integer *g_a, Integer *lo, Integer *hi, 
+                          void *buf, Integer *ld);
 extern void FATR ga_merge_mirrored_(Integer *g_a);
 extern void FATR ga_fast_merge_mirrored_(Integer *g_a);
 extern logical FATR ga_is_mirrored_(Integer *g_a);
@@ -349,6 +353,9 @@ extern void FATR  nga_release_update_block_(Integer *g_a, Integer *iblock);
 extern void FATR  nga_release_update_block_grid_(Integer *g_a, Integer *index);
 extern void FATR  nga_release_block_segment_(Integer *g_a, Integer *iproc);
 extern void FATR  nga_release_update_block_segment_(Integer *g_a, Integer *iproc);
+extern void FATR  nga_release_ghost_element_(Integer *g_a, Integer *index);
+extern void FATR  nga_release_update_ghost_element_(Integer *g_a, Integer *index);
+extern void FATR  nga_release_update_ghosts_(Integer *g_a);
 extern void FATR  nga_inquire_(Integer *g_a, Integer *type, Integer *ndim,
     Integer *dims); 
 extern void FATR  nga_inquire_internal_(Integer *g_a, Integer *type, Integer *ndim,
@@ -379,7 +386,7 @@ extern void nga_access_ptr(Integer* g_a, Integer lo[], Integer hi[],
                            void* ptr, Integer ld[]);
 extern void nga_access_ghost_ptr(Integer* g_a, Integer dims[],
                            void* ptr, Integer ld[]);
-extern void nga_access_ghost_element(Integer* g_a, void* ptr, Integer subscript[],
+extern void nga_access_ghost_element(Integer* g_a, Integer* index, Integer subscript[],
                               Integer ld[]);
 
 extern void FATR nga_access_(Integer* g_a, Integer lo[], Integer hi[],
@@ -405,7 +412,7 @@ extern void FATR nga_get_(Integer *g_a, Integer *lo, Integer *hi,
 extern void FATR nga_nbget_(Integer *g_a, Integer *lo, Integer *hi, 
                           void *buf, Integer *ld, Integer *nbhdl);
 extern void FATR nga_nbwait_(Integer *nbhdl);
-extern void FATR nga_nbtest_(Integer *nbhdl);
+extern Integer FATR nga_nbtest_(Integer *nbhdl);
 extern void FATR nga_acc_(Integer *g_a, Integer *lo, Integer *hi,
                           void *buf, Integer *ld, void *alpha);
 extern void FATR nga_nbacc_(Integer *g_a, Integer *lo, Integer *hi,
@@ -534,12 +541,6 @@ extern void FATR ga_median_patch_(Integer *g_a, Integer *alo, Integer *ahi,
 			     Integer *g_c, Integer *clo, Integer *chi, 
 			     Integer *g_m, Integer *mlo, Integer *mhi);
 
-extern int GA_Cluster_nnodes();         
-extern int GA_Cluster_nodeid();
-extern int GA_Cluster_nprocs(int x);
-extern int GA_Cluster_procid(int x, int y);
-extern int GA_Cluster_proc_nodeid(int proc);
-
 #ifdef __cplusplus
 }
 #endif
@@ -549,4 +550,4 @@ extern SingleComplex   *SCPL_MB;
 extern DoublePrecision *DBL_MB;
 extern Integer             *INT_MB;
 extern float           *FLT_MB;
-#endif 
+#endif // GLOBAL_H

@@ -75,9 +75,9 @@
 
 /***************************** macros ************************/
 #define COPY(src, dst, bytes) memcpy((dst),(src),(bytes))
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) <0) ? -(a) : (a))
+#define ARMCI_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define ARMCI_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define ARMCI_ABS(a) (((a) <0) ? -(a) : (a))
 
 /***************************** global data *******************/
 int me, nproc;
@@ -235,9 +235,9 @@ double diff,max;
       idx1 -= offset1;
       idx2 -= offset2;
       diff = patch1[idx1] - patch2[idx2];
-      max  = MAX(ABS(patch1[idx1]),ABS(patch2[idx2]));
+      max  = ARMCI_MAX(ARMCI_ABS(patch1[idx1]),ARMCI_ABS(patch2[idx2]));
       if(max == 0. || max <eps) max = 1.; 
-      if(eps < ABS(diff)/max){
+      if(eps < ARMCI_ABS(diff)/max){
        char msg[48];
          sprintf(msg,"(proc=%d):%f",me,patch1[idx1]);
 	 print_subscript("ERROR: a",ndim,subscr1,msg);

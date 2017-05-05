@@ -16,7 +16,7 @@ c
       integer lop(ndim),hip(ndim)
       integer chunk(ndim)
       integer i, total, loop
-      double precision drand
+      double precision util_drand
       m4_data_type val, alpha
       integer nproc, me, proc
       logical status

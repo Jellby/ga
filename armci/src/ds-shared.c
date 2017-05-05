@@ -672,16 +672,17 @@ void armci_rcv_strided_data(int proc, request_header_t* msginfo, int datalen,
     {
       int bytes_buf = 0, bytes_usr = 0, seg_off=0;
       int ctr=0;
+      stride_info_t sinfo;
       char *armci_ReadFromDirectSegment(int proc,request_header_t *msginfo,
 					int datalen, int *bytes_buf);
 
-      stride_itr_t sitr = armci_stride_itr_init(ptr,strides,stride_arr,count);
+      armci_stride_info_init(&sinfo,ptr,strides,stride_arr,count);
       do {
 	databuf = armci_ReadFromDirectSegment(proc,msginfo,datalen,&bytes_buf);
-	bytes_usr += armci_read_strided_inc(sitr,&databuf[bytes_usr],bytes_buf-bytes_usr, &seg_off);
+	bytes_usr += armci_read_strided_inc(&sinfo,&databuf[bytes_usr],bytes_buf-bytes_usr, &seg_off);
       } while(bytes_buf<datalen);
       dassert(1,bytes_buf == bytes_usr);
-      armci_stride_itr_destroy(&sitr);
+      armci_stride_info_destroy(&sinfo);
     }
 #endif
 }
@@ -799,7 +800,7 @@ void armci_send_data(request_header_t* msginfo, void *data)
          * to do a put. This will not cause problems anywhere else in the
          * code and this part on elan4 will only be invoked in a GPC
          */
-        ARMCI_Put(data,msginfo->tag.data_ptr,msginfo->datalen,to);
+        PARMCI_Put(data,msginfo->tag.data_ptr,msginfo->datalen,to);
 #else
         armci_WriteToDirect(to, msginfo, data);
 #endif
@@ -1088,9 +1089,9 @@ void *armci_server_code(void *data)
         printf("%d(server): connected to all computing processes\n",armci_me);
         fflush(stdout);
     }
-#ifdef ARMCI_ENABLE_GPC_CALLS
-    gpc_init();
-#endif
+/* #if defined(ARMCI_ENABLE_GPC_CALLS) */
+/*     gpc_init(); */
+/* #endif */
     armci_call_data_server();
 
     armci_transport_cleanup();

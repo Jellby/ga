@@ -26,8 +26,8 @@ static short int CONTIG_CHUNKS_OPT_FLAG = SET;
 static short int DIRECT_ACCESS_OPT_FLAG = SET;
 
 static int max3(int ichunk, int jchunk, int kchunk) {
-  if(ichunk>jchunk) return MAX(ichunk,kchunk);
-  else return MAX(jchunk, kchunk);
+  if(ichunk>jchunk) return GA_MAX(ichunk,kchunk);
+  else return GA_MAX(jchunk, kchunk);
 }
 
 static void GET_BLOCK(Integer *g_x, task_list_t *chunk, void *buf, 
@@ -69,7 +69,7 @@ gai_get_task_list(task_list_t *taskListA, task_list_t *taskListB,
 
     if(recovery) jstart_ = state->lo[0]; /* recovering the previous state */
     for(ii=jj=0, jlo = jstart_; jlo <= jend; jlo += Jchunk) {
-       jhi = MIN(jend, jlo+Jchunk-1);
+       jhi = GA_MIN(jend, jlo+Jchunk-1);
 
        if(recovery) {
 	  do_put = state->do_put;
@@ -78,7 +78,7 @@ gai_get_task_list(task_list_t *taskListA, task_list_t *taskListB,
        else do_put = SET; /* for 1st shot we can put, instead of accumulate */
        
        for(klo = kstart_; klo <= kend; klo += Kchunk) {
-	  khi = MIN(kend, klo+Kchunk-1); 
+	  khi = GA_MIN(kend, klo+Kchunk-1); 
 	  get_new_B = TRUE;
 	  
 	  /* set it back after the first loop */
@@ -97,14 +97,14 @@ gai_get_task_list(task_list_t *taskListA, task_list_t *taskListB,
 	  }
 	  
 	  for(ilo = istart; ilo <= iend; ilo += Ichunk){ 	     
-	     ihi = MIN(iend, ilo+Ichunk-1);
+	     ihi = GA_MIN(iend, ilo+Ichunk-1);
 	     taskListA[ii].dim[0] = ihi - ilo + 1; 
 	     taskListA[ii].dim[1] = khi - klo + 1;
 	     taskListA[ii].lo[0]  = ilo; taskListA[ii].hi[0] = ihi;
 	     taskListA[ii].lo[1]  = klo; taskListA[ii].hi[1] = khi;
 	     taskListA[ii].do_put = do_put;
 	     if(get_new_B) { /* B matrix */
-		ihi = MIN(iend, ilo+Ichunk-1);
+		ihi = GA_MIN(iend, ilo+Ichunk-1);
 		taskListB[jj].dim[0] = khi - klo + 1; 
 		taskListB[jj].dim[1] = jhi - jlo + 1;
 		taskListB[jj].lo[0]  = klo; taskListB[jj].hi[0] = khi;
@@ -173,7 +173,7 @@ static void gai_get_chunk_size(int irregular,Integer *Ichunk,Integer *Jchunk,
       *elems = (Integer)(avail*0.9); /* Donot use every last drop */
       
       /* MAX: get the maximum chunk (or, block) size i.e  */
-      max_chunk=MIN(max_chunk, (Integer)(sqrt( (double)((*elems-nbuf*NUM_MATS)/(nbuf*NUM_MATS)))));
+      max_chunk=GA_MIN(max_chunk, (Integer)(sqrt( (double)((*elems-nbuf*NUM_MATS)/(nbuf*NUM_MATS)))));
 
       if(!irregular && use_armci_memory==SET) 
 	 max_chunk = *Ichunk = *Jchunk = *Kchunk = BLOCK_SIZE;
@@ -181,21 +181,21 @@ static void gai_get_chunk_size(int irregular,Integer *Ichunk,Integer *Jchunk,
       if(irregular) {
 	 /* NOTE:enable this part for regular cases, if later 
 	    part of the code is buggy or inefficient */
-	 *Ichunk = MIN(m,max_chunk);
-	 *Jchunk = MIN(n,max_chunk);
-	 *Kchunk = MIN(k,max_chunk);      
+	 *Ichunk = GA_MIN(m,max_chunk);
+	 *Jchunk = GA_MIN(n,max_chunk);
+	 *Kchunk = GA_MIN(k,max_chunk);      
       }
       else { /* This part of the code takes care of rectangular chunks and
 		most probably gives optimum rectangular chunk size */
 	 temp = max_chunk*max_chunk;
 	 if(*Ichunk < max_chunk && *Kchunk > max_chunk) {
-	    *Kchunk = MIN(*Kchunk,(Integer)(temp/(*Ichunk)));
-	    *Jchunk = MIN(*Jchunk,(Integer)(temp/(*Kchunk)));
+	    *Kchunk = GA_MIN(*Kchunk,(Integer)(temp/(*Ichunk)));
+	    *Jchunk = GA_MIN(*Jchunk,(Integer)(temp/(*Kchunk)));
 	 }
 	 else if(*Kchunk < max_chunk && *Ichunk > max_chunk) {
 	    temp *= 1.0/(*Kchunk);
-	    *Ichunk = MIN(*Ichunk,(Integer)temp);
-	    *Jchunk = MIN(*Jchunk,(Integer)temp);
+	    *Ichunk = GA_MIN(*Ichunk,(Integer)temp);
+	    *Jchunk = GA_MIN(*Jchunk,(Integer)temp);
 	 }
 	 else *Ichunk = *Jchunk = *Kchunk = max_chunk;
       }
@@ -209,7 +209,7 @@ static void gai_get_chunk_size(int irregular,Integer *Ichunk,Integer *Jchunk,
 	  if(*Ichunk > tmpa && *Jchunk > tmpb) {
 	     *Ichunk = tmpa;
 	     *Jchunk = tmpb;
-	     *Kchunk = MIN(*Ichunk,*Jchunk);
+	     *Kchunk = GA_MIN(*Ichunk,*Jchunk);
 	  }
 	  else {
 	     int i=1;/* i should be >=1 , to avoid divide by zero error */
@@ -222,7 +222,7 @@ static void gai_get_chunk_size(int irregular,Integer *Ichunk,Integer *Jchunk,
 		   *Jchunk = tmpb/i;
 		}
 		else *Jchunk = tmpb;
-		*Kchunk = MIN(*Ichunk, *Jchunk);
+		*Kchunk = GA_MIN(*Ichunk, *Jchunk);
 	     }
 	  }
        }
@@ -416,7 +416,7 @@ static void gai_matmul_shmem(transa, transb, alpha, beta, atype,
 
     /* loop through columns of g_c patch */
     for(jlo = jstart; jlo <= jend; jlo += Jchunk) { 
-       jhi  = MIN(jend, jlo+Jchunk-1);
+       jhi  = GA_MIN(jend, jlo+Jchunk-1);
        jdim = jhi - jlo +1;
      
        /* if beta=0,then for first shot we can do put,instead of accumulate */
@@ -424,13 +424,13 @@ static void gai_matmul_shmem(transa, transb, alpha, beta, atype,
    
        /* loop cols of g_a patch : loop rows of g_b patch*/
        for(klo = kstart; klo <= kend; klo += Kchunk) { 
-	  khi = MIN(kend, klo+Kchunk-1);
+	  khi = GA_MIN(kend, klo+Kchunk-1);
 	  kdim= khi - klo +1;
 	  get_new_B = TRUE; /* Each pass thru' outer 2 loops means we 
 			       need a different patch of B.*/
 	  /*loop through rows of g_c patch */
 	  for(ilo = istart; ilo <= iend; ilo += Ichunk){ 
-	     ihi = MIN(iend, ilo+Ichunk-1);
+	     ihi = GA_MIN(iend, ilo+Ichunk-1);
 	     idim= cdim = ihi - ilo +1;
 	 
 	     /* STEP1(a): get matrix "A" chunk */
@@ -861,11 +861,11 @@ static void gai_matmul_irreg(transa, transb, alpha, beta, atype,
     compute_flag=0;     /* take care of the last chunk */
 
     for(jlo = 0; jlo < n; jlo += Jchunk){ /* loop thru columns of g_c patch */
-       jhi = MIN(n-1, jlo+Jchunk-1);
+       jhi = GA_MIN(n-1, jlo+Jchunk-1);
        jdim= jhi - jlo +1;
 
        for(klo = 0; klo < k; klo += Kchunk){    /* loop cols of g_a patch */
-	  khi = MIN(k-1, klo+Kchunk-1);          /* loop rows of g_b patch */
+	  khi = GA_MIN(k-1, klo+Kchunk-1);          /* loop rows of g_b patch */
 	  kdim= khi - klo +1;                                     
 	   
 	  /** Each pass through the outer two loops means we need a
@@ -876,7 +876,7 @@ static void gai_matmul_irreg(transa, transb, alpha, beta, atype,
 	        
 	     if(ijk%nproc == grp_me){
 
-		ihi = MIN(m-1, ilo+Ichunk-1);
+		ihi = GA_MIN(m-1, ilo+Ichunk-1);
 		idim= cdim = ihi - ilo +1;
 
 
@@ -1344,15 +1344,15 @@ void ga_matmul(transa, transb, alpha, beta,
 	  short int nbuf=1;
 	  DoubleComplex *tmp = NULL;
 
-	  Ichunk = MIN( (hiC[0]-loC[0]+1), (hiA[0]-loA[0]+1) );
-	  Jchunk = MIN( (hiC[1]-loC[1]+1), (hiB[1]-loB[1]+1) );
-	  Kchunk = MIN( (hiA[1]-loA[1]+1), (hiB[0]-loB[0]+1) );
+	  Ichunk = GA_MIN( (hiC[0]-loC[0]+1), (hiA[0]-loA[0]+1) );
+	  Jchunk = GA_MIN( (hiC[1]-loC[1]+1), (hiB[1]-loB[1]+1) );
+	  Kchunk = GA_MIN( (hiA[1]-loA[1]+1), (hiB[0]-loB[0]+1) );
 
 #if KCHUNK_OPTIMIZATION /*works great for m=1000,n=1000,k=4000 kinda cases*/
 	  nga_distribution_(g_a, &me, loC, hiC);
 	  Kchunk = hiC[1]-loC[1]+1;
 	  nga_distribution_(g_b, &me, loC, hiC);
-	  Kchunk = MIN(Kchunk, (hiC[0]-loC[0]+1));
+	  Kchunk = GA_MIN(Kchunk, (hiC[0]-loC[0]+1));
 #endif
 
 	  /* Just to avoid divide by zero error */
@@ -1612,10 +1612,10 @@ int idim_t, jdim_t, kdim_t, adim_t, bdim_t, cdim_t;
        if(avail<MINMEM && ga_nodeid_()==0) ga_error("NotEnough memory",avail);
        elems = (Integer)(avail*0.9); /* Donot use every last drop */
        
-       max_chunk=MIN(max_chunk, (Integer)(sqrt( (double)((elems-EXTRA)/3))));
-       Ichunk = MIN(m,max_chunk);
-       Jchunk = MIN(n,max_chunk);
-       Kchunk = MIN(k,max_chunk);
+       max_chunk=GA_MIN(max_chunk, (Integer)(sqrt( (double)((elems-EXTRA)/3))));
+       Ichunk = GA_MIN(m,max_chunk);
+       Jchunk = GA_MIN(n,max_chunk);
+       Kchunk = GA_MIN(k,max_chunk);
      }
      else /* "EXTRA" elems for safety - just in case */
        elems = 3*Ichunk*Jchunk + EXTRA*factor;
@@ -1638,11 +1638,11 @@ int idim_t, jdim_t, kdim_t, adim_t, bdim_t, cdim_t;
    else  ga_fill_patch_(g_c, cilo, cihi, cjlo, cjhi, beta);
 
    for(jlo = 0; jlo < n; jlo += Jchunk){ /* loop through columns of g_c patch */
-       jhi = MIN(n-1, jlo+Jchunk-1);
+       jhi = GA_MIN(n-1, jlo+Jchunk-1);
        jdim= jhi - jlo +1;
 
        for(klo = 0; klo < k; klo += Kchunk){    /* loop cols of g_a patch */
-	 khi = MIN(k-1, klo+Kchunk-1);          /* loop rows of g_b patch */
+	 khi = GA_MIN(k-1, klo+Kchunk-1);          /* loop rows of g_b patch */
 	 kdim= khi - klo +1;                                     
 	 
 	 /** Each pass through the outer two loops means we need a
@@ -1653,7 +1653,7 @@ int idim_t, jdim_t, kdim_t, adim_t, bdim_t, cdim_t;
 	   
 	   if(ijk%nproc == iproc){
 
-	     ihi = MIN(m-1, ilo+Ichunk-1);
+	     ihi = GA_MIN(m-1, ilo+Ichunk-1);
 	     idim= cdim = ihi - ilo +1;
 	     
 	     if(atype == C_FLOAT) 
@@ -1838,7 +1838,7 @@ void ga_matmul_patch(transa, transb, alpha, beta,
 
 /*\ select the 2d plane to be used in matrix multiplication                     
   \*/
-static void  gai_setup_2d_patch(Integer rank, Integer dims[],
+  static void  gai_setup_2d_patch(Integer rank, char *trans, Integer dims[],
                                 Integer lo[], Integer hi[],
                                 Integer* ilo, Integer* ihi,
                                 Integer* jlo, Integer* jhi,
@@ -1846,7 +1846,8 @@ static void  gai_setup_2d_patch(Integer rank, Integer dims[],
                                 int* ipos, int* jpos)
 {
     int d,e=0;
-
+    char t='n';
+    
     for(d=0; d<rank; d++)
        if( (hi[d]-lo[d])>0 && ++e>2 ) ga_error("3-D Patch Detected", 0L);
     *ipos = *jpos = -1;
@@ -1861,12 +1862,20 @@ static void  gai_setup_2d_patch(Integer rank, Integer dims[],
     /* single element case (trivial) */
     if((*ipos <0) && (*jpos <0)){ *ipos =0; *jpos=1; }
     else{
-       
        /* handle almost trivial case of only one dimension with >1 elements */
-       if(*ipos == rank-1) (*ipos)--; /* i cannot be the last dimension */
-       if(*ipos <0) *ipos = *jpos-1; /* select i dimension based on j */
-       if(*jpos <0) *jpos = *ipos+1; /* select j dimenison based on i */
-       
+       if(trans == NULL) trans = &t;      
+       if(*trans == 'n' || *trans == 'N') {
+          if(*ipos == rank-1) (*ipos)--; /* i cannot be the last dimension */
+          if(*ipos <0) *ipos = *jpos-1; /* select i dimension based on j */
+          if(*jpos <0) *jpos = *ipos+1; /* select j dimenison based on i */
+       }
+       else {
+          if(*ipos <0) *ipos = *jpos-1; 
+          if(*jpos <0) {
+             if(*ipos==0) *jpos = *ipos + 1; 
+             else         *jpos = (*ipos)--;
+          }
+       }
     }
     
     *ilo = lo[*ipos]; *ihi = hi[*ipos];
@@ -1958,12 +1967,12 @@ int idim_t, jdim_t, kdim_t, adim_t, bdim_t, cdim_t;
    if(atype != C_DCPL && atype != C_DBL && atype != C_FLOAT && atype != C_SCPL)
      ga_error(" type error",atype);
    
-   gai_setup_2d_patch(arank, adims, alo, ahi, &ailo, &aihi, &ajlo, &ajhi, 
-		                  &adim1, &adim2, &aipos, &ajpos);
-   gai_setup_2d_patch(brank, bdims, blo, bhi, &bilo, &bihi, &bjlo, &bjhi, 
-		                  &bdim1, &bdim2, &bipos, &bjpos);
-   gai_setup_2d_patch(crank, cdims, clo, chi, &cilo, &cihi, &cjlo, &cjhi, 
-		                  &cdim1, &cdim2, &cipos, &cjpos);
+   gai_setup_2d_patch(arank, transa, adims, alo, ahi, &ailo, &aihi,
+                      &ajlo, &ajhi, &adim1, &adim2, &aipos, &ajpos);
+   gai_setup_2d_patch(brank, transb, bdims, blo, bhi, &bilo, &bihi,
+                      &bjlo, &bjhi, &bdim1, &bdim2, &bipos, &bjpos);
+   gai_setup_2d_patch(crank, NULL, cdims, clo, chi, &cilo, &cihi,
+                      &cjlo, &cjhi, &cdim1, &cdim2, &cipos, &cjpos);
 
    /* check if patch indices and dims match */
    if (*transa == 'n' || *transa == 'N'){
@@ -2015,10 +2024,10 @@ int idim_t, jdim_t, kdim_t, adim_t, bdim_t, cdim_t;
        if(avail<MINMEM && ga_nodeid_()==0) ga_error("Not enough memory",avail);
        elems = (Integer)(avail*0.9);/* Donot use every last drop */
        
-       max_chunk=MIN(max_chunk, (Integer)(sqrt( (double)((elems-EXTRA)/3))));
-       Ichunk = MIN(m,max_chunk);
-       Jchunk = MIN(n,max_chunk);
-       Kchunk = MIN(k,max_chunk);
+       max_chunk=GA_MIN(max_chunk, (Integer)(sqrt( (double)((elems-EXTRA)/3))));
+       Ichunk = GA_MIN(m,max_chunk);
+       Jchunk = GA_MIN(n,max_chunk);
+       Kchunk = GA_MIN(k,max_chunk);
      }
      else /* "EXTRA" elems for safety - just in case */
        elems = 3*Ichunk*Jchunk + EXTRA*factor;
@@ -2040,11 +2049,11 @@ int idim_t, jdim_t, kdim_t, adim_t, bdim_t, cdim_t;
    else      nga_fill_patch_(g_c, clo, chi, beta);
   
    for(jlo = 0; jlo < n; jlo += Jchunk){ /* loop through columns of g_c patch */
-       jhi = MIN(n-1, jlo+Jchunk-1);
+       jhi = GA_MIN(n-1, jlo+Jchunk-1);
        jdim= jhi - jlo +1;
        
        for(klo = 0; klo < k; klo += Kchunk){    /* loop cols of g_a patch */
-	 khi = MIN(k-1, klo+Kchunk-1);        /* loop rows of g_b patch */
+	 khi = GA_MIN(k-1, klo+Kchunk-1);        /* loop rows of g_b patch */
 	 kdim= khi - klo +1;               
 
 	 get_new_B = TRUE;
@@ -2052,7 +2061,7 @@ int idim_t, jdim_t, kdim_t, adim_t, bdim_t, cdim_t;
 	 for(ilo = 0; ilo < m; ilo += Ichunk){ /*loop through rows of g_c patch */
 	   
 	   if(ijk%nproc == iproc){
-	     ihi = MIN(m-1, ilo+Ichunk-1);
+	     ihi = GA_MIN(m-1, ilo+Ichunk-1);
 	     idim= cdim = ihi - ilo +1;
 	     
 	     if(atype == C_FLOAT) 

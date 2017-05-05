@@ -18,7 +18,7 @@ c#define MIRROR
 #include "mafdecls.fh"
 #include "global.fh"
 #include "testutil.fh"
-#include "tcgmsg.fh"
+c#include "tcgmsg.fh"
       integer heap, stack, fudge, ma_heap, me
       integer nmax, DIM, nwidth, MAXPROC, nloop
       parameter (nmax = 20, DIM = 3, nwidth = 2, MAXPROC = 2000)
@@ -42,8 +42,18 @@ c
 c***  Intitialize a message passing library
 c
 #ifdef MPI
+#include "mpif.h"
       integer ierr
+#ifdef DCMF
+      integer required, provided
+      required=MPI_THREAD_MULTIPLE
+      call mpi_init_thread(required, provided, ierr)
+      if (provided.ne.MPI_THREAD_MULTIPLE) then
+        call ga_error('provided.ne.MPI_THREAD_MULTIPLE',provided)
+      endif
+#else
       call mpi_init(ierr)
+#endif
 #else
       call pbeginf
 #endif

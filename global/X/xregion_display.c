@@ -92,10 +92,10 @@ int base, stime;
  
     if (in_display_region(ilo, ihi, jlo, jhi))
     {
-      ilo = MAX(ilo - top_edge, 0);
-      ihi = MIN(ihi - top_edge, pict_height - 1);
-      jlo = MAX(jlo - left_edge, 0);
-      jhi = MIN(jhi - left_edge, pict_width - 1);
+      ilo = GA_MAX(ilo - top_edge, 0);
+      ihi = GA_MIN(ihi - top_edge, pict_height - 1);
+      jlo = GA_MAX(jlo - left_edge, 0);
+      jhi = GA_MIN(jhi - left_edge, pict_width - 1);
       UpdatePixRegion(ilo, ihi, jlo, jhi, inc, (double) 1e-6 * ev_times[cur_event]);
       DisplayPixRegion(ilo, ihi, jlo, jhi);
     } 

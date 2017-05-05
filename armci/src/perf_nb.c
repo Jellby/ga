@@ -40,7 +40,16 @@
 #   include <mpi.h>
 #   define MP_BARRIER()      MPI_Barrier(MPI_COMM_WORLD)
 #   define MP_FINALIZE()     MPI_Finalize()
+#ifdef DCMF
+#   define MP_INIT(arc,argv) \
+    int desired = MPI_THREAD_MULTIPLE; \
+    int provided; \
+    printf("using MPI_Init_thread\n"); \
+    MPI_Init_thread(&argc, &argv, desired, &provided); \
+    if ( provided != MPI_THREAD_MULTIPLE ) printf("provided != MPI_THREAD_MULTIPLE\n");
+#else
 #   define MP_INIT(arc,argv) MPI_Init(&(argc),&(argv))
+#endif
 #   define MP_MYID(pid)      MPI_Comm_rank(MPI_COMM_WORLD, (pid))
 #   define MP_PROCS(pproc)   MPI_Comm_size(MPI_COMM_WORLD, (pproc));
 #   define MP_TIMER          MPI_Wtime
@@ -103,9 +112,9 @@ int DEBUG=0;  /* if debug=1, dump extra messages */
 
 /***************************** macros ************************/
 #define COPY(src, dst, bytes) memcpy((dst),(src),(bytes))
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) <0) ? -(a) : (a))
+#define ARMCI_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define ARMCI_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define ARMCI_ABS(a) (((a) <0) ? -(a) : (a))
 
 /***************************** global data *******************/
 int me, nproc;
@@ -176,7 +185,7 @@ void verify_results(int op, int *elems) {
     case PUT:
       if(!(me==0))
 	for(j=0; j<elems[1]; j++) {
-	  if( ABS(ddst[me][j]-j*1.001) > 0.1) {
+	  if( ARMCI_ABS(ddst[me][j]-j*1.001) > 0.1) {
 	    ARMCI_Error("put failed...Invalid Value Obtained..1", 0);
 	  }
 	}
@@ -188,7 +197,7 @@ void verify_results(int op, int *elems) {
       if(me==0) {
 	for(i=1; i<nproc; i++) {
 	  for(j=0; j<elems[1]; j++) {
-	    if( ABS(ddst[me][i*elems[1]+j]-j*1.001*(i+1)) > 0.1) 
+	    if( ARMCI_ABS(ddst[me][i*elems[1]+j]-j*1.001*(i+1)) > 0.1) 
 	      ARMCI_Error("get failed...Invalid Value Obtained..1", 0);
 	  }
 	}
@@ -202,7 +211,7 @@ void verify_results(int op, int *elems) {
 	for(j=0; j<elems[1]; j++) {
 	  /*printf("ddst[%d][%d] = %lf\n", me, j, ddst[me][j]);
 	    fflush(stdout); */
-	  if( ABS(ddst[me][j]-(double)nproc) > 0.1) {
+	  if( ARMCI_ABS(ddst[me][j]-(double)nproc) > 0.1) {
 	    ARMCI_Error("accumulate failed...Invalid Value Obtained..1", 0);
 	  }
 	}

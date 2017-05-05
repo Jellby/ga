@@ -75,7 +75,7 @@ int ftype;
                 break;
    case C_SCPL:
 #       if defined(NO_REAL_32)
-                ftype = -1;
+                ftype = MT_F_DCPL;
 #       else
                 ftype = MT_F_SCPL;
 #       endif

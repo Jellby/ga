@@ -34,7 +34,7 @@ Date: 2/28/2002
 #define OP_ZERO_DIAGONAL        11
 
 # define THRESH 1e-5
-#define MISMATCHED(x,y) ABS((x)-(y))>=THRESH
+#define MISMATCHED(x,y) GA_ABS((x)-(y))>=THRESH
 
 /*#define BLOCK_CYCLIC*/
 /*#define USE_SCALAPACK*/
@@ -1419,17 +1419,17 @@ test_norm_infinity (int g_a)
   switch (type)
     {
     case C_INT:
-      result = (double) ABS (ival);
+      result = (double) GA_ABS(ival);
       break;
     case C_LONG:
-      result = (double) ABS (lval);
+      result = (double) GA_ABS(lval);
       break;
     case C_FLOAT:
-      result = (double) ABS (fval);
+      result = (double) GA_ABS(fval);
       break;
 
     case C_DBL:
-      result = ABS (dval);
+      result = GA_ABS(dval);
       break;
 
     case C_DCPL:
@@ -1514,17 +1514,17 @@ test_norm1 (int g_a)
   switch (type)
     {
     case C_INT:
-      result = (double) ABS (ival);
+      result = (double) GA_ABS(ival);
       break;
     case C_LONG:
-      result = (double) ABS (lval);
+      result = (double) GA_ABS(lval);
       break;
     case C_FLOAT:
-      result = (double) ABS (fval);
+      result = (double) GA_ABS(fval);
       break;
 
     case C_DBL:
-      result = ABS (dval);
+      result = GA_ABS(dval);
       break;
 
     case C_DCPL:
@@ -2031,7 +2031,7 @@ test_zero_diagonal (int g_a)
   fcval.real = -2.0;
   fcval.imag = -0.0;
 
-  vdims = MIN(dims[0],dims[1]);
+  vdims = GA_MIN(dims[0],dims[1]);
 
   switch (type)
   {
@@ -2245,7 +2245,7 @@ test_shift_diagonal (int g_a)
 
   NGA_Inquire (g_a, &type, &ndim, dims);
 
-  dim = MIN (dims[0], dims[1]);
+  dim = GA_MIN(dims[0], dims[1]);
 
   dcval.real = -2.0;
   dcval.imag = -0.0;
@@ -2439,7 +2439,7 @@ do_work (int type, int op)
       GA_Allocate(g_a);
 #endif
       /*find out the diagonal length of the matrix A */
-      vdim = MIN (dims[0], dims[1]);
+      vdim = GA_MIN(dims[0], dims[1]);
       g_v = NGA_Create (type, 1, &vdim, "V", NULL);
       if (!g_v)
 	GA_Error ("create failed:V", n);
@@ -2483,11 +2483,11 @@ do_work (int type, int op)
       GA_Allocate(g_a);
 #endif
       /*find out the diagonal length of the matrix A */
-      vdim = MIN (dims[0], dims[1]);
+      vdim = GA_MIN(dims[0], dims[1]);
       g_v = NGA_Create (type, 1, &vdim, "V", NULL);
       if (!g_v)
 	GA_Error ("create failed:V", n);
-      vdim = MIN (dims[0], dims[1]);
+      vdim = GA_MIN(dims[0], dims[1]);
       test_add_diagonal (g_a, g_v);
       GA_Destroy (g_a);
       GA_Destroy (g_v);
@@ -2509,7 +2509,7 @@ do_work (int type, int op)
       GA_Allocate(g_a);
 #endif
       /*find out the diagonal length of the matrix A */
-      vdim = MIN (dims[0], dims[1]);
+      vdim = GA_MIN(dims[0], dims[1]);
       g_v = NGA_Create (type, 1, &vdim, "V", NULL);
       if (!g_v)
 	GA_Error ("create failed:V", n);
@@ -2704,7 +2704,14 @@ main (argc, argv)
   type = C_DBL;
 
 #ifdef MPI
+#ifdef DCMF
+    int desired = MPI_THREAD_MULTIPLE;
+    int provided;
+    MPI_Init_thread(&argc, &argv, desired, &provided);
+    if ( provided != MPI_THREAD_MULTIPLE ) printf("provided != MPI_THREAD_MULTIPLE\n");
+#else
   MPI_Init (&argc, &argv);	/* initialize MPI */
+#endif
 #else
   PBEGIN_ (argc, argv);		/* initialize TCGMSG */
 #endif

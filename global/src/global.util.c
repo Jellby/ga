@@ -92,20 +92,18 @@ char *name;
      if (!*pretty) {
        for (i=*ilo; i <*ihi+1; i++){
          for (j=*jlo; j <*jhi+1; j+=bufsize){
-           jmax = MIN(j+bufsize-1,*jhi);
+           jmax = GA_MIN(j+bufsize-1,*jhi);
            switch(type){
               case C_INT:
                    ga_get_(g_a, &i, &i, &j, &jmax, ibuf, &ld);
                    for(jj=0; jj<(jmax-j+1); jj++)
-                     fprintf(file," %8ld",ibuf[jj]);
+                     fprintf(file," %8d",ibuf[jj]);
                    break;
-
               case C_DBL:
                    ga_get_(g_a, &i, &i, &j, &jmax, dbuf, &ld);
                    for(jj=0; jj<(jmax-j+1); jj++)
                      fprintf(file," %11.5f",dbuf[jj]);
                    break;
-
               case C_DCPL:
                    ga_get_(g_a, &i, &i, &j, &jmax, dbuf, &ld);
                    for(jj=0; jj<(jmax-j+1); jj+=2)
@@ -141,7 +139,7 @@ char *name;
      } else {
 
         for (j=*jlo; j<*jhi+1; j+=bufsize){
-        jmax = MIN(j+bufsize-1,*jhi);
+        jmax = GA_MIN(j+bufsize-1,*jhi);
 
            fprintf(file, "\n"); fprintf(file, "\n");
 
@@ -150,9 +148,17 @@ char *name;
            fprintf(file, "      ");
            switch(type){
               case C_INT:
+                   for (jj=j; jj<=jmax; jj++) fprintf(file, "%6d  ", jj);
+                   fprintf(file,"\n      ");
+                   for (jj=j; jj<=jmax; jj++) fprintf(file," -------");
+                   break;
               case C_LONG:  
-              case C_LONGLONG:  
                    for (jj=j; jj<=jmax; jj++) fprintf(file, "%6ld  ", jj);
+                   fprintf(file,"\n      ");
+                   for (jj=j; jj<=jmax; jj++) fprintf(file," -------");
+                   break;
+              case C_LONGLONG:  
+                   for (jj=j; jj<=jmax; jj++) fprintf(file, "%6lld  ", jj);
                    fprintf(file,"\n      ");
                    for (jj=j; jj<=jmax; jj++) fprintf(file," -------");
                    break;
@@ -184,7 +190,7 @@ char *name;
                  case C_INT:
                       ga_get_(g_a, &i, &i, &j, &jmax, ibuf, &ld);
                       for(jj=0; jj<(jmax-j+1); jj++)
-                        fprintf(file," %8ld",ibuf[jj]);
+                        fprintf(file," %8d",ibuf[jj]);
                       break;
                  case C_LONG: 
                       ga_get_(g_a, &i, &i, &j, &jmax,lbuf, &ld);
@@ -612,16 +618,16 @@ void FATR nga_file_print_patch(file, g_a, lo, hi, pretty)
             for(i=0; i<ndim; i++) {
                 lop[i] = lo[i]; hip[i] = lo[i];
             }
-            hip[0] = MIN(lop[0]+bufsize-1, hi[0]);
+            hip[0] = GA_MIN(lop[0]+bufsize-1, hi[0]);
             while(done) {
                 switch(type) {
-                    case C_INT: nga_get_(g_a, lop, hip, ibuf, ld); break;
-                    case C_DBL: nga_get_(g_a, lop, hip, dbuf, ld); break;
-                    case C_DCPL: nga_get_(g_a, lop, hip, dbuf, ld); break;
-                    case C_FLOAT: nga_get_(g_a, lop, hip, fbuf, ld); break; 
-                    case C_SCPL: nga_get_(g_a, lop, hip, fbuf, ld); break;
-                    case C_LONG: nga_get_(g_a, lop, hip, lbuf, ld); break; 
-                    case C_LONGLONG: nga_get_(g_a, lop, hip, llbuf, ld);break;
+                    case C_INT:      nga_get_(g_a, lop, hip, ibuf, ld); break;
+                    case C_DBL:      nga_get_(g_a, lop, hip, dbuf, ld); break;
+                    case C_DCPL:     nga_get_(g_a, lop, hip, dbuf, ld); break;
+                    case C_FLOAT:    nga_get_(g_a, lop, hip, fbuf, ld); break; 
+                    case C_SCPL:     nga_get_(g_a, lop, hip, fbuf, ld); break;
+                    case C_LONG:     nga_get_(g_a, lop, hip, lbuf, ld); break; 
+                    case C_LONGLONG: nga_get_(g_a, lop, hip,llbuf, ld); break;
                     default: ga_error("ga_print: wrong type",0);
                 }
                 
@@ -637,10 +643,12 @@ void FATR nga_file_print_patch(file, g_a, lo, hi, pretty)
                             fprintf(file, "%ld,", lop[j]+i);
                         else fprintf(file, "%ld,", lop[j]);
                     switch(type) {
-                        case C_INT: fprintf(file,") = %ld\n", ibuf[i]);break;
-                        case C_LONG: fprintf(file,") = %ld\n", lbuf[i]);break;
+                        case C_INT:
+                            fprintf(file,") = %d\n", ibuf[i]);break;
+                        case C_LONG:
+                            fprintf(file,") = %ld\n", lbuf[i]);break;
                         case C_LONGLONG:
-                           fprintf(file,") = %lld\n", llbuf[i]);break;
+                            fprintf(file,") = %lld\n", llbuf[i]);break;
                         case C_DBL:
                             if((double)dbuf[i]<100000.0)
                                 fprintf(file,") = %f\n", dbuf[i]);
@@ -670,14 +678,14 @@ void FATR nga_file_print_patch(file, g_a, lo, hi, pretty)
                 
                 fflush(file);
                 
-                lop[0] = hip[0]+1; hip[0] = MIN(lop[0]+bufsize-1, hi[0]);
+                lop[0] = hip[0]+1; hip[0] = GA_MIN(lop[0]+bufsize-1, hi[0]);
                 
                 for(i=0; i<ndim; i++)
                     if(lop[i] > hi[i]) 
                         if(i == (ndim-1)) done = 0;
                         else {
                             lop[i] = lo[i];
-                            if(i == 0) hip[i] = MIN(lop[i]+bufsize-1, hi[i]);
+                            if(i == 0) hip[i] = GA_MIN(lop[i]+bufsize-1, hi[i]);
                             else hip[i] = lo[i];
                             lop[i+1]++; hip[i+1]++;
                         }
@@ -689,7 +697,7 @@ void FATR nga_file_print_patch(file, g_a, lo, hi, pretty)
             for(i=0; i<ndim; i++) {
                 lop[i] = lo[i];
                 if((i == 0) || (i == 1))
-                    hip[i] = MIN(lop[i]+bufsize-1, hi[i]);
+                    hip[i] = GA_MIN(lop[i]+bufsize-1, hi[i]);
                 else 
                     hip[i] = lo[i];
             }
@@ -714,11 +722,25 @@ void FATR nga_file_print_patch(file, g_a, lo, hi, pretty)
                     fprintf(file, "\n"); 
                     switch(type) {
                         case C_INT:
+                            fprintf(file, "     ");
+                            for (i=lop[1]; i<=hip[1]; i++)
+                                fprintf(file, "%7d  ", i);
+                            fprintf(file,"\n      ");
+                            for (i=lop[1]; i<=hip[1]; i++)
+                                fprintf(file," --------");
+                            break;
                         case C_LONG:
-                        case C_LONGLONG:
                             fprintf(file, "     ");
                             for (i=lop[1]; i<=hip[1]; i++)
                                 fprintf(file, "%7ld  ", i);
+                            fprintf(file,"\n      ");
+                            for (i=lop[1]; i<=hip[1]; i++)
+                                fprintf(file," --------");
+                            break;
+                        case C_LONGLONG:
+                            fprintf(file, "     ");
+                            for (i=lop[1]; i<=hip[1]; i++)
+                                fprintf(file, "%7lld  ", i);
                             fprintf(file,"\n      ");
                             for (i=lop[1]; i<=hip[1]; i++)
                                 fprintf(file," --------");
@@ -763,7 +785,7 @@ void FATR nga_file_print_patch(file, g_a, lo, hi, pretty)
                 
                 switch(type) {
                     case C_INT: nga_get_(g_a, lop, hip, ibuf_2d, ld); break;
-		    case C_LONG: nga_get_(g_a, lop, hip,lbuf_2d, ld); break;  
+                    case C_LONG: nga_get_(g_a, lop, hip,lbuf_2d, ld); break;
                     case C_LONGLONG: nga_get_(g_a, lop, hip,llbuf_2d,ld);break;
                     case C_DBL: nga_get_(g_a, lop, hip, dbuf_2d, ld); break;
                     case C_DCPL: nga_get_(g_a, lop, hip, dbuf_2d, ld);break;
@@ -778,8 +800,8 @@ void FATR nga_file_print_patch(file, g_a, lo, hi, pretty)
                         case C_INT:
                             if(ndim > 1)
                                 for(j=0; j<(hip[1]-lop[1]+1); j++)
-                                    fprintf(file," %8ld", ibuf_2d[j*bufsize+i]);
-                            else fprintf(file," %8ld", ibuf_2d[i]);
+                                    fprintf(file," %8d", ibuf_2d[j*bufsize+i]);
+                            else fprintf(file," %8d", ibuf_2d[i]);
                             break;
                         case C_LONG:
                             if(ndim > 1)
@@ -861,7 +883,7 @@ void FATR nga_file_print_patch(file, g_a, lo, hi, pretty)
                     fprintf(file,"\n");
                 }
                 
-                lop[0] = hip[0]+1; hip[0] = MIN(lop[0]+bufsize-1, hi[0]);
+                lop[0] = hip[0]+1; hip[0] = GA_MIN(lop[0]+bufsize-1, hi[0]);
                 
                 for(i=0; i<ndim; i++)
                     if(lop[i] > hi[i]) 
@@ -870,12 +892,12 @@ void FATR nga_file_print_patch(file, g_a, lo, hi, pretty)
                             lop[i] = lo[i];
                             
                             if((i == 0) || (i == 1))
-                                hip[i] = MIN(lop[i]+bufsize-1, hi[i]);
+                                hip[i] = GA_MIN(lop[i]+bufsize-1, hi[i]);
                             else hip[i] = lo[i];
                             
                             if(i == 0) {
                                 lop[i+1] = hip[i+1]+1;
-                                hip[i+1] = MIN(lop[i+1]+bufsize-1, hi[i+1]);
+                                hip[i+1] = GA_MIN(lop[i+1]+bufsize-1, hi[i+1]);
                             }
                             else {
                                 lop[i+1]++; hip[i+1]++;

@@ -251,7 +251,7 @@ static void do_abs(void *ptr, int nelem, int type)
          case C_INT:
               ia = (int *)ptr; 
               for(i=0;i<nelem;i++)
-                  ia[i]= ABS(ia[i]);
+                  ia[i]= GA_ABS(ia[i]);
               break; 
          case C_DCPL:
               ca = (DoubleComplex *) ptr;
@@ -263,18 +263,18 @@ static void do_abs(void *ptr, int nelem, int type)
 		ca[i].imag = 0.0;
 		   Better (but slower) is:
 		*/
-		magi = ABS(val.imag);
-		magr = ABS(val.real);
-		if (ABS(val.real) >= ABS(val.imag)) {
+		magi = GA_ABS(val.imag);
+		magr = GA_ABS(val.real);
+		if (GA_ABS(val.real) >= GA_ABS(val.imag)) {
 		  if (val.real == (double)0.0) {
 		    ca[i].real = (double)0.0;
 		  } else {
 		    x2 = val.imag/val.real;
-		    ca[i].real = ABS(val.real)*sqrt(((double)1.0)+(x2*x2));
+		    ca[i].real = GA_ABS(val.real)*sqrt(((double)1.0)+(x2*x2));
 		  }
 		} else {
 		  x2 = val.real/val.imag;
-		  ca[i].real = ABS(val.imag)*sqrt(((double)1.0)+(x2*x2));
+		  ca[i].real = GA_ABS(val.imag)*sqrt(((double)1.0)+(x2*x2));
 		}
 		ca[i].imag=(double)0.0;
               }
@@ -289,18 +289,18 @@ static void do_abs(void *ptr, int nelem, int type)
 		cfa[i].imag = 0.0;
 		   Better (but slower) is:
 		*/
-		smagi = ABS(cval.imag);
-		smagr = ABS(cval.real);
-		if (ABS(val.real) >= ABS(val.imag)) {
+		smagi = GA_ABS(cval.imag);
+		smagr = GA_ABS(cval.real);
+		if (GA_ABS(val.real) >= GA_ABS(val.imag)) {
 		  if (cval.real == (float)0.0) {
 		    cfa[i].real = (float)0.0;
 		  } else {
 		    sx2 = cval.imag/cval.real;
-		    cfa[i].real = ABS(cval.real)*sqrt(((float)1.0)+(sx2*sx2));
+		    cfa[i].real = GA_ABS(cval.real)*sqrt(((float)1.0)+(sx2*sx2));
 		  }
 		} else {
 		  sx2 = cval.real/cval.imag;
-		  cfa[i].real = ABS(cval.imag)*sqrt(((float)1.0)+(sx2*sx2));
+		  cfa[i].real = GA_ABS(cval.imag)*sqrt(((float)1.0)+(sx2*sx2));
 		}
 		cfa[i].imag=(float)0.0;
               }
@@ -308,17 +308,17 @@ static void do_abs(void *ptr, int nelem, int type)
   	 case C_DBL:
               da = (double *) ptr;
               for(i=0;i<nelem;i++)
-                  da[i]= ABS(da[i]);
+                  da[i]= GA_ABS(da[i]);
               break;
          case C_FLOAT:
               fa = (float *)ptr;
               for(i=0;i<nelem;i++)
-                  fa[i]= ABS(fa[i]);
+                  fa[i]= GA_ABS(fa[i]);
               break;
  	case C_LONG:
               la = (long *)ptr;
               for(i=0;i<nelem;i++)
-                  la[i]= ABS(la[i]);
+                  la[i]= GA_ABS(la[i]);
               break;
 
          default: ga_error("wrong data type",type);
@@ -392,8 +392,8 @@ static void do_recip(void *ptr, int nelem, int type)
 		printf(" do_recip i = %d, x1 = %le, x2 = %le\n",
 		       i,x1,x2);
 		*/
-		magr = ABS(x1);
-		magi = ABS(x2);
+		magr = GA_ABS(x1);
+		magi = GA_ABS(x2);
 		/*
 		printf(" do_recip i = %d, magr = %le, magi = %le\n",
 		       i,magr,magi);
@@ -447,8 +447,8 @@ static void do_recip(void *ptr, int nelem, int type)
 		printf(" do_recip i = %d, x1 = %le, x2 = %le\n",
 		       i,x1,x2);
 		*/
-		smagr = ABS(sx1);
-		smagi = ABS(sx2);
+		smagr = GA_ABS(sx1);
+		smagi = GA_ABS(sx2);
 		/*
 		printf(" do_recip i = %d, magr = %le, magi = %le\n",
 		       i,magr,magi);
@@ -1062,7 +1062,7 @@ static void do_divide(void *pA, void *pB, void *pC, Integer nelems, Integer type
 	ga_error("zero divisor ",temp); 
       }
       */
-      if (ABS(bReal) >= ABS(bImag)) {
+      if (GA_ABS(bReal) >= GA_ABS(bImag)) {
 	if (bReal != (double)0.0) {
 	  x1 = bImag/bReal;
           /* So x1 <= 1 */
@@ -1102,7 +1102,7 @@ static void do_divide(void *pA, void *pB, void *pC, Integer nelems, Integer type
 	ga_error("zero divisor ",temp); 
       }
       */
-      if (ABS(bReal) >= ABS(bImag)) {
+      if (GA_ABS(bReal) >= GA_ABS(bImag)) {
 	if (bReal != (float)0.0) {
 	  x1 = bImag/bReal;
           /* So x1 <= 1 */
@@ -1432,7 +1432,7 @@ static void do_maximum(void *pA, void *pB, void *pC, Integer nelems, Integer typ
     
   case C_DBL:
     for(i = 0; i<nelems; i++)
-      ((double*)pC)[i] = MAX(((double*)pA)[i],((double*)pB)[i]);
+      ((double*)pC)[i] = GA_MAX(((double*)pA)[i],((double*)pB)[i]);
     break;
   case C_DCPL:
     for(i = 0; i<nelems; i++) {
@@ -1440,9 +1440,9 @@ static void do_maximum(void *pA, void *pB, void *pC, Integer nelems, Integer typ
       bReal = ((DoubleComplex*)pB)[i].real;
       aImag = ((DoubleComplex*)pA)[i].imag;
       bImag = ((DoubleComplex*)pB)[i].imag;
-      x1    = MAX(ABS(aReal),ABS(aImag));
-      x2    = MAX(ABS(bReal),ABS(bImag));
-      x1    = MAX(x1,x2);
+      x1    = GA_MAX(GA_ABS(aReal),GA_ABS(aImag));
+      x2    = GA_MAX(GA_ABS(bReal),GA_ABS(bImag));
+      x1    = GA_MAX(x1,x2);
       if (x1 == (double)0.0) {
 	((DoubleComplex*)pC)[i].real=((DoubleComplex*)pA)[i].real;
 	((DoubleComplex*)pC)[i].imag=((DoubleComplex*)pA)[i].imag;
@@ -1471,9 +1471,9 @@ static void do_maximum(void *pA, void *pB, void *pC, Integer nelems, Integer typ
       bReal = ((SingleComplex*)pB)[i].real;
       aImag = ((SingleComplex*)pA)[i].imag;
       bImag = ((SingleComplex*)pB)[i].imag;
-      x1    = MAX(ABS(aReal),ABS(aImag));
-      x2    = MAX(ABS(bReal),ABS(bImag));
-      x1    = MAX(x1,x2);
+      x1    = GA_MAX(GA_ABS(aReal),GA_ABS(aImag));
+      x2    = GA_MAX(GA_ABS(bReal),GA_ABS(bImag));
+      x1    = GA_MAX(x1,x2);
       if (x1 == (double)0.0) {
 	((SingleComplex*)pC)[i].real=((SingleComplex*)pA)[i].real;
 	((SingleComplex*)pC)[i].imag=((SingleComplex*)pA)[i].imag;
@@ -1498,16 +1498,16 @@ static void do_maximum(void *pA, void *pB, void *pC, Integer nelems, Integer typ
     break;
   case C_INT:
     for(i = 0; i<nelems; i++)
-      ((int*)pC)[i] =MAX(((int*)pA)[i],((int*)pB)[i]);
+      ((int*)pC)[i] =GA_MAX(((int*)pA)[i],((int*)pB)[i]);
     break;
   case C_FLOAT:
     for(i = 0; i<nelems; i++)
-      ((float*)pC)[i]=MAX(((float*)pA)[i],((float*)pB)[i]);
+      ((float*)pC)[i]=GA_MAX(((float*)pA)[i],((float*)pB)[i]);
     break;
     
   case C_LONG:
     for(i = 0; i<nelems; i++)
-      ((long *)pC)[i]=MAX(((long *)pA)[i],((long *)pB)[i]);
+      ((long *)pC)[i]=GA_MAX(((long *)pA)[i],((long *)pB)[i]);
     break;
     
   default: ga_error(" wrong data type ",type);
@@ -1528,7 +1528,7 @@ static void do_minimum(void *pA, void *pB, void *pC, Integer nelems, Integer typ
     
   case C_DBL:
     for(i = 0; i<nelems; i++)
-      ((double*)pC)[i] = MIN(((double*)pA)[i],((double*)pB)[i]);
+      ((double*)pC)[i] = GA_MIN(((double*)pA)[i],((double*)pB)[i]);
     break;
   case C_DCPL:
     for(i = 0; i<nelems; i++) {
@@ -1536,9 +1536,9 @@ static void do_minimum(void *pA, void *pB, void *pC, Integer nelems, Integer typ
       bReal = ((DoubleComplex*)pB)[i].real;
       aImag = ((DoubleComplex*)pA)[i].imag;
       bImag = ((DoubleComplex*)pB)[i].imag;
-      x1    = MAX(ABS(aReal),ABS(aImag));
-      x2    = MAX(ABS(bReal),ABS(bImag));
-      x1    = MAX(x1,x2);
+      x1    = GA_MAX(GA_ABS(aReal),GA_ABS(aImag));
+      x2    = GA_MAX(GA_ABS(bReal),GA_ABS(bImag));
+      x1    = GA_MAX(x1,x2);
       if (x1 == (double)0.0) {
 	((DoubleComplex*)pC)[i].real=((DoubleComplex*)pA)[i].real;
 	((DoubleComplex*)pC)[i].imag=((DoubleComplex*)pA)[i].imag;
@@ -1567,9 +1567,9 @@ static void do_minimum(void *pA, void *pB, void *pC, Integer nelems, Integer typ
       bReal = ((SingleComplex*)pB)[i].real;
       aImag = ((SingleComplex*)pA)[i].imag;
       bImag = ((SingleComplex*)pB)[i].imag;
-      x1    = MAX(ABS(aReal),ABS(aImag));
-      x2    = MAX(ABS(bReal),ABS(bImag));
-      x1    = MAX(x1,x2);
+      x1    = GA_MAX(GA_ABS(aReal),GA_ABS(aImag));
+      x2    = GA_MAX(GA_ABS(bReal),GA_ABS(bImag));
+      x1    = GA_MAX(x1,x2);
       if (x1 == (double)0.0) {
 	((SingleComplex*)pC)[i].real=((SingleComplex*)pA)[i].real;
 	((SingleComplex*)pC)[i].imag=((SingleComplex*)pA)[i].imag;
@@ -1594,15 +1594,15 @@ static void do_minimum(void *pA, void *pB, void *pC, Integer nelems, Integer typ
     break;
   case C_INT:
     for(i = 0; i<nelems; i++)
-      ((int*)pC)[i] =MIN(((int*)pA)[i],((int*)pB)[i]);
+      ((int*)pC)[i] =GA_MIN(((int*)pA)[i],((int*)pB)[i]);
     break;
   case C_FLOAT:
     for(i = 0; i<nelems; i++)
-      ((float*)pC)[i]=MIN(((float*)pA)[i],((float*)pB)[i]);
+      ((float*)pC)[i]=GA_MIN(((float*)pA)[i],((float*)pB)[i]);
     break;
   case C_LONG:
     for(i = 0; i<nelems; i++)
-      ((long *)pC)[i]=MIN(((long *)pA)[i],((long *)pB)[i]);
+      ((long *)pC)[i]=GA_MIN(((long *)pA)[i],((long *)pB)[i]);
     break;
     
   default: ga_error(" wrong data type ",type);
@@ -3027,7 +3027,7 @@ void FATR ga_step_bound_info_patch_(
      switch (xxtype)
        {
        case C_INT:
-	 *(int*)wolfemin = ABS(MIN(iresult,iresult2));
+	 *(int*)wolfemin = GA_ABS(GA_MIN(iresult,iresult2));
 	 break;
        case C_DCPL:
        case C_SCPL:
@@ -3035,13 +3035,13 @@ void FATR ga_step_bound_info_patch_(
 		   xxtype);
 	 break;
        case C_DBL:
-	 *(double*)wolfemin = ABS(MIN(dresult,dresult2));
+	 *(double*)wolfemin = GA_ABS(GA_MIN(dresult,dresult2));
 	 break;
        case C_FLOAT:
-	 *(float*)wolfemin = ABS(MIN(fresult,fresult2));
+	 *(float*)wolfemin = GA_ABS(GA_MIN(fresult,fresult2));
 	 break;
        case C_LONG:
-	 *(long*)wolfemin =  ABS(MIN(lresult,lresult2));
+	 *(long*)wolfemin =  GA_ABS(GA_MIN(lresult,lresult2));
 	 break;
        default:
 	 ga_error ("Ga_step_bound_info_patch_: result2 set: wrong data type.", xxtype);
@@ -3305,7 +3305,7 @@ void FATR ga_step_max_patch_(g_a,  alo, ahi, g_b,  blo, bhi, result)
     switch (atype)
     {
       case C_INT:
-        *(int*)result = ABS(iresult);
+        *(int*)result = GA_ABS(iresult);
         break;
       case C_DCPL:
       case C_SCPL:
@@ -3313,13 +3313,13 @@ void FATR ga_step_max_patch_(g_a,  alo, ahi, g_b,  blo, bhi, result)
             atype);
         break;
       case C_DBL:
-        *(double*)result = ABS(dresult);
+        *(double*)result = GA_ABS(dresult);
         break;
       case C_FLOAT:
-        *(float*)result = ABS(fresult);
+        *(float*)result = GA_ABS(fresult);
         break;
       case C_LONG:
-        *(long*)result = ABS(lresult);
+        *(long*)result = GA_ABS(lresult);
         break;
       default:
         ga_error ("Ga_step_max_patch_: wrong data type.", atype);

@@ -29,6 +29,7 @@ void ga_vampir_init() {
     vampir_symdef(GA_ERROR,                  "GA_Error",                   "GA",__FILE__,__LINE__);
     vampir_symdef(GA_FENCE,                  "GA_Fence",                   "GA",__FILE__,__LINE__);
     vampir_symdef(GA_FILL,                   "GA_Fill",                    "GA",__FILE__,__LINE__);
+    vampir_symdef(GA_RANDOMIZE,              "GA_Randomize",               "GA",__FILE__,__LINE__);
     vampir_symdef(GA_FILL_PATCH,             "GA_Fill_patch",              "GA",__FILE__,__LINE__);
     vampir_symdef(GA_GATHER,                 "GA_Gather",
         "GA_ONESIDED",__FILE__,__LINE__);

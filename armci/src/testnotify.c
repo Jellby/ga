@@ -39,7 +39,16 @@
 #   include <mpi.h>
 #   define MP_BARRIER()      MPI_Barrier(MPI_COMM_WORLD)
 #   define MP_FINALIZE()     MPI_Finalize()
+#ifdef DCMF
+#   define MP_INIT(arc,argv) \
+    int desired = MPI_THREAD_MULTIPLE; \
+    int provided; \
+    printf("using MPI_Init_thread\n"); \
+    MPI_Init_thread(&argc, &argv, desired, &provided); \
+    if ( provided != MPI_THREAD_MULTIPLE ) printf("provided != MPI_THREAD_MULTIPLE\n");
+#else
 #   define MP_INIT(arc,argv) MPI_Init(&(argc),&(argv))
+#endif
 #   define MP_MYID(pid)      MPI_Comm_rank(MPI_COMM_WORLD, (pid))
 #   define MP_PROCS(pproc)   MPI_Comm_size(MPI_COMM_WORLD, (pproc));
 #endif
@@ -94,9 +103,9 @@
 
 /***************************** macros ************************/
 #define COPY(src, dst, bytes) memcpy((dst),(src),(bytes))
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) <0) ? -(a) : (a))
+#define ARMCI_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define ARMCI_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define ARMCI_ABS(a) (((a) <0) ? -(a) : (a))
 
 /***************************** global data *******************/
 int me, nproc;
@@ -311,10 +320,10 @@ void compare_patches(double eps, int ndim, double *patch1, int lo1[], int hi1[],
 		
 
                 diff = patch1[idx1] - patch2[idx2];
-                max  = MAX(ABS(patch1[idx1]),ABS(patch2[idx2]));
+                max  = ARMCI_MAX(ARMCI_ABS(patch1[idx1]),ARMCI_ABS(patch2[idx2]));
                 if(max == 0. || max <eps) max = 1.; 
 
-		if(eps < ABS(diff)/max){
+		if(eps < ARMCI_ABS(diff)/max){
 			char msg[48];
 			sprintf(msg,"(proc=%d):%f",me,patch1[idx1]);
 			print_subscript("ERROR: a",ndim,subscr1,msg);

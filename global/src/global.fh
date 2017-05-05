@@ -47,6 +47,7 @@
       integer ga_ndim
       real ga_sdot, ga_sdot_patch, nga_sdot_patch
       integer ga_is_mirrored
+      integer ga_nbtest, nga_nbtest
 !
       integer nga_read_inc
       integer ga_cluster_nprocs, ga_cluster_nodeid, ga_cluster_nnodes
@@ -111,6 +112,8 @@
       logical ga_pgroup_destroy
       external ga_pgroup_destroy
       external ga_wtime
+      external ga_nbtest, nga_nbtest
+      external ga_nbwait, nga_nbwait
 
       integer ga_pgroup_absolute_id
       external ga_pgroup_absolute_id 

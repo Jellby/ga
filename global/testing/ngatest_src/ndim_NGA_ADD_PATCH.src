@@ -16,7 +16,7 @@ c
       integer i, total
       integer elems, count_elems      
       integer loop
-      double precision drand
+      double precision util_drand
       m4_data_type alpha, beta
       integer lop(ndim), hip(ndim), hipl(ndim)
       integer alo(ndim), ahi(ndim)

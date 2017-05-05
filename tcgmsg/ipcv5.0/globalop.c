@@ -11,9 +11,9 @@ DoublePrecision _gops_work[BUF_SIZE];
 
 Integer one=1;
 
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a)   (((a) >= 0) ? (a) : (-(a)))
+#define TCG_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define TCG_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define TCG_ABS(a)   (((a) >= 0) ? (a) : (-(a)))
 
 
 void BRDCST_(type, buf, len, originator)
@@ -65,24 +65,24 @@ static void idoop(n, op, x, work)
       *x++ *= *work++;
   else if (strncmp(op,"max",3) == 0)
     while(n--) {
-      *x = MAX(*x, *work);
+      *x = TCG_MAX(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"min",3) == 0)
     while(n--) {
-      *x = MIN(*x, *work);
+      *x = TCG_MIN(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"absmax",6) == 0)
     while(n--) {
-      register Integer x1 = ABS(*x), x2 = ABS(*work);
-      *x = MAX(x1, x2);
+      register Integer x1 = TCG_ABS(*x), x2 = TCG_ABS(*work);
+      *x = TCG_MAX(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"absmin",6) == 0)
     while(n--) {
-      register Integer x1 = ABS(*x), x2 = ABS(*work);
-      *x = MIN(x1, x2);
+      register Integer x1 = TCG_ABS(*x), x2 = TCG_ABS(*work);
+      *x = TCG_MIN(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"or",2) == 0)
@@ -111,24 +111,24 @@ static void ddoop(n, op, x, work)
       *x++ *= *work++;
   else if (strncmp(op,"max",3) == 0)
     while(n--) {
-      *x = MAX(*x, *work);
+      *x = TCG_MAX(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"min",3) == 0)
     while(n--) {
-      *x = MIN(*x, *work);
+      *x = TCG_MIN(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"absmax",6) == 0)
     while(n--) {
-      register double x1 = ABS(*x), x2 = ABS(*work);
-      *x = MAX(x1, x2);
+      register double x1 = TCG_ABS(*x), x2 = TCG_ABS(*work);
+      *x = TCG_MAX(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"absmin",6) == 0)
     while(n--) {
-      register double x1 = ABS(*x), x2 = ABS(*work);
-      *x = MIN(x1, x2);
+      register double x1 = TCG_ABS(*x), x2 = TCG_ABS(*work);
+      *x = TCG_MIN(x1, x2);
       x++; work++;
     }
   else

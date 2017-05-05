@@ -16,7 +16,7 @@ c
       integer i, j, total, loop
       m4_data_type v(m)
       integer d(ndim, m)
-      double precision drand
+      double precision util_drand
       integer unique,unique_index
       integer nproc, me
       logical status
@@ -52,7 +52,7 @@ c           generate indices
             unique_index = 0
             do while(unique_index.eq.0)
                do j=1,ndim
-                  d(j,i) = int(drand(0)*real(n)) + 1
+                  d(j,i) = int(util_drand(0)*real(n)) + 1
                enddo
 c              
                unique_index = unique(d,ndim,m,i)

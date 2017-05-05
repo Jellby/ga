@@ -38,7 +38,7 @@ ifdef USE_MPI
   MSG_COMMS = MPI
 endif
 ifeq ($(MSG_COMMS),MPI)
-include ../../armci/config/makemp.h
+include ../../$(ARMCI_DIR_NAME)/config/makemp.h
 endif
 
 # We can remove entire library when cleaning rather than individual objects
@@ -46,7 +46,7 @@ HARDCLEAN = yes
 
 include ../../config/makefile.h
 include ../../config/makelib.h
-LIB_INCLUDES += -I../../armci/src -I$(INCDIR)
+LIB_INCLUDES += -I../../$(ARMCI_DIR_NAME)/src -I$(INCDIR)
 
 %.o : %.cc
 	$(CXX) $(NOPT) $(COPT_REN) $(INCLUDES) $(DEFINES) $(CDEFS)  -c $<

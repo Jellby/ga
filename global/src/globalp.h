@@ -1,7 +1,17 @@
 #ifndef  _GLOBALP_H_
 #define _GLOBALP_H_
 
-#include "config.h"
+#ifndef F77_FUNC_
+#  if (defined(CRAY) && !defined(__crayx1)) || defined(WIN32) || defined(HITACHI)
+#    define F77_FUNC_(name,NAME) NAME
+#  elif defined(F2C2_)
+#    define F77_FUNC_(name,NAME) name ## __
+#  else
+#    define F77_FUNC_(name,NAME) name ## _
+#  endif
+#endif
+
+#include "gaconfig.h"
 #include "global.h"
 
 #ifdef __crayx1
@@ -50,13 +60,15 @@
 #   elif defined(KSR)
 #     define MAX_NPROC      80
 #   elif defined(LINUX64)
-#     define MAX_NPROC    2048
+#     define MAX_NPROC    20000
 #   elif defined(BGML)
 #     define MAX_NPROC    2048
 #   elif defined(BGP)
-#     define MAX_NPROC     8192
+#     define MAX_NPROC    81920
+#   elif defined(BGQ)
+#     define MAX_NPROC   786432 
 #   else
-#     define MAX_NPROC    2048     /* default for everything else */
+#     define MAX_NPROC    20000     /* default for everything else */
 #   endif
 #endif
 
@@ -90,9 +102,9 @@
 #endif
 
 
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a)   (((a) >= 0) ? (a) : (-(a)))
+#define GA_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define GA_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define GA_ABS(a)   (((a) >= 0) ? (a) : (-(a)))
 
 #define GAsizeofM(type)  ( (type)==C_DBL? sizeof(double): \
                            (type)==C_INT? sizeof(int): \

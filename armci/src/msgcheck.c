@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "armci.h"
+#include "armcip.h"
 #include "message.h"
 #include "mp3.h"
 

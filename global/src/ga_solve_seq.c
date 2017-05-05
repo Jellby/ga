@@ -547,7 +547,7 @@ void ga_lu_solve_seq(char *trans, Integer *g_a, Integer *g_b) {
     /** allocate a,b, and work and ipiv arrays */
     adra = (DoublePrecision*) ga_malloc(dimA1*dimA2, C_DBL, "a");
     adrb = (DoublePrecision*) ga_malloc(dimB1*dimB2, C_DBL, "b");
-    adri = (DoublePrecision*) ga_malloc(MIN(dimA1,dimA2), C_DBL, "ipiv");
+    adri = (DoublePrecision*) ga_malloc(GA_MIN(dimA1,dimA2), C_DBL, "ipiv");
 
     /** Fill local arrays from global arrays */   
     ga_get_(g_a, &one, &dimA1, &one, &dimA2, adra, &dimA1);

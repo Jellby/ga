@@ -525,8 +525,8 @@ void armci_mpi2_server_init()
     }
 
     /**********************************************************************
-     * Emulate ARMCI_Init().
-     * Spawned Data server processes emulate ARMCI_Init() to complete the
+     * Emulate PARMCI_Init().
+     * Spawned Data server processes emulate PARMCI_Init() to complete the
      * ARMCI Initalization process similar to clients
      */
     
@@ -546,7 +546,7 @@ void armci_mpi2_server_init()
     
     
     /* server setup clusinfo&locks, exactly as this node's armci master */
-    emulate_armci_init_clusinfo();  /* armci_init_clusinfo()  in ARMCI_Init */
+    emulate_armci_init_clusinfo();  /* armci_init_clusinfo()  in PARMCI_Init */
     emulate_armci_allocate_locks(shm_info); /* armci_allocate_locks() */
 
     /* Fence data structures should be initialized by server too. see
@@ -554,7 +554,7 @@ void armci_mpi2_server_init()
     armci_init_fence();
     
     /**
-     * End of ARMCI_Init() emulation.
+     * End of PARMCI_Init() emulation.
      * *******************************************************************/
 
     MPI_Barrier(MPI_COMM_WORLD);

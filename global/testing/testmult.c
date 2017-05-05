@@ -17,7 +17,7 @@
 #define PERMUTE_ 
 
 #define GA_DATA_TYPE MT_C_FLOAT
-#define ABS(a) (((a) >= 0) ? (a) : (-(a)))
+#define GA_ABS(a) (((a) >= 0) ? (a) : (-(a)))
 #define TOLERANCE 0.000001
 
 #ifdef MPI
@@ -203,7 +203,14 @@ int me, nproc;
 DoublePrecision time;
 
 #ifdef MPI
-    MPI_Init(&argc, &argv);                       /* initialize MPI */
+#ifdef DCMF
+    int desired = MPI_THREAD_MULTIPLE;
+    int provided;
+    MPI_Init_thread(&argc, &argv, desired, &provided);
+    if ( provided != MPI_THREAD_MULTIPLE ) printf("provided != MPI_THREAD_MULTIPLE\n");
+#else
+  MPI_Init (&argc, &argv);	/* initialize MPI */
+#endif
 #else
     PBEGIN_(argc, argv);                        /* initialize TCGMSG */
 #endif

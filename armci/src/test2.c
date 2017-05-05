@@ -48,14 +48,32 @@ long tcg_tag =30000;
 # include <mpi.h>
 #   define MP_BARRIER()      armci_msg_barrier()
 # define MP_FINALIZE()      MPI_Finalize()
-# define MP_INIT(arc, argv)    MPI_Init(&(argc), &(argv))
+#ifdef DCMF
+#   define MP_INIT(arc,argv) \
+    int desired = MPI_THREAD_MULTIPLE; \
+    int provided; \
+    printf("using MPI_Init_thread\n"); \
+    MPI_Init_thread(&argc, &argv, desired, &provided); \
+    if ( provided != MPI_THREAD_MULTIPLE ) printf("provided != MPI_THREAD_MULTIPLE\n");
+#else
+#   define MP_INIT(arc,argv) MPI_Init(&(argc),&(argv))
+#endif
 # define MP_MYID(pid)      MPI_Comm_rank(MPI_COMM_WORLD, (pid))
 # define MP_PROCS(pproc)   MPI_Comm_size(MPI_COMM_WORLD, (pproc));
 #else
 #   include <mpi.h>
 #   define MP_BARRIER()      MPI_Barrier(MPI_COMM_WORLD)
 #   define MP_FINALIZE()     MPI_Finalize()
+#ifdef DCMF
+#   define MP_INIT(arc,argv) \
+    int desired = MPI_THREAD_MULTIPLE; \
+    int provided; \
+    printf("using MPI_Init_thread\n"); \
+    MPI_Init_thread(&argc, &argv, desired, &provided); \
+    if ( provided != MPI_THREAD_MULTIPLE ) printf("provided != MPI_THREAD_MULTIPLE\n");
+#else
 #   define MP_INIT(arc,argv) MPI_Init(&(argc),&(argv))
+#endif
 #   define MP_MYID(pid)      MPI_Comm_rank(MPI_COMM_WORLD, (pid))
 #   define MP_PROCS(pproc)   MPI_Comm_size(MPI_COMM_WORLD, (pproc));
 #endif
@@ -118,9 +136,9 @@ typedef struct {
 
 /***************************** macros ************************/
 #define COPY(src, dst, bytes) memcpy((dst),(src),(bytes))
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) <0) ? -(a) : (a))
+#define ARMCI_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define ARMCI_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define ARMCI_ABS(a) (((a) <0) ? -(a) : (a))
 
 /***************************** global data *******************/
 int me, nproc;
@@ -458,7 +476,7 @@ void test_gop2_or_reduce(const int datatype, const char * op, const int reduce_t
                          else
                             compare = -(((int) j + nproc / 2) / (float) nproc);
                       }
-                      if(ABS(((float *) a[i])[j] - compare) > ABS(compare) * FLOAT_EPS)
+                      if(ARMCI_ABS(((float *) a[i])[j] - compare) > ARMCI_ABS(compare) * FLOAT_EPS)
                       {
                          printf("ERROR %s %s %s a[%d][%d] = %f != %f\n", test_type, "ARMCI_FLOAT", op, i, j, ((float *) a[i])[j], compare);
                          ARMCI_Error("test_gop2_or_reduce failed\n",0);
@@ -475,7 +493,7 @@ void test_gop2_or_reduce(const int datatype, const char * op, const int reduce_t
                             if(j % 2 == 0)
                                compare *= -1.0;
 
-                      if(ABS(((float *) a[i])[j] - compare) > ABS(compare) * FLOAT_EPS) 
+                      if(ARMCI_ABS(((float *) a[i])[j] - compare) > ARMCI_ABS(compare) * FLOAT_EPS) 
                       {
                          printf("ERROR %s %s %s a[%d][%d] = %f != %f\n", test_type, "ARMCI_FLOAT", op, i, j, ((float *) a[i])[j], compare);
                          ARMCI_Error("test_gop2_or_reduce failed\n",0);
@@ -562,7 +580,7 @@ void test_gop2_or_reduce(const int datatype, const char * op, const int reduce_t
                          else
                             compare = -(((int) j + nproc / 2) / (double) nproc);
                       }
-                      if(ABS(((double *) a[i])[j] - compare) > ABS(compare) * DOUBLE_EPS) 
+                      if(ARMCI_ABS(((double *) a[i])[j] - compare) > ARMCI_ABS(compare) * DOUBLE_EPS) 
                       {
                          printf("ERROR %s %s %s a[%d][%d] = %f != %f\n", test_type, "ARMCI_DOUBLE", op, i, j, ((double *) a[i])[j], compare);
                          ARMCI_Error("test_gop2_or_reduce failed\n",0);
@@ -578,7 +596,7 @@ void test_gop2_or_reduce(const int datatype, const char * op, const int reduce_t
                          if(nproc % 2 != 0)
                             if(j % 2 == 0)
                                compare *= -1.0;
-                      if(ABS(((double *) a[i])[j] - compare) > ABS(compare) * DOUBLE_EPS) 
+                      if(ARMCI_ABS(((double *) a[i])[j] - compare) > ARMCI_ABS(compare) * DOUBLE_EPS) 
                       {
                          printf("ERROR %s %s %s a[%d][%d] = %f != %f\n", test_type, "ARMCI_DOUBLE", op, i, j, ((double *) a[i])[j], compare);
                          ARMCI_Error("test_gop2_or_reduce failed\n",0);
@@ -589,7 +607,7 @@ void test_gop2_or_reduce(const int datatype, const char * op, const int reduce_t
                       double compare = -((double) j + nproc - 1) / nproc;
                       if((j + nproc - 1)% 2 == 0 && nproc > 1)
                          compare = -((double) j + nproc - 2) / nproc;
-                      if(ABS(((double *) a[i])[j] - compare) > ABS(compare) * DOUBLE_EPS) 
+                      if(ARMCI_ABS(((double *) a[i])[j] - compare) > ARMCI_ABS(compare) * DOUBLE_EPS) 
                       {
                          printf("ERROR %s %s %s a[%d][%d] = %f != %f\n", test_type, "ARMCI_DOUBLE", op, i, j, ((double *) a[i])[j], compare);
                          ARMCI_Error("test_gop2_or_reduce failed\n",0);
@@ -600,7 +618,7 @@ void test_gop2_or_reduce(const int datatype, const char * op, const int reduce_t
                       double compare = ((double) j + nproc - 1) / nproc;
                       if((j + nproc - 1) % 2 != 0 && nproc > 1)
                          compare = ((double) j + nproc - 2) / nproc;
-                      if(ABS(((double *) a[i])[j] - compare) > ABS(compare) * DOUBLE_EPS) 
+                      if(ARMCI_ABS(((double *) a[i])[j] - compare) > ARMCI_ABS(compare) * DOUBLE_EPS) 
                       {
                          printf("ERROR %s %s %s a[%d][%d] = %f != %f\n", test_type, "ARMCI_DOUBLE", op, i, j, ((double *) a[i])[j], compare);
                          ARMCI_Error("test_gop2_or_reduce failed\n",0);
@@ -609,7 +627,7 @@ void test_gop2_or_reduce(const int datatype, const char * op, const int reduce_t
                    else if(strncmp(op, "absmax", 6) == 0)
                    {
                       double compare = ((double) j + nproc - 1) / nproc;
-                      if(ABS(((double *) a[i])[j] - compare) > ABS(compare) * DOUBLE_EPS) 
+                      if(ARMCI_ABS(((double *) a[i])[j] - compare) > ARMCI_ABS(compare) * DOUBLE_EPS) 
                       {
                          printf("ERROR %s %s %s a[%d][%d] = %f != %f\n", test_type, "ARMCI_DOUBLE", op, i, j, ((double *) a[i])[j], compare);
                          ARMCI_Error("test_gop2_or_reduce failed\n",0);
@@ -618,7 +636,7 @@ void test_gop2_or_reduce(const int datatype, const char * op, const int reduce_t
                    else if(strncmp(op, "absmin", 6) == 0)
                    {
                       double compare = (double) j / nproc;
-                      if(ABS(((double *) a[i])[j] - compare) > ABS(compare) * DOUBLE_EPS) 
+                      if(ARMCI_ABS(((double *) a[i])[j] - compare) > ARMCI_ABS(compare) * DOUBLE_EPS) 
                       {
                          printf("ERROR %s %s %s a[%d][%d] = %f != %f\n", test_type, "ARMCI_DOUBLE", op, i, j, ((double *) a[i])[j], compare);
                          ARMCI_Error("test_gop2_or_reduce failed\n",0);

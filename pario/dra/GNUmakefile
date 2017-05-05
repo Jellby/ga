@@ -26,7 +26,7 @@ LIBRARY_SHARED = libpario.so
 LIB_INCLUDES = -I$(INCDIR)
     TESTUTIL = ffflush.o
 
-include ../../armci/config/makecoms.h
+include ../../$(ARMCI_DIR_NAME)/config/makecoms.h
 include ../makefile.h
 include ../../config/makefile.h
 include ../../config/makelib.h

@@ -13,7 +13,7 @@ long *nxtval_shmem = &nxtval_counter;
 #define BUSY -1L               /* indicates somebody else updating counter*/
 
 
-#if defined(__i386__) && defined(__GNUC__)
+#if (defined(__i386__) || defined(__x86_64__)) && defined(__GNUC__)
 #   define TESTANDSET testandset
 
 static inline int testandset(int *spinlock)

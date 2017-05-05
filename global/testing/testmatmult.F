@@ -47,7 +47,12 @@ c
 #include "global.fh"
 #include "testutil.fh"
 
+#ifdef MPI
+      integer ierr
+      call mpi_init(ierr)
+#else
       call PBEGINF
+#endif
       if (.not.ma_init(MT_DBL,1,20000000)) then
          call ga_error('failed: ma_init(MT_DBL,1,20000000)',10)
       endif
@@ -211,7 +216,11 @@ c
       if(ga_nodeid().eq.0) print *,'All tests successful '
 c      
       call ga_terminate
+#ifdef MPI
+      call mpi_finalize(ierr)
+#else
       call pend
+#endif
 c     
       end
 c

@@ -7,7 +7,7 @@
 
 
 static void gai_combine_val(Integer type, void *ptra, void *ptrb, Integer n, void* val,
-                            Integer add, Integer excl, Integer bit)
+                            Integer add, Integer excl)
 {
   int i;
   switch (type){
@@ -18,16 +18,14 @@ static void gai_combine_val(Integer type, void *ptra, void *ptrb, Integer n, voi
     float *fa, *fb;
     long *la, *lb;
     long long *lla, *llb;
-    case C_INT:
+  case C_INT:
     ia = (int*)ptra;
     ib = (int*)ptrb;
     if(add) {
       if (excl) {
         for (i=0; i<n; i++) {
-          if (i==0 && bit) {
+          if (i==0) {
             ib[i] = 0;
-          } else if (i==0) {
-            ib[i] = ia[i];
           } else {
             ib[i] = ib[i-1] + ia[i-1]; 
           }
@@ -45,18 +43,15 @@ static void gai_combine_val(Integer type, void *ptra, void *ptrb, Integer n, voi
       for(i=0; i< n; i++) ib[i] = *(int*)val; 
     }
     break;
-    case C_DCPL:
+  case C_DCPL:
     ca = (DoubleComplex*)ptra;
     cb = (DoubleComplex*)ptrb;
     if(add) {
       if (excl) {
         for(i=0; i< n; i++) {
-          if (i==0 && bit) {
+          if (i==0) {
             cb[i].real = 0.0;
             cb[i].imag = 0.0;
-          } else if (i==0) {
-            cb[i].real = ca[i].real;
-            cb[i].imag = ca[i].imag;
           } else {
             cb[i].real = cb[i-1].real + ca[i-1].real; 
             cb[i].imag = cb[i-1].imag + ca[i-1].imag; 
@@ -86,12 +81,9 @@ static void gai_combine_val(Integer type, void *ptra, void *ptrb, Integer n, voi
     if(add) {
       if (excl) {
         for(i=0; i< n; i++){
-          if (i==0 && bit) {
+          if (i==0) {
             cfb[i].real = 0.0;
             cfb[i].imag = 0.0;
-          } else if (i==0) {
-            cfb[i].real = cfa[i].real;
-            cfb[i].imag = cfa[i].imag;
           } else {
             cfb[i].real = cfb[i-1].real + cfa[i-1].real; 
             cfb[i].imag = cfb[i-1].imag + cfa[i-1].imag; 
@@ -121,10 +113,8 @@ static void gai_combine_val(Integer type, void *ptra, void *ptrb, Integer n, voi
     if(add) {
       if (excl) {
         for(i=0; i< n; i++) {
-          if (i==0 && bit) {
+          if (i==0) {
             db[i] = 0.0;
-          } else if (i==0) {
-            db[i] = da[i];
           } else {
             db[i] = db[i-1] + da[i-1]; 
           }
@@ -145,10 +135,8 @@ static void gai_combine_val(Integer type, void *ptra, void *ptrb, Integer n, voi
     fb = (float*)ptrb;
     if(add) {
       if (excl) {
-        if (i==0 && bit) {
+        if (i==0) {
             fb[i] = 0.0;
-        } else if (i==0) {
-            fb[i] = fa[i];
         } else {
             fb[i] = fb[i-1] + fa[i-1];
         }
@@ -170,10 +158,8 @@ static void gai_combine_val(Integer type, void *ptra, void *ptrb, Integer n, voi
     if(add) {
       if (excl) {
         for(i=0; i< n; i++) {
-          if (i==0 && bit) {
+          if (i==0) {
             lb[i] = 0;
-          } else if (i==0) {
-            lb[i] = la[i];
           } else {
             lb[i] = lb[i-1] + la[i-1];
           }
@@ -196,10 +182,8 @@ static void gai_combine_val(Integer type, void *ptra, void *ptrb, Integer n, voi
     if(add) {
       if (excl) {
         for(i=0; i< n; i++) {
-          if (i==0 && bit) {
+          if (i==0) {
             llb[i] = 0;
-          } else if (i==0) {
-            llb[i] = lla[i];
           } else {
             llb[i] = llb[i-1] + lla[i-1];
           }
@@ -401,7 +385,7 @@ register Integer i;
    ga_check_handle(g_a, "ga_patch_enum");
 
    ndim = ga_ndim_(g_a);
-   if(ndim > 1)ga_error("ga_patch_enum:applicable to 1-dim arrays",ndim);
+   if (ndim > 1) ga_error("ga_patch_enum:applicable to 1-dim arrays",ndim);
 
    nga_inquire_internal_(g_a, &type, &ndim, dims);
    nga_distribution_(g_a, &me, &lop, &hip);
@@ -490,7 +474,6 @@ static void gai_scan_copy_add(Integer* g_a, Integer* g_b, Integer* g_sbit,
    Integer *lim=NULL, *lom=NULL, nproc, me;
    Integer lop, hip, ndim, dims, type, ioff;
    double buf[2];
-   Integer bit;
    Integer *ia, *ip, elems,ld;
    int i, k;
    void *ptr_b;
@@ -527,14 +510,14 @@ static void gai_scan_copy_add(Integer* g_a, Integer* g_b, Integer* g_sbit,
 
         nga_access_ptr(g_sbit, &lop, &hip, &ia, &ld);
         elems = hip - lop + 1;
-        /* find last bit set on given process */
+        /* find last bit set on given process (store as global index) */
         for(i=0; i<elems; i++) {
           if(ia[i]) {
             ioff = i + lop;
             if (ioff >= *lo && ioff <= *hi) {
               lim[me]= ioff;
             }
-            /* find first bit set on given process */
+            /* find first bit set on given process (store as local index) */
             if (!lom[me]) {
               lom[me] = i;
             }
@@ -558,22 +541,21 @@ static void gai_scan_copy_add(Integer* g_a, Integer* g_b, Integer* g_sbit,
        ip = ia;
        if(lop < *lo){
            /* user specified patch starts in the middle */
+           ip = ia + (*lo-lop); /*set pointer to first value in sbit array*/
            lop = *lo;
-           ip = ia + (*lo-lop);
        } 
-       bit = *ip;
        if(hip > *hi) hip = *hi;
       
-       /* access the data */
+       /* access the data. g_a is source, g_b is destination */
        nga_access_ptr(g_b, &lop, &hip, &ptr_b, &ld);
        nga_access_ptr(g_a, &lop, &hip, &ptr_a, &ld);
 
        /* find start bit corresponding to my patch */
        /* case 1: sbit set for the first patch element and check earlier elems*/
-       for(k=lop, i=0; k >= lops; i--, k--) if(ip[i]){ startp = k; break; }
+       for(k=lop, i=0; k >= lops; i--, k--) if (ip[i]) { startp = k; break; }
        if(!startp){
           /* case2: scan lim to find sbit set on lower numbered processors */ 
-          for(k=me-1; k >=0; k--)if(lim[k]) {startp =lim[k]; break; }
+          for(k=me-1; k >=0; k--)if(lim[k]>0) {startp =lim[k]; break; }
        }
        if(!startp) ga_error("sbit not found for",lop); /*nothing was found*/
 
@@ -586,20 +568,26 @@ static void gai_scan_copy_add(Integer* g_a, Integer* g_b, Integer* g_sbit,
            
            /* find where sbit changes */ 
            for(; i< hip-lop; indx=++i) if(ip[i+1]) {i++; break;}
+           /* at this point, i equals the location of the next non-zero value in
+            * sbit, indx equals the location of the last entry before this bit
+            * (unless there are two consecutive non-zero values in sbit, this
+            * will point to a zero in sbit) */
 
-           elems = indx- k+lop +1; /* that many elements will be updating now*/
+           elems = indx- k+lop +1; /* the number of elements that will be updated*/
 
            /* get the current value of A */
            nga_get_(g_a, &startp, &startp, buf, &one);
 
-           /* assign it to "elems" elements of B */
-           gai_combine_val(type, ptr_a, ptr_b, elems, buf, add, *excl, bit); 
+           /* assign elements of B
+              If add then assign ptr_b[i] = ptr_b[i-1]+ptr_a[i]
+              If add and excl then ptr_b[i] = ptr_b[i-1] + ptr_a[i-1]
+              If !add then ptr_b[i] = *buf */
+           gai_combine_val(type, ptr_a, ptr_b, elems, buf, add, *excl); 
 
            ptr_a = (char*)ptr_a + elems*elemsize;
            ptr_b = (char*)ptr_b + elems*elemsize;
            k += elems;
            startp = k;
-           bit = 1;
        }
        /* release local access to arrays */
        nga_release_(g_a, &lop, &hip);
@@ -612,6 +600,7 @@ static void gai_scan_copy_add(Integer* g_a, Integer* g_b, Integer* g_sbit,
     if (add) {
       Integer ichk = 1;
       nga_access_ptr(g_b, &lop, &hip, &ptr_b, &ld);
+      if (*excl) nga_access_ptr(g_a, &lop, &hip, &ptr_a, &ld);
       ioff = hip - lop;
       switch (type) {
         Integer *ilast;
@@ -624,16 +613,23 @@ static void gai_scan_copy_add(Integer* g_a, Integer* g_b, Integer* g_sbit,
         case C_INT:
           ilast = (Integer*) ga_malloc(nproc, MT_F_INT, "ga add buf");
           bzero(ilast,sizeof(Integer)*nproc);
-          if (lim[me] >= 0) {
+          if (lim[me] >= 0) { /* This processor contains data */
             ilast[me] = (Integer)((int*)ptr_b)[ioff];
+            if (*excl) {
+              if (lim[me] - lop == ioff) {
+                ilast[me] = (Integer)((int*)ptr_a)[ioff];
+              } else {
+                ilast[me] += (Integer)((int*)ptr_a)[ioff];
+              }
+            }
           }
           ga_igop(GA_TYPE_GOP,ilast,nproc,"+");
           if (!ip[0]) {
             Integer iup;
-            if (lim[me] > 0) {
-              iup = lom[me];
+            if (lim[me] > 0) { /* There is a bit set on this processor */
+              iup = lom[me]; 
             } else {
-              iup = hip - lop;
+              iup = hip - lop + 1;
             }
             for (k=me-1; k>=0 && ichk; k--) {
               for (i=0; i<iup; i++) {
@@ -647,14 +643,23 @@ static void gai_scan_copy_add(Integer* g_a, Integer* g_b, Integer* g_sbit,
         case C_DCPL:
           cdlast = (DoubleComplex*) ga_malloc(nproc, C_DCPL, "ga add buf");
           bzero(cdlast,sizeof(DoubleComplex)*nproc);
-          if (lim[me] >= 0) {
+          if (lim[me] >= 0) { /* This processor contains data */
             cdlast[me].real = ((DoubleComplex*)ptr_b)[ioff].real;
             cdlast[me].imag = ((DoubleComplex*)ptr_b)[ioff].imag;
+            if (*excl) {
+              if (lim[me] - lop == ioff) {
+                cdlast[me].real = ((DoubleComplex*)ptr_a)[ioff].real;
+                cdlast[me].imag = ((DoubleComplex*)ptr_a)[ioff].imag;
+              } else {
+                cdlast[me].real += ((DoubleComplex*)ptr_a)[ioff].real;
+                cdlast[me].imag += ((DoubleComplex*)ptr_a)[ioff].imag;
+              }
+            }
           }
           ga_dgop(GA_TYPE_GOP,(double*)cdlast,2*nproc,"+");
           if (!ip[0]) {
             Integer iup;
-            if (lim[me] > 0) {
+            if (lim[me] > 0) { /* There is a bit set on this processor */
               iup = lom[me];
             } else {
               iup = hip - lop + 1;
@@ -672,14 +677,23 @@ static void gai_scan_copy_add(Integer* g_a, Integer* g_b, Integer* g_sbit,
         case C_SCPL:
           cflast = (SingleComplex*) ga_malloc(nproc, C_SCPL, "ga add buf");
           bzero(cflast,sizeof(SingleComplex)*nproc);
-          if (lim[me] >= 0) {
+          if (lim[me] >= 0) { /* This processor contains data */
             cflast[me].real = ((SingleComplex*)ptr_b)[ioff].real;
             cflast[me].imag = ((SingleComplex*)ptr_b)[ioff].imag;
+            if (*excl) {
+              if (lim[me] - lop == ioff) {
+                cflast[me].real = ((SingleComplex*)ptr_a)[ioff].real;
+                cflast[me].imag = ((SingleComplex*)ptr_a)[ioff].imag;
+              } else {
+                cflast[me].real += ((SingleComplex*)ptr_a)[ioff].real;
+                cflast[me].imag += ((SingleComplex*)ptr_a)[ioff].imag;
+              }
+            }
           }
           ga_fgop(GA_TYPE_GOP,(float*)cflast,2*nproc,"+");
           if (!ip[0]) {
             Integer iup;
-            if (lim[me] > 0) {
+            if (lim[me] > 0) { /* There is a bit set on this processor */
               iup = lom[me];
             } else {
               iup = hip - lop + 1;
@@ -697,13 +711,20 @@ static void gai_scan_copy_add(Integer* g_a, Integer* g_b, Integer* g_sbit,
         case C_DBL:
           dlast = (double*) ga_malloc(nproc, C_DBL, "ga add buf");
           bzero(dlast,sizeof(double)*nproc);
-          if (lim[me] >= 0) {
+          if (lim[me] >= 0) { /* This processor contains data */
             dlast[me] = ((double*)ptr_b)[ioff];
+            if (*excl) {
+              if (lim[me] - lop == ioff) {
+                dlast[me] = ((double*)ptr_a)[ioff];
+              } else {
+                dlast[me] += ((double*)ptr_a)[ioff];
+              }
+            }
           }
           ga_dgop(GA_TYPE_GOP,dlast,nproc,"+");
           if (!ip[0]) {
             Integer iup;
-            if (lim[me] > 0) {
+            if (lim[me] > 0) { /* There is a bit set on this processor */
               iup = lom[me];
             } else {
               iup = hip - lop + 1;
@@ -720,13 +741,20 @@ static void gai_scan_copy_add(Integer* g_a, Integer* g_b, Integer* g_sbit,
         case C_FLOAT:
           flast = (float*) ga_malloc(nproc, C_FLOAT, "ga add buf");
           bzero(flast,sizeof(float)*nproc);
-          if (lim[me] >= 0) {
+          if (lim[me] >= 0) { /* This processor contains data */
             flast[me] = ((float*)ptr_b)[ioff];
+            if (*excl) {
+              if (lim[me] - lop == ioff) {
+                flast[me] = ((float*)ptr_a)[ioff];
+              } else {
+                flast[me] += ((float*)ptr_a)[ioff];
+              }
+            }
           }
           ga_fgop(GA_TYPE_GOP,flast,nproc,"+");
           if (!ip[0]) {
             Integer iup;
-            if (lim[me] > 0) {
+            if (lim[me] > 0) { /* There is a bit set on this processor */
               iup = lom[me];
             } else {
               iup = hip - lop + 1;
@@ -743,13 +771,20 @@ static void gai_scan_copy_add(Integer* g_a, Integer* g_b, Integer* g_sbit,
         case C_LONG:
           llast = (long*) ga_malloc(nproc, C_LONG, "ga add buf");
           bzero(llast,sizeof(long)*nproc);
-          if (lim[me] >= 0) {
+          if (lim[me] >= 0) { /* This processor contains data */
             llast[me] = ((long*)ptr_b)[ioff];
+            if (*excl) {
+              if (lim[me] - lop == ioff) {
+                llast[me] = ((long*)ptr_a)[ioff];
+              } else {
+                llast[me] += ((long*)ptr_a)[ioff];
+              }
+            }
           }
           ga_lgop(GA_TYPE_GOP,llast,nproc,"+");
           if (!ip[0]) {
             Integer iup;
-            if (lim[me] > 0) {
+            if (lim[me] > 0) { /* There is a bit set on this processor */
               iup = lom[me];
             } else {
               iup = hip - lop + 1;
@@ -766,13 +801,20 @@ static void gai_scan_copy_add(Integer* g_a, Integer* g_b, Integer* g_sbit,
         case C_LONGLONG:
           lllast = (long long*) ga_malloc(nproc, C_LONGLONG, "ga add buf");
           bzero(lllast,sizeof(long long)*nproc);
-          if (lim[me] >= 0) {
+          if (lim[me] >= 0) { /* This processor contains data */
             lllast[me] = ((long long*)ptr_b)[ioff];
+            if (*excl) {
+              if (lim[me] - lop == ioff) {
+                lllast[me] = ((long long*)ptr_a)[ioff];
+              } else {
+                lllast[me] += ((long long*)ptr_a)[ioff];
+              }
+            }
           }
           ga_llgop(GA_TYPE_GOP,lllast,nproc,"+");
           if (!ip[0]) {
             Integer iup;
-            if (lim[me] > 0) {
+            if (lim[me] > 0) { /* There is a bit set on this processor */
               iup = lom[me];
             } else {
               iup = hip - lop + 1;
@@ -789,6 +831,7 @@ static void gai_scan_copy_add(Integer* g_a, Integer* g_b, Integer* g_sbit,
         default: ga_error("ga_scan/add:wrong data type",type);
       }
       nga_release_(g_b, &lop, &hip);
+      if (*excl) nga_release_(g_a, &lop, &hip);
 
    }
 
@@ -871,7 +914,7 @@ static void gai_pack_unpack(Integer* g_a, Integer* g_b, Integer* g_sbit,
    }
    ga_free(lim);
 
-   if(*hi <lop || hip <*lo || counter ==0 ); /* we got no elements to update */
+   if(*hi <lop || hip <*lo || counter ==0 ); /* we have no elements to update */
    else{
 
      void *buf;

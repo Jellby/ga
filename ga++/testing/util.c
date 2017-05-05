@@ -1,10 +1,11 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <unistd.h>
 #include <assert.h>
 #include "macdecls.h"
 #include "testutil.h"
 
-#ifdef MPI
+#ifdef MPIPP
 #  include <mpi.h>
 #else
 #  include <sndrcv.h>
@@ -20,9 +21,9 @@
 
 /***************************** macros ************************/
 #define COPY(src, dst, bytes) memcpy((dst),(src),(bytes))
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) <0) ? -(a) : (a))
+#define GA_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define GA_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define GA_ABS(a) (((a) <0) ? -(a) : (a))
 
 
 
@@ -208,10 +209,10 @@ int compare_patches(int me, double eps, int ndim, double *array1,
 		idx2 -= offset2;
 
                 diff = patch1[idx1] - patch2[idx2];
-                max  = MAX(ABS(patch1[idx1]),ABS(patch2[idx2]));
+                max  = GA_MAX(GA_ABS(patch1[idx1]),GA_ABS(patch2[idx2]));
                 if(max == 0. || max <eps) max = 1.; 
 
-		if(eps < ABS(diff)/max){
+		if(eps < GA_ABS(diff)/max){
 			char msg[48], val[48];
 			sprintf(msg,"ERROR (proc=%d): a",me);
 			sprintf(val,"=%lf, ",patch1[idx1]);
@@ -444,7 +445,7 @@ double FATR util_drand_(Integer* flag)
 
 double FATR util_timer_()
 {
-#ifdef MPI
+#ifdef MPIPP
        return MPI_Wtime();
 #else
        return TCGTIME_();

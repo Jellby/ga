@@ -828,24 +828,24 @@ static void ddoop(n, op, x, work)
       *x++ *= *work++;
   else if (strncmp(op,"max",3) == 0)
     while(n--) {
-      *x = MAX(*x, *work);
+      *x = GA_MAX(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"min",3) == 0)
     while(n--) {
-      *x = MIN(*x, *work);
+      *x = GA_MIN(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"absmax",6) == 0)
     while(n--) {
-      register double x1 = ABS(*x), x2 = ABS(*work);
-      *x = MAX(x1, x2);
+      register double x1 = GA_ABS(*x), x2 = GA_ABS(*work);
+      *x = GA_MAX(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"absmin",6) == 0)
     while(n--) {
-      register double x1 = ABS(*x), x2 = ABS(*work);
-      *x = MIN(x1, x2);
+      register double x1 = GA_ABS(*x), x2 = GA_ABS(*work);
+      *x = GA_MIN(x1, x2);
       x++; work++;
     }
   else
@@ -869,24 +869,24 @@ static void idoop(n, op, x, work)
       *x++ *= *work++;
   else if (strncmp(op,"max",3) == 0)
     while(n--) {
-      *x = MAX(*x, *work);
+      *x = GA_MAX(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"min",3) == 0)
     while(n--) {
-      *x = MIN(*x, *work);
+      *x = GA_MIN(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"absmax",6) == 0)
     while(n--) {
-      register Integer x1 = ABS(*x), x2 = ABS(*work);
-      *x = MAX(x1, x2);
+      register Integer x1 = GA_ABS(*x), x2 = GA_ABS(*work);
+      *x = GA_MAX(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"absmin",6) == 0)
     while(n--) {
-      register Integer x1 = ABS(*x), x2 = ABS(*work);
-      *x = MIN(x1, x2);
+      register Integer x1 = GA_ABS(*x), x2 = GA_ABS(*work);
+      *x = GA_MIN(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"or",2) == 0) 

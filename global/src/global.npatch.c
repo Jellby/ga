@@ -95,8 +95,8 @@ logical ngai_patch_intersect(Integer *lo, Integer *hi,
     }
     
     for(i=0; i<ndim; i++) {
-        lop[i] = MAX(lo[i], lop[i]);
-        hip[i] = MIN(hi[i], hip[i]);
+        lop[i] = GA_MAX(lo[i], lop[i]);
+        hip[i] = GA_MIN(hi[i], hip[i]);
     }
     
     return TRUE;
@@ -1029,6 +1029,7 @@ void ngai_dot_patch(g_a, t_a, alo, ahi, g_b, t_b, blo, bhi, retval)
   char *tempname = "temp", transp, transp_a, transp_b;
   int local_sync_begin;
   Integer a_grp, b_grp;
+  Integer adx;
 
   local_sync_begin = _ga_sync_begin; 
   _ga_sync_begin = 1; _ga_sync_end=1; /*remove any previous masking*/

@@ -138,7 +138,7 @@ static void local_await(long *p, long value)
   }
 }
 
-#define ABS(a) (((a) >= 0) ? (a) : (-(a)))
+#define TCG_ABS(a) (((a) >= 0) ? (a) : (-(a)))
 
 long async_send(SendQEntry *entry)
 /*

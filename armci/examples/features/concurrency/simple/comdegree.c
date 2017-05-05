@@ -84,9 +84,9 @@
 
 /***************************** macros ************************/
 #define COPY(src, dst, bytes) memcpy((dst),(src),(bytes))
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) <0) ? -(a) : (a))
+#define ARMCI_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define ARMCI_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define ARMCI_ABS(a) (((a) <0) ? -(a) : (a))
 
 /***************************** global data *******************/
 int me, nproc;

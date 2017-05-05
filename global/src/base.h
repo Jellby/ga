@@ -10,6 +10,7 @@ extern int** GA_Update_Flags;
 extern int* GA_Update_Signal;
 extern short int _ga_irreg_flag; 
 extern Integer GA_Debug_flag;
+extern int *ProcListPerm;            /*permuted list of processes */
 
 #define FNAM        31              /* length of array names   */
 #define CACHE_SIZE  512             /* size of the cache inside GA DS*/
@@ -42,7 +43,8 @@ typedef struct {
        short int  ndim;             /* number of dimensions                 */
        short int  irreg;            /* 0-regular; 1-irregular distribution  */
        int  type;                   /* data type in array                   */
-       int  actv;                   /* activity status                      */
+       int  actv;                   /* activity status, GA is allocated     */
+       int  actv_handle;            /* handle is created                    */
        C_Long   size;               /* size of local data in bytes          */
        int  elemsize;               /* sizeof(datatype)                     */
        int  ghosts;                 /* flag indicating presence of ghosts   */
@@ -69,6 +71,12 @@ typedef struct {
        C_Integer block_dims[MAXDIM];/* array of block dimensions            */
        C_Integer num_blocks[MAXDIM];/* number of blocks in each dimension   */
        C_Integer block_total;       /* total number of blocks in array      */
+                                    /* using restricted arrays              */
+       C_Integer *rstrctd_list;     /* list of processors with data         */
+       C_Integer num_rstrctd;       /* number of processors with data       */
+       C_Integer has_data;          /* flag that processor has data         */
+       C_Integer rstrctd_id;        /* rank of processor in restricted list */
+       C_Integer *rank_rstrctd;     /* ranks of processors with data        */
 
 #ifdef DO_CKPT
        int record_id;               /* record id for writing ga to disk     */
@@ -177,10 +185,25 @@ static char err_string[ ERR_STR_LEN]; /* string for extended error reporting */
 /* this macro finds cordinates of the chunk of array owned by processor proc */
 #define ga_ownsM(ga_handle, proc, lo, hi)                                      \
 {                                                                              \
-  if (GA[ga_handle].block_flag ==0) {                                          \
-    ga_ownsM_no_handle(GA[ga_handle].ndim, GA[ga_handle].dims,                 \
-                       GA[ga_handle].nblock, GA[ga_handle].mapc,               \
-                       proc,lo, hi )                                           \
+  if (GA[ga_handle].block_flag == 0) {                                         \
+    if (GA[ga_handle].num_rstrctd == 0) {                                      \
+      ga_ownsM_no_handle(GA[ga_handle].ndim, GA[ga_handle].dims,               \
+                         GA[ga_handle].nblock, GA[ga_handle].mapc,             \
+                         proc,lo, hi )                                         \
+    } else {                                                                   \
+      if (proc < GA[ga_handle].num_rstrctd) {                                  \
+        ga_ownsM_no_handle(GA[ga_handle].ndim, GA[ga_handle].dims,             \
+                           GA[ga_handle].nblock, GA[ga_handle].mapc,           \
+                           proc,lo, hi )                                       \
+      } else {                                                                 \
+        int _i;                                                                \
+        int _ndim = GA[ga_handle].ndim;                                        \
+        for (_i=0; _i<_ndim; _i++) {                                           \
+          lo[_i] = 0;                                                          \
+          hi[_i] = -1;                                                         \
+        }                                                                      \
+      }                                                                        \
+    }                                                                          \
   } else {                                                                     \
     int _index[MAXDIM];                                                        \
     int _i;                                                                    \
@@ -306,6 +329,8 @@ Integer _lo[MAXDIM], _hi[MAXDIM], _p_handle, _iproc;                          \
       if (_p_handle == 0) {                                                   \
         _iproc = PGRP_LIST[_p_handle].inv_map_proc_list[_iproc];              \
       }                                                                       \
+      if (GA[g_handle].num_rstrctd > 0)                                       \
+        _iproc = GA[g_handle].rstrctd_list[_iproc];                           \
       *(ptr_loc) =  GA[g_handle].ptr[_iproc]+_offset*GA[g_handle].elemsize;   \
 }
 

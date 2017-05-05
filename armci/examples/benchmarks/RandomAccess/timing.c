@@ -1,16 +1,16 @@
-/* Copyright (c) 1995 by PDCL Corporation.  All Rights Reserved */
-
-/***
-   NAME
-     timing.c
-   PURPOSE
-     Timing routines for calculating the execution time:
-       void start_timer(void);  Set the timer.
-       double elapsed_time(void);  Return the timing elapsed since
-                                   the timer has been set.
-   NOTES
-     Jialin Ju - Oct 16, 1995 Created.
-***/
+/** @file
+ * Copyright (c) 1995 by PDCL Corporation.  All Rights Reserved
+ *
+ * NAME
+ *   timing.c
+ * PURPOSE
+ *   Timing routines for calculating the execution time:
+ *     void start_timer(void);  Set the timer.
+ *     double elapsed_time(void);  Return the timing elapsed since
+ *                                 the timer has been set.
+ * NOTES
+ *   Jialin Ju - Oct 16, 1995 Created.
+ */
 
 #include <sys/types.h>
 #include <sys/errno.h>

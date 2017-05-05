@@ -12,8 +12,19 @@ c
 c***  Intitialize a message passing library
 c
 #ifdef MPI
+#include "mpif.h"
       integer ierr
+#ifdef DCMF
+      integer required
+      integer provided
+      required = MPI_THREAD_MULTIPLE
+      call mpi_init_thread(required, provided, ierr)
+      if (provided.ne.MPI_THREAD_MULTIPLE) then
+        call ga_error("MPI_THREAD_MULTIPLE N/A",provided) 
+      endif
+#else
       call mpi_init(ierr)
+#endif
 #else
       call pbeginf
 #endif
@@ -21,7 +32,7 @@ c     Intitialize the GA package
 c
       call ga_initialize()
       nproc = ga_nnodes()
-c     if(ga_nodeid().eq.0)print *,nproc,' nodes'
+      if(ga_nodeid().eq.0)print *,nproc,' nodes'
 c
 c     Initialize the MA package
 c

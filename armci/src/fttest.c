@@ -6,7 +6,16 @@
 #   include <mpi.h>
 #   define MP_BARRIER()      MPI_Barrier(MPI_COMM_WORLD)
 #   define MP_FINALIZE()     MPI_Finalize()
+#ifdef DCMF
+#   define MP_INIT(arc,argv) \
+    int desired = MPI_THREAD_MULTIPLE; \
+    int provided; \
+    printf("using MPI_Init_thread\n"); \
+    MPI_Init_thread(&argc, &argv, desired, &provided); \
+    if ( provided != MPI_THREAD_MULTIPLE ) printf("provided != MPI_THREAD_MULTIPLE\n");
+#else
 #   define MP_INIT(arc,argv) MPI_Init(&(argc),&(argv))
+#endif
 #   define MP_MYID(pid)      MPI_Comm_rank(MPI_COMM_WORLD, (pid))
 #   define MP_PROCS(pproc)   MPI_Comm_size(MPI_COMM_WORLD, (pproc));
 

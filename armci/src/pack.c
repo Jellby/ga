@@ -92,7 +92,7 @@ int armci_pack_strided(int op, void* scale, int proc,
     if(op==GET)bufsize=STRIDED_GET_BUFLEN;
 #  ifdef HITACHI
     else 
-	if(stride_levels || ACC(op))bufsize=MSG_BUFLEN_SMALL-PAGE_SIZE;
+	if(stride_levels || ARMCI_ACC(op))bufsize=MSG_BUFLEN_SMALL-PAGE_SIZE;
 #  endif
 #endif
 
@@ -157,7 +157,7 @@ int armci_pack_strided(int op, void* scale, int proc,
         for(sn = 0; sn < chunk; ){
            src = (char*)src_ptr + src_stride* sn;
            dst = (char*)dst_ptr + dst_stride* sn;
-           count[fit_level] = MIN(b, chunk-sn); /*modify count for this level*/
+           count[fit_level] = ARMCI_MIN(b, chunk-sn); /*modify count for this level*/
 
            if(h) h->last = (last && ((sn+b)>=chunk))? 1: 0 ;
            if(nb_handle)call_count++;
@@ -230,7 +230,7 @@ void armci_dispatch_strided(void *ptr, int stride_arr[], int count[],
         for(sn = 0; sn < chunk; sn += nb){
 
            ptr_upd = (char*)ptr + stride_upd* sn;
-           count[fit_level] = MIN(nb, chunk-sn); /*modify count for this level*/
+           count[fit_level] = ARMCI_MIN(nb, chunk-sn); /*modify count for this level*/
            fun(ptr_upd, stride_arr, count, fit_level, arg);
         }
         count[fit_level] = chunk; /* restore original count */
@@ -319,7 +319,7 @@ int rc=0, nlen, count=0;
 #  if defined(REMOTE_OP) 
        rc = armci_rem_vector(op, scale, ndarr,nlen,proc,0,nb_handle);
 #  else
-       if(ACC(op))rc=armci_acc_vector(op,scale,ndarr,nlen,proc);
+       if(ARMCI_ACC(op))rc=armci_acc_vector(op,scale,ndarr,nlen,proc);
        else rc = armci_copy_vector(op,ndarr,nlen,proc);
 #  endif
        if(rc) break;

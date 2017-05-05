@@ -269,7 +269,7 @@ int rc;
 
       }
 
-      if(msginfo->operation==PUT || ACC(msginfo->operation)) 
+      if(msginfo->operation==PUT || ARMCI_ACC(msginfo->operation)) 
                   UPDATE_FENCE_STATE(msginfo->to, msginfo->operation, 1);
 
       if((rc=LAPI_Amsend(lapi_handle,(uint)msginfo->to,

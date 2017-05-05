@@ -12,9 +12,9 @@
 
 #define GOP_BUF_SIZE 81920
 
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) >= 0) ? (a) : (-(a)))
+#define TCG_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define TCG_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define TCG_ABS(a) (((a) >= 0) ? (a) : (-(a)))
 
 static void idoop(n, op, x, work)
      long n;
@@ -29,24 +29,24 @@ static void idoop(n, op, x, work)
       *x++ *= *work++;
   else if (strncmp(op,"max",3) == 0)
     while(n--) {
-      *x = MAX(*x, *work);
+      *x = TCG_MAX(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"min",3) == 0)
     while(n--) {
-      *x = MIN(*x, *work);
+      *x = TCG_MIN(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"absmax",6) == 0)
     while(n--) {
-      register long x1 = ABS(*x), x2 = ABS(*work);
-      *x = MAX(x1, x2);
+      register long x1 = TCG_ABS(*x), x2 = TCG_ABS(*work);
+      *x = TCG_MAX(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"absmin",6) == 0)
     while(n--) {
-      register long x1 = ABS(*x), x2 = ABS(*work);
-      *x = MIN(x1, x2);
+      register long x1 = TCG_ABS(*x), x2 = TCG_ABS(*work);
+      *x = TCG_MIN(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"or",2) == 0) 
@@ -255,14 +255,14 @@ void igop_(ptype, x, pn, op)
   Integer *work;
   long nb, ndo, lenmes, from, up, left, right;
   if (!(work = (Integer *) 
-	malloc((unsigned) (MIN(nleft,GOP_BUF_SIZE)*sizeof(Integer)))))
+	malloc((unsigned) (TCG_MIN(nleft,GOP_BUF_SIZE)*sizeof(Integer)))))
      Error("IGOP: failed to malloc workspace", nleft);
 
   /* This loop for pipelining and to avoid caller
      having to provide workspace */
 
   while (nleft) {
-    ndo = MIN(nleft, GOP_BUF_SIZE);
+    ndo = TCG_MIN(nleft, GOP_BUF_SIZE);
     nb  = ndo * sizeof(Integer);
 
     /* Do summation amoung slaves in a cluster */

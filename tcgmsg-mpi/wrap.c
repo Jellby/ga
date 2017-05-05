@@ -13,9 +13,9 @@
 #define IGOP_BUF_SIZE (sizeof(double)/sizeof(long))*DGOP_BUF_SIZE 
 static double gop_work[DGOP_BUF_SIZE];              /* global ops buffer */
 
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) >= 0) ? (a) : (-(a)))
+#define TCG_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define TCG_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define TCG_ABS(a) (((a) >= 0) ? (a) : (-(a)))
 
 #if 0
 static void idoop(n, op, x, work)
@@ -31,24 +31,24 @@ static void idoop(n, op, x, work)
       *x++ *= *work++;
   else if (strncmp(op,"max",3) == 0)
     while(n--) {
-      *x = MAX(*x, *work);
+      *x = TCG_MAX(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"min",3) == 0)
     while(n--) {
-      *x = MIN(*x, *work);
+      *x = TCG_MIN(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"absmax",6) == 0)
     while(n--) {
-      register long x1 = ABS(*x), x2 = ABS(*work);
-      *x = MAX(x1, x2);
+      register long x1 = TCG_ABS(*x), x2 = TCG_ABS(*work);
+      *x = TCG_MAX(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"absmin",6) == 0)
     while(n--) {
-      register long x1 = ABS(*x), x2 = ABS(*work);
-      *x = MIN(x1, x2);
+      register long x1 = TCG_ABS(*x), x2 = TCG_ABS(*work);
+      *x = TCG_MIN(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"or",2) == 0) 
@@ -263,7 +263,7 @@ void FATR igop_(ptype, xx, pn, op)
 Integer *work   = (Integer *) gop_work;
 Integer *x = (Integer*)xx; /* Integer could be larger than long */
 long nleft  = *pn;
-long buflen = MIN(nleft,IGOP_BUF_SIZE); /* Try to get even sized buffers */
+long buflen = TCG_MIN(nleft,IGOP_BUF_SIZE); /* Try to get even sized buffers */
 long nbuf   = (nleft-1) / buflen + 1;
 long n;
 MPI_Datatype dtype = MPI_LONG;
@@ -280,13 +280,13 @@ if (sizeof(Integer)>sizeof(long)) dtype =  MPI_LONG_LONG_INT;
 
   if (strncmp(op,"abs",3) == 0) {
     n = *pn;
-    while(n--) x[n] = ABS(x[n]);
+    while(n--) x[n] = TCG_ABS(x[n]);
   }
 
   while (nleft) {
     int root = 0; 
     int ierr = MPI_SUCCESS;
-    int ndo = MIN(nleft, buflen);
+    int ndo = TCG_MIN(nleft, buflen);
 
     if (strncmp(op,"+",1) == 0)
       ierr   = MPI_Reduce(x, work, ndo, dtype, MPI_SUM, root, TCGMSG_Comm);

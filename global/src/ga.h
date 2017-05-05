@@ -72,6 +72,8 @@ extern int NGA_Create_ghosts_irreg_config(int type,int ndim,int dims[], int widt
                                           char *name, int map[], int nblock[], int p_handle);
 extern int GA_Create_handle();
 extern void GA_Set_data(int g_a, int ndim, int dims[], int type);
+extern void GA_Set_restricted(int g_a, int list[], int size);
+extern void GA_Set_restricted_range(int g_a, int lo_proc, int hi_proc);
 extern void GA_Set_chunk(int g_a, int chunk[]);
 extern void GA_Set_array_name(int g_a, char *name);
 extern void GA_Set_pgroup(int g_a, int p_handle);
@@ -98,6 +100,7 @@ extern int GA_Is_mirrored(int g_a);
 extern int GA_Num_mirrored_seg(int g_a);
 extern void GA_Get_mirrored_block(int g_a, int nblock, int lo[], int hi[]);
 extern int NGA_Update_ghost_dir(int g_a, int dimension, int idir, int flag);
+extern void NGA_Get_ghost_block(int g_a, int lo[], int hi[], void *buf, int ld[]);
 extern int GA_Has_ghosts(int g_a);
 extern void GA_Mask_sync(int first, int last);
 extern int GA_Duplicate(int g_a, char* array_name);
@@ -105,6 +108,7 @@ extern void GA_Destroy(int g_a);
 extern void GA_Terminate(void);
 extern void GA_Zero(int g_a); 
 extern void GA_Fill(int g_a, void *value);
+extern void GA_Randomize(int g_a, void *value);
 extern int GA_Pgroup_get_default();
 extern void GA_Pgroup_set_default(int p_handle);
 extern int GA_Pgroup_get_mirror();
@@ -145,11 +149,16 @@ extern void NGA_Release(int g_a, int lo[], int hi[]);
 extern void NGA_Release_block(int g_a, int idx);
 extern void NGA_Release_block_grid(int g_a, int index[]);
 extern void NGA_Release_block_segment(int g_a, int idx);
+extern void NGA_Release_ghost_element(int g_a, int index[]);
+extern void NGA_Release_ghosts(int g_a);
 extern void NGA_Release_update(int g_a, int lo[], int hi[]);
 extern void NGA_Release_update_block(int g_a, int idx);
 extern void NGA_Release_update_block_grid(int g_a, int index[]);
 extern void NGA_Release_update_block_segment(int g_a, int idx);
+extern void NGA_Release_update_ghost_element(int g_a, int index[]);
+extern void NGA_Release_update_ghosts(int g_a);
 extern void NGA_Scatter(int g_a, void *v, int* subsArray[], int n);
+extern void NGA_Scatter_acc(int g_a, void *v, int* subsArray[], int n, void *alpha);
 extern void NGA_Gather(int g_a, void *v, int* subsArray[], int n);
 extern void GA_Error(char *message, int code);
 extern int NGA_Locate(int g_a, int subscript[]);
@@ -199,6 +208,7 @@ extern void GA_Lgop(long x[], int n, char *op);
 extern void GA_Pgroup_lgop(int grp, long x[], int n, char *op);
 extern void GA_Igop(Integer x[], int n, char *op);
 extern void GA_Pgroup_igop(int grp, Integer x[], int n, char *op);
+extern void GA_Fgop(float x[], int n, char *op);
 extern void GA_Pgroup_fgop(int grp_id, float x[], int n, char *op);   
 
 extern void NGA_Copy_patch(char trans, int g_a, int alo[], int ahi[],
@@ -252,22 +262,23 @@ extern void NGA_Matmul_patch(char transa, char transb, void* alpha, void *beta,
 			     int g_a, int alo[], int ahi[], 
 			     int g_b, int blo[], int bhi[], 
 			     int g_c, int clo[], int chi[]) ;
-#define GA_Sync ga_sync_
-#define GA_Error(str,code) ga_error((str),(int)(code))
-#define GA_Inquire_memory (size_t)ga_inquire_memory_
-#define GA_Memory_avail (size_t)ga_memory_avail_
-#define GA_Uses_ma (int)ga_uses_ma_
-#define GA_Print_stats ga_print_stats_
-#define GA_Init_fence  ga_init_fence_
-#define GA_Fence  ga_fence_
-#define GA_Nodeid (int)ga_nodeid_
-#define GA_Nnodes (int)ga_nnodes_
+extern void GA_Sync(void);
+extern void GA_Error(char *str, int code);
+extern size_t GA_Inquire_memory(void);
+extern size_t GA_Memory_avail(void);
+extern int GA_Uses_ma(void);
+extern void GA_Print_stats(void);
+extern void GA_Init_fence(void);
+extern void GA_Fence(void);
+extern int GA_Nodeid(void);
+extern int GA_Nnodes(void);
 #define ga_nbhdl_t Integer
 
 extern int GA_Cluster_nnodes();
 extern int GA_Cluster_nodeid();
 extern int GA_Cluster_nprocs(int x);
 extern int GA_Cluster_procid(int x, int y);
+extern int GA_Cluster_proc_nodeid(int proc);
 extern void GA_Register_stack_memory(void * (*ext_alloc)(), 
 				     void (*ext_free)());
 extern double GA_Wtime();
@@ -303,12 +314,17 @@ extern int NGA_Create_ghosts_irreg_config64(int type,int ndim,int64_t dims[], in
                                           char *name, int64_t map[], int64_t nblock[], int p_handle);
 extern void GA_Set_data64(int g_a, int ndim, int64_t dims[], int type);
 extern void GA_Set_chunk64(int g_a, int64_t chunk[]);
+extern void GA_Set_irreg_distr64(int g_a, int64_t map[], int64_t block[]);
 extern void GA_Set_ghosts64(int g_a, int64_t width[]);
 extern void NGA_Merge_distr_patch64(int g_a, int64_t alo[], int64_t ahi[],
                                     int g_b, int64_t blo[], int64_t bhi[]);
 extern void GA_Get_mirrored_block64(int g_a, int nblock, int64_t lo[], int64_t hi[]);
+extern void NGA_Access_block64(int g_a, int64_t idx, void *ptr, int64_t ld[]);
+extern void NGA_Access_block_grid64(int g_a, int64_t index[], void *ptr, int64_t ld[]);
+extern void NGA_Access_block_segment64(int g_a, int proc, void *ptr, int64_t *len);
 extern void NGA_Access_ghosts64(int g_a, int64_t dims[], void *ptr, int64_t ld[]);
 extern void NGA_Access_ghost_element64(int g_a,  void *ptr, int64_t subscript[], int64_t ld[]);
+extern void NGA_Get_ghost_block64(int g_a, int64_t lo[], int64_t hi[], void* buf, int64_t ld[]); 
 extern void NGA_Get64(int g_a, int64_t lo[], int64_t hi[], void* buf, int64_t ld[]); 
 extern void NGA_Put64(int g_a, int64_t lo[], int64_t hi[], void* buf, int64_t ld[]); 
 extern void GA_Get_block_info(int g_a, int num_blocks[], int block_dims[]);
@@ -321,6 +337,7 @@ extern void GA_Unpack(int g_src, int g_dest, int g_mask, int lo, int hi, int *ic
 extern void GA_Unpack64(int g_src, int g_dest, int g_mask, int64_t lo, int64_t hi, int64_t *icount);
       
 extern void GA_Patch_enum(int g_a, int lo, int hi, int istart, int inc);
+extern void GA_Patch_enum64(int g_a, int64_t lo, int64_t hi, int64_t istart, int64_t inc);
 extern void NGA_Periodic_get64(int g_a, int64_t lo[], int64_t hi[], void* buf, int64_t ld[]); 
 extern void NGA_Periodic_put64(int g_a, int64_t lo[], int64_t hi[], void* buf, int64_t ld[]); 
 extern void NGA_Periodic_acc64(int g_a, int64_t lo[], int64_t hi[],void* buf,int64_t ld[],void* alpha);
@@ -328,9 +345,14 @@ extern long NGA_Read_inc64(int g_a, int64_t subscript[], long inc);
 extern void NGA_Distribution64(int g_a, int iproc, int64_t lo[], int64_t hi[]);
 extern void NGA_Select_elem64(int g_a, char* op, void* val, int64_t* index);
 extern void NGA_Access64(int g_a, int64_t lo[], int64_t hi[], void *ptr, int64_t ld[]);
+extern void GA_Scan_add64(int g_a, int g_b, int g_sbit, int64_t lo, int64_t hi, int excl);
+extern void GA_Scan_copy64(int g_a, int g_b, int g_sbit, int64_t lo, int64_t hi);
 extern void NGA_Release64(int g_a, int64_t lo[], int64_t hi[]);
 extern void NGA_Release_update64(int g_a, int64_t lo[], int64_t hi[]);
+extern void NGA_Release_ghost_element64(int g_a, int64_t index[]);
+extern void NGA_Release_update_ghost_element64(int g_a, int64_t index[]);
 extern void NGA_Scatter64(int g_a, void *v, int64_t* subsArray[], int64_t n);
+extern void NGA_Scatter_acc64(int g_a, void *v, int64_t* subsArray[], int64_t n, void *alpha);
 extern void NGA_Gather64(int g_a, void *v, int64_t* subsArray[], int64_t n);
 extern int NGA_Locate64(int g_a, int64_t subscript[]);
 extern int NGA_Locate_region64(int g_a,int64_t lo[],int64_t hi[],int64_t map[],int procs[]);
@@ -410,6 +432,11 @@ extern void NGA_NbPut64(int g_a, int64_t lo[], int64_t hi[], void* buf, int64_t 
 extern void NGA_NbAcc64(int g_a,int64_t lo[],int64_t hi[],void* buf,int64_t ld[],void* alpha,
                       ga_nbhdl_t* nbhandle);
 extern void NGA_NbGet_ghost_dir64(int g_a, int64_t mask[], ga_nbhdl_t* handle);
+
+/* these used to be in global.h */
+extern void *GA_Getmem(int type, int nelem, int grp_id);
+extern void GA_Freemem(void* ptr);
+extern int GA_Assemble_duplicate(int g_a, char *name, void *ptr);
 
 #ifdef __cplusplus
 }

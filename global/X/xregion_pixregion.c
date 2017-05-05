@@ -36,7 +36,7 @@ void UpdatePixRegion(int ilo, int ihi, int jlo, int jhi, int increment,
 
         *from = *from + increment;
         index = *from;
-        index = MIN(index,MAX_COL-1);
+        index = GA_MIN(index,MAX_COL-1);
 
         if(increment)
         {
@@ -52,7 +52,7 @@ void UpdatePixRegion(int ilo, int ihi, int jlo, int jhi, int increment,
       else /* done with animation display integral */
       {
         index = (int) (((*pintegr) / maxval) * MAX_COL);
-        index = MIN(index, MAX_COL - 1);
+        index = GA_MIN(index, MAX_COL - 1);
         if(!index && *pflag)
         {
           index = MAX_COL;  /* sets the "accessed" color */

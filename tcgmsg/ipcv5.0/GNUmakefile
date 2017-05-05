@@ -8,12 +8,12 @@ LIBRARY_SHARED= libtcgmsg.so
       OBJ_CORE = pbegin.o queues.o globalop.o usleep.o nnodes.o nodeid.o \
                  waitall.o drand48.o random.o pfilecopy.o\
                  mitob.o mdtob.o mitod.o mdtoi.o misc.o snd_rcv_probe.o\
-                 mtime.o wrap.o
+                 mtime.o wrap.o capi.o llog.o niceftn.o
       OBJ_SYSV = shmem.o error.o nxtval.shm.o busy.o async_send.o signals.o pbeginf.o synch.o
 
      JOBJ = fexit.o timer.o getmem.o mxv_fortran.o
 
-HEADERS = sndrcv.h srftoc.h msgtypesc.h msgtypesf.h ../tcgmsg.fh
+HEADERS = sndrcv.h srftoc.h msgtypesc.h msgtypesf.h ../tcgmsg.fh ../ipcv4.0/tcgmsg.h
 
 OBJ = $(OBJ_CORE) $(EXTRA)  
 LIB_TARGETS = *.x pvm.ring
@@ -53,6 +53,11 @@ ifeq ($(TARGET),CYGWIN)
 endif
 
 ifeq ($(TARGET),MACX)
+   LIB_DEFINES = -DSHMEM -DSYSV -DNOSPIN 
+    EXTRA = $(OBJ_SYSV)  memalign.o
+endif
+
+ifeq ($(TARGET),MACX64)
    LIB_DEFINES = -DSHMEM -DSYSV -DNOSPIN 
     EXTRA = $(OBJ_SYSV)  memalign.o
 endif
@@ -118,7 +123,7 @@ ifeq ($(TARGET),CRAY-T3E)
 
  OBJ_CORE = pbegin.o queues.o  usleep.o mitob.o mdtob.o\
             async_send.o mtime.o memalign.o drand48.o busy.o \
-            random.o mitod.o mdtoi.o
+            random.o mitod.o mdtoi.o capi.o llog.o niceftn.o
 endif
 
      JOBJ = fexit.o timer.o getmem.o mxv_fortran.o
@@ -132,7 +137,7 @@ ifeq ($(TARGET),CRAY-T3D)
 
  OBJ_CORE = pbegin.o queues.o  usleep.o mitob.o mdtob.o\
             async_send.o mtime.o memalign.o drand48.o busy.o \
-            random.o mitod.o mdtoi.o
+            random.o mitod.o mdtoi.o capi.o llog.o niceftn.o
 endif
 
      JOBJ = fexit.o timer.o getmem.o mxv_fortran.o
@@ -141,8 +146,8 @@ ifdef GA_USE_VAMPIR
    EXTRA += tcgmsg_vampir.o ga_vt.o
 endif 
 
-include ../../armci/config/makecoms.h
-include ../../armci/config/makemp.h
+include ../../$(ARMCI_DIR_NAME)/config/makecoms.h
+include ../../$(ARMCI_DIR_NAME)/config/makemp.h
 include ../../config/makefile.h
 include ../../config/makelib.h
 

@@ -3,9 +3,11 @@
 #include "globalp.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include "armci.h"
 
 Integer _ga_lo[MAXDIM], _ga_hi[MAXDIM], _ga_work[MAXDIM];
-Integer _ga_dims[MAXDIM], _ga_map_capi[MAX_NPROC];
+Integer _ga_dims[MAXDIM];
+Integer *_ga_map_capi;
 Integer _ga_width[MAXDIM];
 Integer _ga_skip[MAXDIM];
 
@@ -23,8 +25,10 @@ int *_ga_argc=NULL;
 char ***_ga_argv=NULL;
 int _ga_initialize_args=0;
 
-
 short int _ga_irreg_flag = 0;
+
+static void copy_map(int block[], int block_ndim, int map[]);
+static void copy_map64(int64_t block[], int block_ndim, int64_t map[]);
 
 #ifdef USE_FAPI
 #  define COPYC2F(carr, farr, n){\
@@ -33,6 +37,9 @@ short int _ga_irreg_flag = 0;
    int i; for(i=0; i< (n); i++)(carr)[i]=(int)(farr)[i];} 
 #  define COPYF2C_64(farr, carr, n){\
    int i; for(i=0; i< (n); i++)(carr)[i]=(int64_t)(farr)[i];} 
+#  define COPYINDEX_F2C     COPYF2C
+#  define COPYINDEX_F2C_64  COPYF2C_64
+#  define COPYINDEX_C2F     COPYC2F
 #else
 #  define COPYC2F(carr, farr, n){\
    int i; for(i=0; i< (n); i++)(farr)[n-i-1]=(Integer)(carr)[i];} 
@@ -40,24 +47,17 @@ short int _ga_irreg_flag = 0;
    int i; for(i=0; i< (n); i++)(carr)[n-i-1]=(int)(farr)[i];} 
 #  define COPYF2C_64(farr, carr, n){\
    int i; for(i=0; i< (n); i++)(carr)[n-i-1]=(int64_t)(farr)[i];} 
-#define BASE_0
-#endif
-
-#define COPY(CAST,src,dst,n) {\
-   int i; for(i=0; i< (n); i++)(dst)[i]=(CAST)(src)[i];} 
-
-#ifdef BASE_0 
 #  define COPYINDEX_C2F(carr, farr, n){\
    int i; for(i=0; i< (n); i++)(farr)[n-i-1]=(Integer)(carr)[i]+1;}
 #  define COPYINDEX_F2C(farr, carr, n){\
    int i; for(i=0; i< (n); i++)(carr)[n-i-1]=(int)(farr)[i] -1;}
 #  define COPYINDEX_F2C_64(farr, carr, n){\
    int i; for(i=0; i< (n); i++)(carr)[n-i-1]=(int64_t)(farr)[i] -1;}
-#else
-#  define COPYINDEX_F2C     COPYF2C
-#  define COPYINDEX_F2C_64  COPYF2C_64
-#  define COPYINDEX_C2F     COPYC2F
+#define BASE_0
 #endif
+
+#define COPY(CAST,src,dst,n) {\
+   int i; for(i=0; i< (n); i++)(dst)[i]=(CAST)(src)[i];} 
 
 int GA_Uses_fapi(void)
 {
@@ -71,33 +71,30 @@ return 0;
 
 void GA_Initialize_ltd(size_t limit)
 {
-Integer lim = (Integer)limit;
-     ga_initialize_ltd_(&lim);
+  Integer lim = (Integer)limit;
+  ga_initialize_ltd_(&lim);
 }
 
 void GA_Initialize_args(int *argc, char ***argv)
 {
-    _ga_argc = argc;
-    _ga_argv = argv;
+  _ga_argc = argc;
+  _ga_argv = argv;
 
-    _ga_initialize_args = 1;
+  _ga_initialize_args = 1;
 
-    ga_initialize_();
+  ga_initialize_();
 }
 
 void GA_Initialize()
 {
-    char *network;
-    int cmd_args_required=0;
-
 #ifdef MPI_SPAWN
-    GA_Error("GA is build with ARMCI_NETWORK=MPI-SPAWN. For this network "
-             "setting, GA must be initialized with GA_Initialize_args() "
-             "instead of GA_Initialize(). Please replace GA_Initialize() "
-             " with GA_Initialize_args(&argc, &argv) as in the API docs", 0L);
+  GA_Error("GA is build with ARMCI_NETWORK=MPI-SPAWN. For this network "
+      "setting, GA must be initialized with GA_Initialize_args() "
+      "instead of GA_Initialize(). Please replace GA_Initialize() "
+      " with GA_Initialize_args(&argc, &argv) as in the API docs", 0L);
 #endif
-    
-    ga_initialize_();
+
+  ga_initialize_();
 }
 
 void GA_Terminate() 
@@ -184,102 +181,40 @@ int NGA_Create_config64(int type, int ndim,int64_t dims[], char *name, int64_t c
 
 int NGA_Create_irreg(int type,int ndim,int dims[],char *name,int block[],int map[])
 {
-    Integer *ptr, g_a;
+    Integer g_a;
     logical st;
-    int d, base_map=0, base_work, b;
     if(ndim>MAXDIM)return 0;
 
     COPYC2F(dims,_ga_dims, ndim);
     COPYC2F(block,_ga_work, ndim);
+    copy_map(block, ndim, map);
 
-    /* copy might swap only order of dimensions for blocks in map */
-#ifdef  USE_FAPI
-        base_work = 0;
-#else
-        base_work =MAX_NPROC;
-#endif
+    _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
+    st = nga_create_irreg(type, (Integer)ndim, _ga_dims, name, _ga_map_capi,
+            _ga_work, &g_a);
+    _ga_irreg_flag = 0; /* unset it after creating the array */
 
-    for(d=0; d<ndim; d++){
-#ifndef  USE_FAPI
-        base_work -= block[d];
-        if(base_work <0)GA_Error("GA C api: error in block",d);
-#endif
-        for(b=0; b<block[d]; b++){
-
-            _ga_map_capi[base_work + b] = (Integer)map[base_map +b]; /*****/
-#ifdef BASE_0
-            _ga_map_capi[base_work + b]++;
-#endif
-        }
-        base_map += block[d];
-
-#ifdef  USE_FAPI
-        base_work += block[d];
-        if(base_work >MAX_NPROC)GA_Error("GA (c): error in block",base_work);
-#endif
-     }
-
-#ifdef  USE_FAPI
-     ptr = _ga_map_capi;
-#else
-     ptr = _ga_map_capi + base_work;
-#endif
-      
-     _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
-     st = nga_create_irreg(type, (Integer)ndim, _ga_dims, name, ptr, _ga_work, &g_a);
-     _ga_irreg_flag = 0; /* unset it after creating the array */
-
+    free(_ga_map_capi);
     if(st==TRUE) return (int) g_a;
     else return 0;
 }
 
 int NGA_Create_irreg64(int type,int ndim,int64_t dims[],char *name,int64_t block[],int64_t map[])
 {
-    Integer *ptr, g_a;
+    Integer g_a;
     logical st;
-    int64_t d, base_map=0, base_work, b;
     if(ndim>MAXDIM)return 0;
 
     COPYC2F(dims,_ga_dims, ndim);
     COPYC2F(block,_ga_work, ndim);
+    copy_map64(block, ndim, map);
 
-    /* copy might swap only order of dimensions for blocks in map */
-#ifdef  USE_FAPI
-        base_work = 0;
-#else
-        base_work =MAX_NPROC;
-#endif
+    _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
+    st = nga_create_irreg(type, (Integer)ndim, _ga_dims, name, _ga_map_capi,
+            _ga_work, &g_a);
+    _ga_irreg_flag = 0; /* unset it after creating the array */
 
-    for(d=0; d<ndim; d++){
-#ifndef  USE_FAPI
-        base_work -= block[d];
-        if(base_work <0)GA_Error("GA C api: error in block",d);
-#endif
-        for(b=0; b<block[d]; b++){
-
-            _ga_map_capi[base_work + b] = (Integer)map[base_map +b]; /*****/
-#ifdef BASE_0
-            _ga_map_capi[base_work + b]++;
-#endif
-        }
-        base_map += block[d];
-
-#ifdef  USE_FAPI
-        base_work += block[d];
-        if(base_work >MAX_NPROC)GA_Error("GA (c): error in block",base_work);
-#endif
-     }
-
-#ifdef  USE_FAPI
-     ptr = _ga_map_capi;
-#else
-     ptr = _ga_map_capi + base_work;
-#endif
-      
-     _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
-     st = nga_create_irreg(type, (Integer)ndim, _ga_dims, name, ptr, _ga_work, &g_a);
-     _ga_irreg_flag = 0; /* unset it after creating the array */
-
+    free(_ga_map_capi);
     if(st==TRUE) return (int) g_a;
     else return 0;
 }
@@ -287,52 +222,20 @@ int NGA_Create_irreg64(int type,int ndim,int64_t dims[],char *name,int64_t block
 int NGA_Create_irreg_config(int type,int ndim,int dims[],char *name,int block[],
                             int map[], int p_handle)
 {
-    Integer *ptr, g_a;
+    Integer g_a;
     logical st;
-    int d, base_map=0, base_work, b;
     if(ndim>MAXDIM)return 0;
 
     COPYC2F(dims,_ga_dims, ndim);
     COPYC2F(block,_ga_work, ndim);
+    copy_map(block, ndim, map);
 
-    /* copy might swap only order of dimensions for blocks in map */
-#ifdef  USE_FAPI
-        base_work = 0;
-#else
-        base_work =MAX_NPROC;
-#endif
+    _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
+    st = nga_create_irreg_config(type, (Integer)ndim, _ga_dims, name,
+            _ga_map_capi, _ga_work, (Integer)p_handle, &g_a);
+    _ga_irreg_flag = 0; /* unset it, after creating array */
 
-    for(d=0; d<ndim; d++){
-#ifndef  USE_FAPI
-        base_work -= block[d];
-        if(base_work <0)GA_Error("GA C api: error in block",d);
-#endif
-        for(b=0; b<block[d]; b++){
-
-            _ga_map_capi[base_work + b] = (Integer)map[base_map +b]; /*****/
-#ifdef BASE_0
-            _ga_map_capi[base_work + b]++;
-#endif
-        }
-        base_map += block[d];
-
-#ifdef  USE_FAPI
-        base_work += block[d];
-        if(base_work >MAX_NPROC)GA_Error("GA (c): error in block",base_work);
-#endif
-     }
-
-#ifdef  USE_FAPI
-     ptr = _ga_map_capi;
-#else
-     ptr = _ga_map_capi + base_work;
-#endif
-
-     _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
-     st = nga_create_irreg_config(type, (Integer)ndim, _ga_dims, name, ptr,
-				  _ga_work, (Integer)p_handle, &g_a);
-     _ga_irreg_flag = 0; /* unset it, after creating array */
-
+    free(_ga_map_capi);
     if(st==TRUE) return (int) g_a;
     else return 0;
 }
@@ -340,52 +243,20 @@ int NGA_Create_irreg_config(int type,int ndim,int dims[],char *name,int block[],
 int NGA_Create_irreg_config64(int type,int ndim,int64_t dims[],char *name,int64_t block[],
                             int64_t map[], int p_handle)
 {
-    Integer  *ptr, g_a;
+    Integer g_a;
     logical st;
-    int64_t d, base_map=0, base_work, b;
     if(ndim>MAXDIM)return 0;
 
     COPYC2F(dims,_ga_dims, ndim);
     COPYC2F(block,_ga_work, ndim);
+    copy_map64(block, ndim, map);
 
-    /* copy might swap only order of dimensions for blocks in map */
-#ifdef  USE_FAPI
-        base_work = 0;
-#else
-        base_work =MAX_NPROC;
-#endif
+    _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
+    st = nga_create_irreg_config(type, (Integer)ndim, _ga_dims, name,
+            _ga_map_capi, _ga_work, (Integer)p_handle, &g_a);
+    _ga_irreg_flag = 0; /* unset it, after creating array */
 
-    for(d=0; d<ndim; d++){
-#ifndef  USE_FAPI
-        base_work -= block[d];
-        if(base_work <0)GA_Error("GA C api: error in block",d);
-#endif
-        for(b=0; b<block[d]; b++){
-
-            _ga_map_capi[base_work + b] = (Integer)map[base_map +b]; /*****/
-#ifdef BASE_0
-            _ga_map_capi[base_work + b]++;
-#endif
-        }
-        base_map += block[d];
-
-#ifdef  USE_FAPI
-        base_work += block[d];
-        if(base_work >MAX_NPROC)GA_Error("GA (c): error in block",base_work);
-#endif
-     }
-
-#ifdef  USE_FAPI
-     ptr = _ga_map_capi;
-#else
-     ptr = _ga_map_capi + base_work;
-#endif
-
-     _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
-     st = nga_create_irreg_config(type, (Integer)ndim, _ga_dims, name, ptr,
-				  _ga_work, (Integer)p_handle, &g_a);
-     _ga_irreg_flag = 0; /* unset it, after creating array */
-
+    free(_ga_map_capi);
     if(st==TRUE) return (int) g_a;
     else return 0;
 }
@@ -393,53 +264,21 @@ int NGA_Create_irreg_config64(int type,int ndim,int64_t dims[],char *name,int64_
 int NGA_Create_ghosts_irreg(int type,int ndim,int dims[],int width[],char *name,
     int block[],int map[])
 {
-    Integer *ptr, g_a;
+    Integer g_a;
     logical st;
-    int d, base_map=0, base_work, b;
     if(ndim>MAXDIM)return 0;
 
     COPYC2F(dims,_ga_dims, ndim);
     COPYC2F(block,_ga_work, ndim);
     COPYC2F(width,_ga_width, ndim);
-
-    /* copy might swap only order of dimensions for blocks in map */
-#ifdef  USE_FAPI
-        base_work = 0;
-#else
-        base_work =MAX_NPROC;
-#endif
-
-    for(d=0; d<ndim; d++){
-#ifndef  USE_FAPI
-        base_work -= block[d];
-        if(base_work <0)GA_Error("GA C api: error in block",d);
-#endif
-        for(b=0; b<block[d]; b++){
-
-            _ga_map_capi[base_work + b] = (Integer)map[base_map +b]; /*****/
-#ifdef BASE_0
-            _ga_map_capi[base_work + b]++;
-#endif
-        }
-        base_map += block[d];
-
-#ifdef  USE_FAPI
-        base_work += block[d];
-        if(base_work >MAX_NPROC)GA_Error("GA (c): error in block",base_work);
-#endif
-     }
-
-#ifdef  USE_FAPI
-     ptr = _ga_map_capi;
-#else
-     ptr = _ga_map_capi + base_work;
-#endif
+    copy_map(block, ndim, map);
      
-     _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
-     st = nga_create_ghosts_irreg(type, (Integer)ndim, _ga_dims, _ga_width, 
-				  name, ptr, _ga_work, &g_a);
-     _ga_irreg_flag = 0; /* unset it, after creating array */ 
-     
+    _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
+    st = nga_create_ghosts_irreg(type, (Integer)ndim, _ga_dims, _ga_width, 
+				  name, _ga_map_capi, _ga_work, &g_a);
+    _ga_irreg_flag = 0; /* unset it, after creating array */ 
+
+    free(_ga_map_capi);
     if(st==TRUE) return (int) g_a;
     else return 0;
 }
@@ -447,53 +286,21 @@ int NGA_Create_ghosts_irreg(int type,int ndim,int dims[],int width[],char *name,
 int NGA_Create_ghosts_irreg64(int type,int ndim,int64_t dims[],int64_t width[],char *name,
     int64_t block[],int64_t map[])
 {
-    Integer *ptr, g_a;
+    Integer g_a;
     logical st;
-    int64_t d, base_map=0, base_work, b;
     if(ndim>MAXDIM)return 0;
 
     COPYC2F(dims,_ga_dims, ndim);
     COPYC2F(block,_ga_work, ndim);
     COPYC2F(width,_ga_width, ndim);
-
-    /* copy might swap only order of dimensions for blocks in map */
-#ifdef  USE_FAPI
-        base_work = 0;
-#else
-        base_work =MAX_NPROC;
-#endif
-
-    for(d=0; d<ndim; d++){
-#ifndef  USE_FAPI
-        base_work -= block[d];
-        if(base_work <0)GA_Error("GA C api: error in block",d);
-#endif
-        for(b=0; b<block[d]; b++){
-
-            _ga_map_capi[base_work + b] = (Integer)map[base_map +b]; /*****/
-#ifdef BASE_0
-            _ga_map_capi[base_work + b]++;
-#endif
-        }
-        base_map += block[d];
-
-#ifdef  USE_FAPI
-        base_work += block[d];
-        if(base_work >MAX_NPROC)GA_Error("GA (c): error in block",base_work);
-#endif
-     }
-
-#ifdef  USE_FAPI
-     ptr = _ga_map_capi;
-#else
-     ptr = _ga_map_capi + base_work;
-#endif
+    copy_map64(block, ndim, map);
      
-     _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
-     st = nga_create_ghosts_irreg(type, (Integer)ndim, _ga_dims, _ga_width, 
-				  name, ptr, _ga_work, &g_a);
-     _ga_irreg_flag = 0; /* unset it, after creating array */ 
+    _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
+    st = nga_create_ghosts_irreg(type, (Integer)ndim, _ga_dims, _ga_width, 
+				  name, _ga_map_capi, _ga_work, &g_a);
+    _ga_irreg_flag = 0; /* unset it, after creating array */ 
      
+    free(_ga_map_capi);
     if(st==TRUE) return (int) g_a;
     else return 0;
 }
@@ -501,54 +308,22 @@ int NGA_Create_ghosts_irreg64(int type,int ndim,int64_t dims[],int64_t width[],c
 int NGA_Create_ghosts_irreg_config(int type, int ndim, int dims[], int width[],
     char *name, int block[], int map[], int p_handle)
 {
-    Integer *ptr, g_a;
+    Integer g_a;
     logical st;
-    int d, base_map=0, base_work, b;
     if(ndim>MAXDIM)return 0;
 
     COPYC2F(dims,_ga_dims, ndim);
     COPYC2F(block,_ga_work, ndim);
     COPYC2F(width,_ga_width, ndim);
+    copy_map(block, ndim, map);
 
-    /* copy might swap only order of dimensions for blocks in map */
-#ifdef  USE_FAPI
-        base_work = 0;
-#else
-        base_work =MAX_NPROC;
-#endif
-
-    for(d=0; d<ndim; d++){
-#ifndef  USE_FAPI
-        base_work -= block[d];
-        if(base_work <0)GA_Error("GA C api: error in block",d);
-#endif
-        for(b=0; b<block[d]; b++){
-
-            _ga_map_capi[base_work + b] = (Integer)map[base_map +b]; /*****/
-#ifdef BASE_0
-            _ga_map_capi[base_work + b]++;
-#endif
-        }
-        base_map += block[d];
-
-#ifdef  USE_FAPI
-        base_work += block[d];
-        if(base_work >MAX_NPROC)GA_Error("GA (c): error in block",base_work);
-#endif
-     }
-
-#ifdef  USE_FAPI
-     ptr = _ga_map_capi;
-#else
-     ptr = _ga_map_capi + base_work;
-#endif
-
-     _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
-     st = nga_create_ghosts_irreg_config(type, (Integer)ndim, _ga_dims,
-					 _ga_width, name, ptr, _ga_work, 
+    _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
+    st = nga_create_ghosts_irreg_config(type, (Integer)ndim, _ga_dims,
+					 _ga_width, name, _ga_map_capi, _ga_work, 
 					 (Integer)p_handle, &g_a);
-     _ga_irreg_flag = 0; /* unset it, after creating array */ 
+    _ga_irreg_flag = 0; /* unset it, after creating array */ 
 
+    free(_ga_map_capi);
     if(st==TRUE) return (int) g_a;
     else return 0;
 }
@@ -556,54 +331,22 @@ int NGA_Create_ghosts_irreg_config(int type, int ndim, int dims[], int width[],
 int NGA_Create_ghosts_irreg_config64(int type, int ndim, int64_t dims[], int64_t width[],
     char *name, int64_t block[], int64_t map[], int p_handle)
 {
-    Integer *ptr, g_a;
+    Integer g_a;
     logical st;
-    int64_t d, base_map=0, base_work, b;
     if(ndim>MAXDIM)return 0;
 
     COPYC2F(dims,_ga_dims, ndim);
     COPYC2F(block,_ga_work, ndim);
     COPYC2F(width,_ga_width, ndim);
+    copy_map64(block, ndim, map);
 
-    /* copy might swap only order of dimensions for blocks in map */
-#ifdef  USE_FAPI
-        base_work = 0;
-#else
-        base_work =MAX_NPROC;
-#endif
-
-    for(d=0; d<ndim; d++){
-#ifndef  USE_FAPI
-        base_work -= block[d];
-        if(base_work <0)GA_Error("GA C api: error in block",d);
-#endif
-        for(b=0; b<block[d]; b++){
-
-            _ga_map_capi[base_work + b] = (Integer)map[base_map +b]; /*****/
-#ifdef BASE_0
-            _ga_map_capi[base_work + b]++;
-#endif
-        }
-        base_map += block[d];
-
-#ifdef  USE_FAPI
-        base_work += block[d];
-        if(base_work >MAX_NPROC)GA_Error("GA (c): error in block",base_work);
-#endif
-     }
-
-#ifdef  USE_FAPI
-     ptr = _ga_map_capi;
-#else
-     ptr = _ga_map_capi + base_work;
-#endif
-
-     _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
-     st = nga_create_ghosts_irreg_config(type, (Integer)ndim, _ga_dims,
-					 _ga_width, name, ptr, _ga_work, 
+    _ga_irreg_flag = 1; /* set this flag=1, to indicate array is irregular */
+    st = nga_create_ghosts_irreg_config(type, (Integer)ndim, _ga_dims,
+					 _ga_width, name, _ga_map_capi, _ga_work, 
 					 (Integer)p_handle, &g_a);
-     _ga_irreg_flag = 0; /* unset it, after creating array */ 
+    _ga_irreg_flag = 0; /* unset it, after creating array */ 
 
+    free(_ga_map_capi);
     if(st==TRUE) return (int) g_a;
     else return 0;
 }
@@ -765,6 +508,28 @@ void GA_Set_block_cyclic(int g_a, int dims[])
     ga_set_block_cyclic_(&aa, _ga_dims);
 }
 
+void GA_Set_restricted(int g_a, int list[], int size)
+{
+    Integer aa;
+    Integer asize = (Integer)size;
+    int i;
+    aa = (Integer)g_a;
+    _ga_map_capi = (Integer*)malloc(size * sizeof(Integer));
+    for (i=0; i<size; i++)
+       _ga_map_capi[i] = (Integer)list[i];
+    ga_set_restricted_(&aa,_ga_map_capi,&asize);
+    free(_ga_map_capi);
+}
+
+void GA_Set_restricted_range(int g_a, int lo_proc, int hi_proc)
+{
+    Integer aa, lo, hi;
+    aa = (Integer)g_a;
+    lo = (Integer)lo_proc;
+    hi = (Integer)hi_proc;
+    ga_set_restricted_range_(&aa,&lo,&hi);
+}
+
 int GA_Total_blocks(int g_a)
 {
     Integer aa;
@@ -841,46 +606,29 @@ void GA_Set_ghosts64(int g_a, int64_t width[])
     ga_set_ghosts_(&aa, ptr);
 }
 
+
 void GA_Set_irreg_distr(int g_a, int map[], int block[])
 {
-    Integer aa, *ptr, ndim;
-    int d, base_map=0, base_work, b;
+    Integer aa, ndim;
+
     aa = (Integer)g_a;
     ndim = ga_get_dimension_(&aa);
     COPYC2F(block,_ga_work, ndim);
+    copy_map(block, ndim, map);
+    ga_set_irreg_distr_(&aa, _ga_map_capi, _ga_work);
+    free(_ga_map_capi);
+}
 
-    /* copy might swap only order of dimensions for blocks in map */
-#ifdef  USE_FAPI
-    base_work = 0;
-#else
-    base_work =MAX_NPROC;
-#endif
+void GA_Set_irreg_distr64(int g_a, int64_t map[], int64_t block[])
+{
+    Integer aa, ndim;
 
-    for(d=0; d<ndim; d++){
-#ifndef  USE_FAPI
-      base_work -= block[d];
-      if(base_work <0)GA_Error("GA C api: error in block",d);
-#endif
-        for(b=0; b<block[d]; b++){
-
-          _ga_map_capi[base_work + b] = (Integer)map[base_map +b]; /*****/
-#ifdef BASE_0
-          _ga_map_capi[base_work + b]++;
-#endif
-      }
-      base_map += block[d];
-#ifdef  USE_FAPI
-      base_work += block[d];
-      if(base_work >MAX_NPROC)GA_Error("GA (c): error in block",base_work);
-#endif
-   }
-
-#ifdef  USE_FAPI
-   ptr = _ga_map_capi;
-#else
-   ptr = _ga_map_capi + base_work;
-#endif
-   ga_set_irreg_distr_(&aa, ptr, _ga_work);
+    aa = (Integer)g_a;
+    ndim = ga_get_dimension_(&aa);
+    COPYC2F(block,_ga_work, ndim);
+    copy_map64(block, ndim, map);
+    ga_set_irreg_distr_(&aa, _ga_map_capi, _ga_work);
+    free(_ga_map_capi);
 }
 
 void GA_Set_irreg_flag(int g_a, int flag)
@@ -931,9 +679,13 @@ int GA_Pgroup_create(int *list, int count)
 {
     Integer acount = (Integer)count;
     int i;
+    int grp_id;
+    _ga_map_capi = (Integer*)malloc(count * sizeof(Integer));
     for (i=0; i<count; i++)
        _ga_map_capi[i] = (Integer)list[i];
-    return (int)ga_pgroup_create_(_ga_map_capi,&acount);
+    grp_id = (int)ga_pgroup_create_(_ga_map_capi,&acount);
+    free(_ga_map_capi);
+    return grp_id;
 }
 
 int GA_Pgroup_destroy(int grp)
@@ -1085,6 +837,27 @@ int GA_Has_ghosts(int g_a)
     return (int)st;
 }
 
+void NGA_Get_ghost_block(int g_a, int lo[], int hi[], void *buf, int ld[])
+{
+    Integer a=(Integer)g_a;
+    Integer ndim = ga_ndim_(&a);
+    COPYINDEX_C2F(lo,_ga_lo, ndim);
+    COPYINDEX_C2F(hi,_ga_hi, ndim);
+    COPYC2F(ld,_ga_work, ndim-1);
+    nga_get_ghost_block_(&a, _ga_lo, _ga_hi, buf, _ga_work);
+}
+
+void NGA_Get_ghost_block64(int g_a, int64_t lo[], int64_t hi[],
+    void *buf, int64_t ld[])
+{
+    Integer a=(Integer)g_a;
+    Integer ndim = ga_ndim_(&a);
+    COPYINDEX_C2F(lo,_ga_lo, ndim);
+    COPYINDEX_C2F(hi,_ga_hi, ndim);
+    COPYC2F(ld,_ga_work, ndim-1);
+    nga_get_ghost_block_(&a, _ga_lo, _ga_hi, buf, _ga_work);
+}
+
 void GA_Mask_sync(int first, int last)
 {
     Integer ifirst = (Integer)first;
@@ -1207,6 +980,12 @@ float GA_Fdot(int g_a, int g_b)
     gai_dot(C_FLOAT, &a, &b, &sum);
     return sum;
 }    
+
+void GA_Randomize(int g_a, void *value)
+{
+    Integer a=(Integer)g_a;
+    ga_randomize_(&a, value);
+}
 
 void GA_Fill(int g_a, void *value)
 {
@@ -1331,6 +1110,30 @@ int NGA_NbTest(ga_nbhdl_t* nbhandle)
 int NGA_NbWait(ga_nbhdl_t* nbhandle)
 {
     return(nga_wait_internal((Integer *)nbhandle));
+}
+
+void NGA_Strided_get(int g_a, int lo[], int hi[], int skip[],
+                     void* buf, int ld[])
+{
+    Integer a=(Integer)g_a;
+    Integer ndim = ga_ndim_(&a);
+    COPYINDEX_C2F(lo,_ga_lo, ndim);
+    COPYINDEX_C2F(hi,_ga_hi, ndim);
+    COPYC2F(ld,_ga_work, ndim-1);
+    COPYC2F(skip, _ga_skip, ndim);
+    nga_strided_get_(&a, _ga_lo, _ga_hi, _ga_skip, buf, _ga_work);
+}    
+
+void NGA_Strided_get64(int g_a, int64_t lo[], int64_t hi[], int64_t skip[],
+                     void* buf, int64_t ld[])
+{
+    Integer a=(Integer)g_a;
+    Integer ndim = ga_ndim_(&a);
+    COPYINDEX_C2F(lo,_ga_lo, ndim);
+    COPYINDEX_C2F(hi,_ga_hi, ndim);
+    COPYC2F(ld,_ga_work, ndim-1);
+    COPYC2F(skip, _ga_skip, ndim);
+    nga_strided_get_(&a, _ga_lo, _ga_hi, _ga_skip, buf, _ga_work);
 }
 
 void NGA_Strided_put(int g_a, int lo[], int hi[], int skip[],
@@ -1520,9 +1323,9 @@ void GA_Scan_add(int g_a, int g_b, int g_sbit, int lo,
      Integer ndim = ga_ndim_(&a);
      Integer b = (Integer)g_b;
      Integer s = (Integer)g_sbit;
-     COPYINDEX_F2C(_ga_lo, &lo, ndim);
-     COPYINDEX_F2C(_ga_hi, &hi, ndim);
      Integer x = (Integer)excl;
+     COPYINDEX_C2F(&lo, _ga_lo, ndim);
+     COPYINDEX_C2F(&hi, _ga_hi, ndim);
      ga_scan_add_(&a, &b, &s, _ga_lo, _ga_hi, &x);
 
 }
@@ -1534,9 +1337,9 @@ void GA_Scan_add64(int g_a, int g_b, int g_sbit, int64_t lo,
      Integer ndim = ga_ndim_(&a);
      Integer b = (Integer)g_b;
      Integer s = (Integer)g_sbit;
-     COPYINDEX_F2C_64(_ga_lo, &lo, ndim);
-     COPYINDEX_F2C_64(_ga_hi, &hi, ndim);
      Integer x = (Integer)excl;
+     COPYINDEX_C2F(&lo, _ga_lo, ndim);
+     COPYINDEX_C2F(&hi, _ga_hi, ndim);
      ga_scan_add_(&a, &b, &s, _ga_lo, _ga_hi, &x);
 
 }
@@ -1548,8 +1351,8 @@ void GA_Scan_copy(int g_a, int g_b, int g_sbit, int lo,
      Integer ndim = ga_ndim_(&a);
      Integer b = (Integer)g_b;
      Integer s = (Integer)g_sbit;
-     COPYINDEX_F2C(_ga_lo, &lo, ndim);
-     COPYINDEX_F2C(_ga_hi, &hi, ndim);
+     COPYINDEX_C2F(&lo, _ga_lo, ndim);
+     COPYINDEX_C2F(&hi, _ga_hi, ndim);
      ga_scan_copy_(&a, &b, &s, _ga_lo, _ga_hi);
 
 }
@@ -1561,8 +1364,8 @@ void GA_Scan_copy64(int g_a, int g_b, int g_sbit, int64_t lo,
      Integer ndim = ga_ndim_(&a);
      Integer b = (Integer)g_b;
      Integer s = (Integer)g_sbit;
-     COPYINDEX_F2C_64(_ga_lo, &lo, ndim);
-     COPYINDEX_F2C_64(_ga_hi, &hi, ndim);
+     COPYINDEX_C2F(&lo, _ga_lo, ndim);
+     COPYINDEX_C2F(&hi, _ga_hi, ndim);
      ga_scan_copy_(&a, &b, &s, _ga_lo, _ga_hi);
 
 }
@@ -1571,10 +1374,10 @@ void GA_Patch_enum(int g_a, int lo, int hi, int istart, int inc)
 {
      Integer a = (Integer)g_a;
      Integer ndim = ga_ndim_(&a);
-     COPYINDEX_F2C(_ga_lo, &lo, ndim);
-     COPYINDEX_F2C(_ga_hi, &hi, ndim);
      Integer aistart = (Integer)istart;
      Integer ainc = (Integer)inc;
+     COPYINDEX_C2F(&lo, _ga_lo, ndim);
+     COPYINDEX_C2F(&hi, _ga_hi, ndim);
      ga_patch_enum_(&a, _ga_lo, _ga_hi, &aistart, &ainc);
 }
 
@@ -1582,10 +1385,10 @@ void GA_Patch_enum64(int g_a, int64_t lo, int64_t hi, int64_t istart, int64_t in
 {
      Integer a = (Integer)g_a;
      Integer ndim = ga_ndim_(&a);
-     COPYINDEX_F2C_64(_ga_lo, &lo, ndim);
-     COPYINDEX_F2C_64(_ga_hi, &hi, ndim);
      Integer aistart = (Integer)istart;
      Integer ainc = (Integer)inc;
+     COPYINDEX_C2F(&lo, _ga_lo, ndim);
+     COPYINDEX_C2F(&hi, _ga_hi, ndim);
      ga_patch_enum_(&a, _ga_lo, _ga_hi, &aistart, &ainc);
 }
 
@@ -1595,9 +1398,9 @@ void GA_Pack(int g_src, int g_dest, int g_mask, int lo, int hi, int *icount)
      Integer ndim = ga_ndim_(&a);
      Integer b = (Integer)g_dest;
      Integer s = (Integer)g_mask;
-     COPYINDEX_F2C(_ga_lo, &lo, ndim);
-     COPYINDEX_F2C(_ga_hi, &hi, ndim);
      Integer icnt;
+     COPYINDEX_C2F(&lo, _ga_lo, ndim);
+     COPYINDEX_C2F(&hi, _ga_hi, ndim);
      ga_pack_(&a, &b, &s, _ga_lo, _ga_hi, &icnt); 
      *icount = icnt;
 }
@@ -1608,9 +1411,9 @@ void GA_Pack64(int g_src, int g_dest, int g_mask, int64_t lo, int64_t hi, int64_
      Integer ndim = ga_ndim_(&a);
      Integer b = (Integer)g_dest;
      Integer s = (Integer)g_mask;
-     COPYINDEX_F2C_64(_ga_lo, &lo, ndim);
-     COPYINDEX_F2C_64(_ga_hi, &hi, ndim);
      Integer icnt;
+     COPYINDEX_C2F(&lo, _ga_lo, ndim);
+     COPYINDEX_C2F(&hi, _ga_hi, ndim);
      ga_pack_(&a, &b, &s, _ga_lo, _ga_hi, &icnt); 
      *icount = icnt;
 }
@@ -1621,9 +1424,9 @@ void GA_Unpack(int g_src, int g_dest, int g_mask, int lo, int hi, int *icount)
      Integer ndim = ga_ndim_(&a);
      Integer b = (Integer)g_dest;
      Integer s = (Integer)g_mask;
-     COPYINDEX_F2C(_ga_lo, &lo, ndim);
-     COPYINDEX_F2C(_ga_hi, &hi, ndim);
      Integer icnt;
+     COPYINDEX_C2F(&lo, _ga_lo, ndim);
+     COPYINDEX_C2F(&hi, _ga_hi, ndim);
      ga_pack_(&a, &b, &s, _ga_lo, _ga_hi, &icnt); 
      *icount = icnt;
 }
@@ -1634,9 +1437,9 @@ void GA_Unpack64(int g_src, int g_dest, int g_mask, int64_t lo, int64_t hi, int6
      Integer ndim = ga_ndim_(&a);
      Integer b = (Integer)g_dest;
      Integer s = (Integer)g_mask;
-     COPYINDEX_F2C_64(_ga_lo, &lo, ndim);
-     COPYINDEX_F2C_64(_ga_hi, &hi, ndim);
      Integer icnt;
+     COPYINDEX_C2F(&lo, _ga_lo, ndim);
+     COPYINDEX_C2F(&hi, _ga_hi, ndim);
      ga_pack_(&a, &b, &s, _ga_lo, _ga_hi, &icnt); 
      *icount = icnt;
 }
@@ -1695,7 +1498,7 @@ void NGA_Access_block_grid(int g_a, int index[], void *ptr, int ld[])
 {
      Integer a=(Integer)g_a;
      Integer ndim = ga_ndim_(&a);
-     COPYF2C(_ga_lo,index, ndim);
+     COPYC2F(_ga_lo,index, ndim);
      nga_access_block_grid_ptr(&a,_ga_lo,ptr,_ga_work);
      COPYF2C(_ga_work,ld, ndim-1);
 }
@@ -1704,7 +1507,7 @@ void NGA_Access_block_grid64(int g_a, int64_t index[], void *ptr, int64_t ld[])
 {
      Integer a=(Integer)g_a;
      Integer ndim = ga_ndim_(&a);
-     COPYF2C_64(_ga_lo,index, ndim);
+     COPYC2F(_ga_lo,index, ndim);
      nga_access_block_grid_ptr(&a,_ga_lo,ptr,_ga_work);
      COPYF2C_64(_ga_work,ld, ndim-1);
 }
@@ -1713,7 +1516,7 @@ void NGA_Access_block_segment(int g_a, int proc, void *ptr, int *len)
 {
      Integer a=(Integer)g_a;
      Integer iblock = (Integer)proc;
-     Integer ilen = (Integer)len;
+     Integer ilen = (Integer)(*len);
      nga_access_block_segment_ptr(&a,&iblock,ptr,&ilen);
      *len = (int)ilen;
 }
@@ -1722,7 +1525,7 @@ void NGA_Access_block_segment64(int g_a, int proc, void *ptr, int64_t *len)
 {
      Integer a=(Integer)g_a;
      Integer iblock = (Integer)proc;
-     Integer ilen = (Integer)len;
+     Integer ilen = (Integer)(*len);
      nga_access_block_segment_ptr(&a,&iblock,ptr,&ilen);
      *len = (int64_t)ilen;
 }
@@ -1756,7 +1559,7 @@ void NGA_Access_ghost_element(int g_a, void *ptr, int subscript[], int ld[])
 
      COPYINDEX_C2F(subscript, _subscript, ndim);
      COPYINDEX_C2F(ld, _ld, ndim-1);
-     nga_access_ghost_element_(&a, ptr, _subscript, _ld);
+     nga_access_ghost_element_ptr(&a, ptr, _subscript, _ld);
 }
 
 void NGA_Access_ghost_element64(int g_a, void *ptr, int64_t subscript[], int64_t ld[])
@@ -1816,6 +1619,32 @@ void NGA_Release_block_segment(int g_a, int idx)
      nga_release_block_segment_(&a, &iproc);
 }
 
+void NGA_Release_ghost_element(int g_a, int index[])
+{
+     Integer a=(Integer)g_a;
+     Integer ndim = ga_ndim_(&a);
+     COPYINDEX_C2F(index,_ga_lo,ndim);
+
+     nga_release_ghost_element_(&a, _ga_lo);
+}
+
+void NGA_Release_ghost_element64(int g_a, int64_t index[])
+{
+     Integer a=(Integer)g_a;
+     Integer ndim = ga_ndim_(&a);
+     COPYINDEX_C2F(index,_ga_lo,ndim);
+
+     nga_release_ghost_element_(&a, _ga_lo);
+}
+
+
+void NGA_Release_ghosts_(int g_a)
+{
+     Integer a=(Integer)g_a;
+
+     nga_release_ghosts_(&a);
+}
+
 int NGA_Locate(int g_a, int subscript[])
 {
     logical st;
@@ -1851,10 +1680,12 @@ int NGA_Locate_region(int g_a,int lo[],int hi[],int map[],int procs[])
      if(!map)GA_Error("NGA_Locate_region: unable to allocate memory",g_a);
      COPYINDEX_C2F(lo,_ga_lo,ndim);
      COPYINDEX_C2F(hi,_ga_hi,ndim);
+     _ga_map_capi = (Integer*)malloc(GA_Nnodes()*sizeof(Integer));
 
      st = nga_locate_region_(&a,_ga_lo, _ga_hi, tmap, _ga_map_capi, &np);
      if(st==FALSE){
        free(tmap);
+       free(_ga_map_capi);
        return 0;
      }
 
@@ -1868,6 +1699,7 @@ int NGA_Locate_region(int g_a,int lo[],int hi[],int map[],int procs[])
         COPYINDEX_F2C(ptmap, pmap, ndim);  
      }
      free(tmap);
+     free(_ga_map_capi);
      return (int)np;
 }
 
@@ -1882,10 +1714,12 @@ int NGA_Locate_region64(int g_a,int64_t lo[],int64_t hi[],int64_t map[],int proc
      if(!map)GA_Error("NGA_Locate_region: unable to allocate memory",g_a);
      COPYINDEX_C2F(lo,_ga_lo,ndim);
      COPYINDEX_C2F(hi,_ga_hi,ndim);
+     _ga_map_capi = (Integer*)malloc(GA_Nnodes()*sizeof(Integer));
 
      st = nga_locate_region_(&a,_ga_lo, _ga_hi, tmap, _ga_map_capi, &np);
      if(st==FALSE){
        free(tmap);
+       free(_ga_map_capi);
        return 0;
      }
 
@@ -1899,6 +1733,7 @@ int NGA_Locate_region64(int g_a,int64_t lo[],int64_t hi[],int64_t map[],int proc
         COPYINDEX_F2C_64(ptmap, pmap, ndim);  
      }
      free(tmap);
+     free(_ga_map_capi);
      return (int)np;
 }
 
@@ -1918,7 +1753,7 @@ void NGA_Inquire(int g_a, int *type, int *ndim, int dims[])
 {
      Integer a=(Integer)g_a;
      Integer ttype, nndim;
-     nga_inquire(&a,&ttype, &nndim, _ga_dims);
+     ngai_inquire(&a,&ttype, &nndim, _ga_dims);
      COPYF2C(_ga_dims, dims,nndim);  
      *ndim = (int)nndim;
      *type = (int)ttype;
@@ -1928,7 +1763,7 @@ void NGA_Inquire64(int g_a, int *type, int *ndim, int64_t dims[])
 {
      Integer a=(Integer)g_a;
      Integer ttype, nndim;
-     nga_inquire(&a,&ttype, &nndim, _ga_dims);
+     ngai_inquire(&a,&ttype, &nndim, _ga_dims);
      COPYF2C_64(_ga_dims, dims,nndim);  
      *ndim = (int)nndim;
      *type = (int)ttype;
@@ -2043,7 +1878,7 @@ void GA_Igop(Integer x[], int n, char *op)
 {
   Integer type=GA_TYPE_GOP;
   Integer len = (Integer)n;
-  ga_igop(type, x, len, op);
+  ga_c_igop(type, x, len, op);
 }
 
 void GA_Fgop(float x[], int n, char *op)
@@ -2102,7 +1937,7 @@ void NGA_Scatter(int g_a, void *v, int* subsArray[], int n)
     if(_subs_array == NULL) GA_Error("Memory allocation failed.", 0);
     for(idx=0; idx<n; idx++)
         for(i=0; i<ndim; i++)
-            _subs_array[idx*ndim+i] = subsArray[idx][i] + 1;
+            _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx][i] + 1;
     
     nga_scatter_(&a, v, _subs_array , &nv);
     
@@ -2121,7 +1956,7 @@ void NGA_Scatter64(int g_a, void *v, int64_t* subsArray[], int64_t n)
     if(_subs_array == NULL) GA_Error("Memory allocation failed.", 0);
     for(idx=0; idx<n; idx++)
         for(i=0; i<ndim; i++)
-            _subs_array[idx*ndim+i] = subsArray[idx][i] + 1;
+            _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx][i] + 1;
     
     nga_scatter_(&a, v, _subs_array , &nv);
     
@@ -2139,7 +1974,7 @@ void NGA_Scatter_acc(int g_a, void *v, int* subsArray[], int n, void *alpha)
     if(_subs_array == NULL) GA_Error("Memory allocation failed.", 0);
     for(idx=0; idx<n; idx++)
         for(i=0; i<ndim; i++)
-            _subs_array[idx*ndim+i] = subsArray[idx][i] + 1;
+            _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx][i] + 1;
     
     nga_scatter_acc_(&a, v, _subs_array , &nv, alpha);
     
@@ -2158,7 +1993,7 @@ void NGA_Scatter_acc64(int g_a, void *v, int64_t* subsArray[], int64_t n, void *
     if(_subs_array == NULL) GA_Error("Memory allocation failed.", 0);
     for(idx=0; idx<n; idx++)
         for(i=0; i<ndim; i++)
-            _subs_array[idx*ndim+i] = subsArray[idx][i] + 1;
+            _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx][i] + 1;
     
     nga_scatter_acc_(&a, v, _subs_array , &nv, alpha);
     
@@ -2178,7 +2013,7 @@ void NGA_Gather(int g_a, void *v, int* subsArray[], int n)
     /* adjust the indices for fortran interface */
     for(idx=0; idx<n; idx++)
         for(i=0; i<ndim; i++)
-            _subs_array[idx*ndim+i] = subsArray[idx][i] + 1;
+            _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx][i] + 1;
     
     nga_gather_(&a, v, _subs_array , &nv);
     
@@ -2200,129 +2035,14 @@ void NGA_Gather64(int g_a, void *v, int64_t* subsArray[], int64_t n)
     /* adjust the indices for fortran interface */
     for(idx=0; idx<n; idx++)
         for(i=0; i<ndim; i++)
-            _subs_array[idx*ndim+i] = subsArray[idx][i] + 1;
+            _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx][i] + 1;
     
     nga_gather_(&a, v, _subs_array , &nv);
     
     free(_subs_array);
 }
 
-void GA_Dgemm(char ta, char tb, int m, int n, int k,
-              double alpha, int g_a, int g_b, double beta, int g_c )
-{
-  Integer G_a = g_a;
-  Integer G_b = g_b;
-  Integer G_c = g_c;
-
-  Integer ailo = 1;
-  Integer aihi = m;
-  Integer ajlo = 1;
-  Integer ajhi = k;
-  
-  Integer bilo = 1;
-  Integer bihi = k;
-  Integer bjlo = 1;
-  Integer bjhi = n;
-  
-  Integer cilo = 1;
-  Integer cihi = m;
-  Integer cjlo = 1;
-  Integer cjhi = n;
-  
-  ga_matmul(&ta, &tb, (DoublePrecision *)&alpha,(DoublePrecision *)&beta,
-	    &G_a, &ailo, &aihi, &ajlo, &ajhi,
-	    &G_b, &bilo, &bihi, &bjlo, &bjhi,
-	    &G_c, &cilo, &cihi, &cjlo, &cjhi);
-}
-
-void GA_Zgemm(char ta, char tb, int m, int n, int k,
-              DoubleComplex alpha, int g_a, int g_b, 
-	      DoubleComplex beta, int g_c )
-{
-  Integer G_a = g_a;
-  Integer G_b = g_b;
-  Integer G_c = g_c;
-
-  Integer ailo = 1;
-  Integer aihi = m;
-  Integer ajlo = 1;
-  Integer ajhi = k;
-  
-  Integer bilo = 1;
-  Integer bihi = k;
-  Integer bjlo = 1;
-  Integer bjhi = n;
-  
-  Integer cilo = 1;
-  Integer cihi = m;
-  Integer cjlo = 1;
-  Integer cjhi = n;
-  
-  ga_matmul(&ta, &tb, (DoublePrecision *)&alpha,(DoublePrecision *)&beta,
-	    &G_a, &ailo, &aihi, &ajlo, &ajhi,
-	    &G_b, &bilo, &bihi, &bjlo, &bjhi,
-	    &G_c, &cilo, &cihi, &cjlo, &cjhi);
-}
-
-void GA_Cgemm(char ta, char tb, int m, int n, int k,
-              SingleComplex alpha, int g_a, int g_b, 
-	      SingleComplex beta, int g_c )
-{
-  Integer G_a = g_a;
-  Integer G_b = g_b;
-  Integer G_c = g_c;
-
-  Integer ailo = 1;
-  Integer aihi = m;
-  Integer ajlo = 1;
-  Integer ajhi = k;
-  
-  Integer bilo = 1;
-  Integer bihi = k;
-  Integer bjlo = 1;
-  Integer bjhi = n;
-  
-  Integer cilo = 1;
-  Integer cihi = m;
-  Integer cjlo = 1;
-  Integer cjhi = n;
-  
-  ga_matmul(&ta, &tb, (float *)&alpha,(float *)&beta,
-	    &G_a, &ailo, &aihi, &ajlo, &ajhi,
-	    &G_b, &bilo, &bihi, &bjlo, &bjhi,
-	    &G_c, &cilo, &cihi, &cjlo, &cjhi);
-}
-
-void GA_Sgemm(char ta, char tb, int m, int n, int k,
-              float alpha, int g_a, int g_b, 
-	      float beta,  int g_c )
-{
-  Integer G_a = g_a;
-  Integer G_b = g_b;
-  Integer G_c = g_c;
-
-  Integer ailo = 1;
-  Integer aihi = m;
-  Integer ajlo = 1;
-  Integer ajhi = k;
-  
-  Integer bilo = 1;
-  Integer bihi = k;
-  Integer bjlo = 1;
-  Integer bjhi = n;
-  
-  Integer cilo = 1;
-  Integer cihi = m;
-  Integer cjlo = 1;
-  Integer cjhi = n;
-  
-  ga_matmul(&ta, &tb, (DoublePrecision*)&alpha, (DoublePrecision*)&beta,
-	    &G_a, &ailo, &aihi, &ajlo, &ajhi,
-	    &G_b, &bilo, &bihi, &bjlo, &bjhi,
-	    &G_c, &cilo, &cihi, &cjlo, &cjhi);
-}
-
-void GA_Dgemm64(char ta, char tb, int64_t m, int64_t n, int64_t k,
+void GA_Dgemm_c(char ta, char tb, int m, int n, int k,
                 double alpha, int g_a, int g_b, double beta, int g_c )
 {
   Integer G_a = g_a;
@@ -2350,7 +2070,7 @@ void GA_Dgemm64(char ta, char tb, int64_t m, int64_t n, int64_t k,
 	    &G_c, &cilo, &cihi, &cjlo, &cjhi);
 }
 
-void GA_Zgemm64(char ta, char tb, int64_t m, int64_t n, int64_t k,
+void GA_Zgemm_c(char ta, char tb, int m, int n, int k,
                 DoubleComplex alpha, int g_a, int g_b, 
                 DoubleComplex beta, int g_c )
 {
@@ -2379,7 +2099,122 @@ void GA_Zgemm64(char ta, char tb, int64_t m, int64_t n, int64_t k,
 	    &G_c, &cilo, &cihi, &cjlo, &cjhi);
 }
 
-void GA_Cgemm64(char ta, char tb, int64_t m, int64_t n, int64_t k,
+void GA_Cgemm_c(char ta, char tb, int m, int n, int k,
+              SingleComplex alpha, int g_a, int g_b, 
+	      SingleComplex beta, int g_c )
+{
+  Integer G_a = g_a;
+  Integer G_b = g_b;
+  Integer G_c = g_c;
+
+  Integer ailo = 1;
+  Integer aihi = m;
+  Integer ajlo = 1;
+  Integer ajhi = k;
+  
+  Integer bilo = 1;
+  Integer bihi = k;
+  Integer bjlo = 1;
+  Integer bjhi = n;
+  
+  Integer cilo = 1;
+  Integer cihi = m;
+  Integer cjlo = 1;
+  Integer cjhi = n;
+  
+  ga_matmul(&ta, &tb, (float *)&alpha,(float *)&beta,
+	    &G_a, &ailo, &aihi, &ajlo, &ajhi,
+	    &G_b, &bilo, &bihi, &bjlo, &bjhi,
+	    &G_c, &cilo, &cihi, &cjlo, &cjhi);
+}
+
+void GA_Sgemm_c(char ta, char tb, int m, int n, int k,
+              float alpha, int g_a, int g_b, 
+	      float beta,  int g_c )
+{
+  Integer G_a = g_a;
+  Integer G_b = g_b;
+  Integer G_c = g_c;
+
+  Integer ailo = 1;
+  Integer aihi = m;
+  Integer ajlo = 1;
+  Integer ajhi = k;
+  
+  Integer bilo = 1;
+  Integer bihi = k;
+  Integer bjlo = 1;
+  Integer bjhi = n;
+  
+  Integer cilo = 1;
+  Integer cihi = m;
+  Integer cjlo = 1;
+  Integer cjhi = n;
+  
+  ga_matmul(&ta, &tb, (DoublePrecision*)&alpha, (DoublePrecision*)&beta,
+	    &G_a, &ailo, &aihi, &ajlo, &ajhi,
+	    &G_b, &bilo, &bihi, &bjlo, &bjhi,
+	    &G_c, &cilo, &cihi, &cjlo, &cjhi);
+}
+
+void GA_Dgemm64_c(char ta, char tb, int64_t m, int64_t n, int64_t k,
+                double alpha, int g_a, int g_b, double beta, int g_c )
+{
+  Integer G_a = g_a;
+  Integer G_b = g_b;
+  Integer G_c = g_c;
+
+  Integer ailo = 1;
+  Integer aihi = m;
+  Integer ajlo = 1;
+  Integer ajhi = k;
+  
+  Integer bilo = 1;
+  Integer bihi = k;
+  Integer bjlo = 1;
+  Integer bjhi = n;
+  
+  Integer cilo = 1;
+  Integer cihi = m;
+  Integer cjlo = 1;
+  Integer cjhi = n;
+  
+  ga_matmul(&ta, &tb, (DoublePrecision *)&alpha,(DoublePrecision *)&beta,
+	    &G_a, &ailo, &aihi, &ajlo, &ajhi,
+	    &G_b, &bilo, &bihi, &bjlo, &bjhi,
+	    &G_c, &cilo, &cihi, &cjlo, &cjhi);
+}
+
+void GA_Zgemm64_c(char ta, char tb, int64_t m, int64_t n, int64_t k,
+                DoubleComplex alpha, int g_a, int g_b, 
+                DoubleComplex beta, int g_c )
+{
+  Integer G_a = g_a;
+  Integer G_b = g_b;
+  Integer G_c = g_c;
+
+  Integer ailo = 1;
+  Integer aihi = m;
+  Integer ajlo = 1;
+  Integer ajhi = k;
+  
+  Integer bilo = 1;
+  Integer bihi = k;
+  Integer bjlo = 1;
+  Integer bjhi = n;
+  
+  Integer cilo = 1;
+  Integer cihi = m;
+  Integer cjlo = 1;
+  Integer cjhi = n;
+  
+  ga_matmul(&ta, &tb, (DoublePrecision *)&alpha,(DoublePrecision *)&beta,
+	    &G_a, &ailo, &aihi, &ajlo, &ajhi,
+	    &G_b, &bilo, &bihi, &bjlo, &bjhi,
+	    &G_c, &cilo, &cihi, &cjlo, &cjhi);
+}
+
+void GA_Cgemm64_c(char ta, char tb, int64_t m, int64_t n, int64_t k,
                 SingleComplex alpha, int g_a, int g_b, 
                 SingleComplex beta, int g_c )
 {
@@ -2408,7 +2243,7 @@ void GA_Cgemm64(char ta, char tb, int64_t m, int64_t n, int64_t k,
 	    &G_c, &cilo, &cihi, &cjlo, &cjhi);
 }
 
-void GA_Sgemm64(char ta, char tb, int64_t m, int64_t n, int64_t k,
+void GA_Sgemm64_c(char ta, char tb, int64_t m, int64_t n, int64_t k,
                 float alpha, int g_a, int g_b, 
                 float beta,  int g_c )
 {
@@ -2435,6 +2270,69 @@ void GA_Sgemm64(char ta, char tb, int64_t m, int64_t n, int64_t k,
 	    &G_a, &ailo, &aihi, &ajlo, &ajhi,
 	    &G_b, &bilo, &bihi, &bjlo, &bjhi,
 	    &G_c, &cilo, &cihi, &cjlo, &cjhi);
+}
+
+/**
+ * When calling GA _dgemm from the C, it is represented as follows (since the
+ * underlying GA dgemm implementation ga_matmul is in Fortran style)
+ *   C(m,n) = A(m,k) * B(k,n)
+ * Since GA internally creates GAs in Fortran style, we remap the above
+ * expression to: C(n,m) = B(n,k) * A(k,m) and pass it to fortran. This
+ * produces the output C in (n,m) format, which translates to C as (m,n),and
+ * ultimately giving us the correct result.
+ */
+void GA_Dgemm(char ta, char tb, int m, int n, int k,
+              double alpha, int g_a, int g_b, double beta, int g_c )
+{
+    GA_Dgemm_c(tb, ta, n, m, k, alpha, g_b, g_a, beta, g_c);
+}
+
+void GA_Zgemm(char ta, char tb, int m, int n, int k,
+              DoubleComplex alpha, int g_a, int g_b, 
+	      DoubleComplex beta, int g_c )
+{
+    GA_Zgemm_c(tb, ta, n, m, k, alpha, g_b, g_a, beta, g_c);
+}
+
+void GA_Cgemm(char ta, char tb, int m, int n, int k,
+              SingleComplex alpha, int g_a, int g_b, 
+	      SingleComplex beta, int g_c )
+{
+    GA_Cgemm_c(tb, ta, n, m, k, alpha, g_b, g_a, beta, g_c);
+}
+
+void GA_Sgemm(char ta, char tb, int m, int n, int k,
+              float alpha, int g_a, int g_b, 
+	      float beta,  int g_c )
+{
+    GA_Sgemm_c(tb, ta, n, m, k, alpha, g_b, g_a, beta, g_c);
+}
+
+void GA_Dgemm64(char ta, char tb, int64_t m, int64_t n, int64_t k,
+                double alpha, int g_a, int g_b, double beta, int g_c )
+{
+    GA_Dgemm64_c(tb, ta, n, m, k, alpha, g_b, g_a, beta, g_c);
+}
+
+void GA_Zgemm64(char ta, char tb, int64_t m, int64_t n, int64_t k,
+                DoubleComplex alpha, int g_a, int g_b, 
+                DoubleComplex beta, int g_c )
+{
+    GA_Zgemm64_c(tb, ta, n, m, k, alpha, g_b, g_a, beta, g_c);
+}
+
+void GA_Cgemm64(char ta, char tb, int64_t m, int64_t n, int64_t k,
+                SingleComplex alpha, int g_a, int g_b, 
+                SingleComplex beta, int g_c )
+{
+    GA_Cgemm64_c(tb, ta, n, m, k, alpha, g_b, g_a, beta, g_c);
+}
+
+void GA_Sgemm64(char ta, char tb, int64_t m, int64_t n, int64_t k,
+                float alpha, int g_a, int g_b, 
+                float beta,  int g_c )
+{
+    GA_Sgemm64_c(tb, ta, n, m, k, alpha, g_b, g_a, beta, g_c);
 }
 
 /* Patch related */
@@ -3136,6 +3034,27 @@ void NGA_Release_update_block_segment(int g_a, int idx)
      nga_release_update_block_segment_(&a, &iproc);
 }
 
+void NGA_Release_update_ghost_element(int g_a, int index[])
+{
+     Integer a=(Integer)g_a;
+     Integer ndim = ga_ndim_(&a);
+     COPYINDEX_C2F(index,_ga_lo,ndim);
+     nga_release_update_ghost_element_(&a, _ga_lo);
+}
+
+void NGA_Release_update_ghost_element64(int g_a, int64_t index[])
+{
+     Integer a=(Integer)g_a;
+     Integer ndim = ga_ndim_(&a);
+     COPYINDEX_C2F(index,_ga_lo,ndim);
+     nga_release_update_ghost_element_(&a, _ga_lo);
+}
+
+void NGA_Release_update_ghosts(int g_a)
+{
+     Integer a=(Integer)g_a;
+     nga_release_update_ghosts_(&a);
+}
 
 int GA_Ndim(int g_a)
 {
@@ -3595,12 +3514,6 @@ void GA_Median_patch64(int g_a, int64_t *alo, int64_t *ahi,
     ga_median_patch_(&a, _ga_alo, _ga_ahi, &b, _ga_blo, _ga_bhi, &c, _ga_clo, _ga_chi, &m, _ga_mlo, _ga_mhi);
 }
 
-#ifdef WIN32
-#include <armci.h>
-#else
-#include <../../armci/src/armci.h>
-#endif
-
 /* return number of nodes being used in a cluster */
 int GA_Cluster_nnodes()
 {
@@ -3663,3 +3576,95 @@ int GA_Pgroup_absolute_id(int grp_id, int pid) {
   return (int)ga_pgroup_absolute_id_(&agrp_id, &apid);
 }
 
+void GA_Error(char *str, int code)
+{
+    Integer icode = code;
+    ga_error(str, icode);
+}
+
+size_t GA_Memory_avail(void)
+{
+    return (size_t)ga_memory_avail_();
+}
+
+size_t GA_Inquire_memory()
+{
+    return ga_inquire_memory_();
+}
+
+void GA_Sync()
+{
+    ga_sync_();
+}
+
+int GA_Uses_ma()
+{
+    return ga_uses_ma_();
+}
+
+void GA_Print_stats()
+{
+    ga_print_stats_();
+}
+
+void GA_Init_fence()
+{
+    ga_init_fence_();
+}
+
+void GA_Fence()
+{
+    ga_fence_();
+}
+
+int GA_Nodeid()
+{
+    return ga_nodeid_();
+}
+
+int GA_Nnodes()
+{
+    return ga_nnodes_();
+}
+
+static void copy_map(int block[], int block_ndim, int map[])
+{
+    int d;
+    int i,sum=0,capi_offset=0,map_offset=0;
+
+    for (d=0; d<block_ndim; d++) {
+        sum += block[d];
+    }
+
+    _ga_map_capi = (Integer*)malloc(sum * sizeof(Integer));
+
+    capi_offset = sum;
+    for (d=0; d<block_ndim; d++) {
+        capi_offset -= block[d];
+        for (i=0; i<block[d]; i++) {
+            _ga_map_capi[capi_offset+i] = map[map_offset+i] + 1;
+        }
+        map_offset += block[d];
+    }
+}
+
+static void copy_map64(int64_t block[], int block_ndim, int64_t map[])
+{
+    int d;
+    int64_t i,sum=0,capi_offset=0,map_offset=0;
+
+    for (d=0; d<block_ndim; d++) {
+        sum += block[d];
+    }
+
+    _ga_map_capi = (Integer*)malloc(sum * sizeof(Integer));
+
+    capi_offset = sum;
+    for (d=0; d<block_ndim; d++) {
+        capi_offset -= block[d];
+        for (i=0; i<block[d]; i++) {
+            _ga_map_capi[capi_offset+i] = map[map_offset+i] + 1;
+        }
+        map_offset += block[d];
+    }
+}

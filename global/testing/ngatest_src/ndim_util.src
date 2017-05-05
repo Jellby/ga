@@ -14,7 +14,7 @@ c     initialize the array with random numbers
       implicit none
       integer n
       m4_data_type a(n)
-      double precision drand
+      double precision util_drand
       integer i
       do i= 1, n
          a(i) = m4_rand(i)

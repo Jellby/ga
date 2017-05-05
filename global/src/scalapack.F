@@ -1941,7 +1941,7 @@ c
       endif
 c     
       call ga_sync()
-      if(maxproc.lt.nnodes) then
+      if(maxproc.lt.nnodes.or.dima1.le.nb) then
 c     broadcast evals
          dblsize=ma_sizeof(MT_DBL,1,MT_BYTE)*dima1
          call ga_brdcst(1688,eval,dblsize,0)
@@ -2244,7 +2244,7 @@ c
       endif
 c     
       call ga_sync()
-      if(maxproc.lt.nnodes) then
+      if(maxproc.lt.nnodes.or.dima1.le.nb) then
 c     broadcast evals
          dblsize=ma_sizeof(MT_DBL,1,MT_BYTE)*dima1
          call ga_brdcst(1688,eval,dblsize,0)
@@ -2632,7 +2632,7 @@ c
       endif
 c     
       call ga_sync()
-      if(maxproc.lt.nnodes) then
+      if(maxproc.lt.nnodes.or.dima1.le.nb) then
 c     broadcast evals
          dblsize=ma_sizeof(MT_DBL,1,MT_BYTE)*dima1
          call ga_brdcst(1688,eval,dblsize,0)
@@ -2938,7 +2938,7 @@ c
 c     
       endif
       call ga_sync()
-      if(maxproc.lt.nnodes) then
+      if(maxproc.lt.nnodes.or.dima1.le.nb) then
 c     broadcast evals
          dblsize=ma_sizeof(MT_DBL,1,MT_BYTE)*dima1
          call ga_brdcst(1688,eval,dblsize,0)
@@ -3226,7 +3226,7 @@ c
 c     
       endif
       call ga_sync()
-      if(maxproc.lt.nnodes) then
+      if(maxproc.lt.nnodes.or.dima1.le.nb) then
 c     broadcast evals
          dblsize=ma_sizeof(MT_DBL,1,MT_BYTE)*dima1
          call ga_brdcst(1688,eval,dblsize,0)

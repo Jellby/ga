@@ -68,7 +68,7 @@ extern void armci_msg_barrier(void);
 #  endif
 #endif
 
-/* global variables -- Initialized in ARMCI_Init() and never modified*/
+/* global variables -- Initialized in PARMCI_Init() and never modified*/
 int armci_me, armci_nproc;
 int armci_clus_me, armci_nclus, armci_master;
 int armci_clus_first, armci_clus_last;
@@ -158,7 +158,7 @@ void armci_notify_init()
         (armci_notify_t**)malloc(armci_nproc*sizeof(armci_notify_t*));
   if(!_armci_notify_arr)armci_die("armci_notify_ini:malloc failed",armci_nproc);
 
-  if((rc=ARMCI_Malloc((void **)_armci_notify_arr, bytes))) 
+  if((rc=PARMCI_Malloc((void **)_armci_notify_arr, bytes))) 
         armci_die(" armci_notify_init: armci_malloc failed",bytes); 
   bzero(_armci_notify_arr[armci_me], bytes);
 }
@@ -309,7 +309,7 @@ void armci_init_memlock()
     memlock_table_array = malloc(armci_nproc*sizeof(void*));
     if(!memlock_table_array) armci_die("malloc failed for ARMCI lock array",0);
 
-    rc = ARMCI_Malloc(memlock_table_array, bytes);
+    rc = PARMCI_Malloc(memlock_table_array, bytes);
     if(rc) armci_die("failed to allocate ARMCI memlock array",rc);
 
     armci_msg_barrier();
@@ -382,11 +382,11 @@ void armci_create_ft_group()
 }
 #endif
 
-int ARMCI_Init_args(int *argc, char ***argv) 
+int PARMCI_Init_args(int *argc, char ***argv) 
 {
 #ifdef MPI_SPAWN
     /* If this is data server process, then it should call
-     * armci_mpi2_server_init() instead of ARMCI_Init(). ARMCI_Init() should
+     * armci_mpi2_server_init() instead of PARMCI_Init(). PARMCI_Init() should
      * only be called by clients */
     {
        MPI_Comm parent_comm;
@@ -398,7 +398,7 @@ int ARMCI_Init_args(int *argc, char ***argv)
     _armci_argc = argc;
     _armci_argv = argv;
     _armci_initialized_args=1;
-    ARMCI_Init();
+    PARMCI_Init();
 }
 
 void _armci_test_connections() {
@@ -408,19 +408,19 @@ void _armci_test_connections() {
   int *val;
   dassert(1, bufs);
 
-  ARMCI_Malloc((void **)bufs, sizeof(int));
+  PARMCI_Malloc((void **)bufs, sizeof(int));
   dassert(1, bufs[armci_me]);
-  val = ARMCI_Malloc_local(sizeof(int));
+  val = PARMCI_Malloc_local(sizeof(int));
   dassert(1, val);
 
   for(i=0; i<nprocs; i++) {
     dassert(1, bufs[i]);
-    ARMCI_Put(val, bufs[i], sizeof(int), i);
+    PARMCI_Put(val, bufs[i], sizeof(int), i);
   }
-  ARMCI_AllFence();
-  ARMCI_Barrier();
-  ARMCI_Free(bufs[armci_me]);
-  ARMCI_Free_local(val);
+  PARMCI_AllFence();
+  PARMCI_Barrier();
+  PARMCI_Free(bufs[armci_me]);
+  PARMCI_Free_local(val);
   free(bufs);
   if(armci_me==0) {
     printf("All connections between all procs tested: SUCCESS\n");
@@ -428,7 +428,7 @@ void _armci_test_connections() {
   }
 }
 
-int ARMCI_Init()
+int PARMCI_Init()
 {
   char *uval;
     int th_idx;
@@ -449,9 +449,9 @@ int ARMCI_Init()
 #ifdef MPI_SPAWN
     if(!_armci_initialized_args)
        armci_die("ARMCI is built w/ ARMCI_NETWORK=MPI-SPAWN. For this network "
-                 "setting, ARMCI must be initialized with ARMCI_Init_args() "
-                 "instead of ARMCI_Init(). Please replace ARMCI_Init() "
-                 " with ARMCI_Init_args(&argc, &argv) as in the API docs", 0L);
+                 "setting, ARMCI must be initialized with PARMCI_Init_args() "
+                 "instead of PARMCI_Init(). Please replace PARMCI_Init() "
+                 " with PARMCI_Init_args(&argc, &argv) as in the API docs", 0L);
 #endif
     
 #ifdef BGML
@@ -478,7 +478,7 @@ int ARMCI_Init()
     armci_init_threads();
     th_idx = ARMCI_THREAD_IDX;
     if (th_idx)
-        printf("WARNING: ARMCI_Init is called from thread %d, should be 0\n",th_idx);
+        printf("WARNING: PARMCI_Init is called from thread %d, should be 0\n",th_idx);
 #endif
 
 #ifdef _CRAYMPP
@@ -571,7 +571,7 @@ int ARMCI_Init()
        {
 	 void* test_ptr_arr = malloc(sizeof(void *)*MAX_PROC);
 	 dassert(1,test_ptr_arr);
-	 ARMCI_Malloc(test_ptr_arr,256*1024*1024);
+	 PARMCI_Malloc(test_ptr_arr,256*1024*1024);
 #if 0
        {
           int i;
@@ -585,7 +585,7 @@ int ARMCI_Init()
           armci_msg_barrier();
        }
 #endif
-       ARMCI_Free(test_ptr_arr[armci_me]);
+       PARMCI_Free(test_ptr_arr[armci_me]);
        free(test_ptr_arr);
        }
 #endif
@@ -607,12 +607,12 @@ int ARMCI_Init()
        if(!addr)armci_die("armci_init:addr malloc failed",segments*armci_nproc);
 
        for(seg=0; seg< segments; seg++) /* allocate segments */
-          if(ARMCI_Malloc(addr+armci_nproc*seg,segsize))
+          if(PARMCI_Malloc(addr+armci_nproc*seg,segsize))
              armci_die("problem in Elan-3 mem preallocation",seg);
        
        for(seg=0; seg< segments; seg++) /* return to free pool */
          if(armci_me==armci_master)
-           if(ARMCI_Free(*(addr+armci_nproc*seg+armci_me)))
+           if(PARMCI_Free(*(addr+armci_nproc*seg+armci_me)))
               armci_die("problem in Elan-3 mem preallocation - free stage",seg);
        free(addr);
 
@@ -630,20 +630,17 @@ int ARMCI_Init()
     armci_allocate_locks();
     armci_init_fence();
 
-#ifdef ARMCI_ENABLE_GPC_CALLS
-    gpc_init_signals();
-#endif
-
 #ifdef ALLOW_PIN
     armci_prot_switch_fence = malloc(sizeof(int*)*armci_nproc);
     armci_prot_switch_preproc = -1;
     armci_prot_switch_preop = -1;
 #endif
 
-    /* NOTE: FOR PROCESS-BASED DATA SERVER WE CANNOT call ARMCI_Malloc yet */
+    /* NOTE: FOR PROCESS-BASED DATA SERVER WE CANNOT call PARMCI_Malloc yet */
 
 #   if defined(DATA_SERVER) || defined(ELAN_ACC)
-       if(armci_nclus >1) armci_start_server();
+       if(armci_nclus >1) 
+           armci_start_server();
 #   endif
 #if defined(GM) || defined(VAPI) || defined(PORTALS) || (defined(LAPI) && defined(LAPI_RDMA))
     /* initialize registration of memory */
@@ -665,7 +662,7 @@ int ARMCI_Init()
     vampir_end(ARMCI_INIT,__FILE__,__LINE__);
 #endif    
 
-    _armci_initialized++;
+    _armci_initialized=1;
 #ifdef DO_CKPT
     armci_init_checkpoint(armci_ft_spare_procs);
 #endif
@@ -678,11 +675,11 @@ int ARMCI_Init()
 }
 
 
-void ARMCI_Finalize()
+void PARMCI_Finalize()
 {
-    _armci_initialized--;
 
-    if(_armci_initialized)return;
+    if(_armci_initialized<=0)return;
+    _armci_initialized=0;
 #ifdef GA_USE_VAMPIR
     vampir_begin(ARMCI_FINALIZE,__FILE__,__LINE__);
 #endif
@@ -722,6 +719,9 @@ void ARMCI_Finalize()
 #ifdef GA_USE_VAMPIR
     vampir_end(ARMCI_FINALIZE,__FILE__,__LINE__);
     vampir_finalize(__FILE__,__LINE__);
+#endif
+#ifdef ARMCIX
+    ARMCIX_Finalize ();
 #endif
 }
 
@@ -776,7 +776,7 @@ int ARMCI_Same_node(int proc)
 /*\ blocks the calling process until a nonblocking operation represented
  *  by the user handle completes
 \*/
-int ARMCI_Wait(armci_hdl_t* usr_hdl){
+int PARMCI_Wait(armci_hdl_t* usr_hdl){
 armci_ihdl_t nb_handle = (armci_ihdl_t)usr_hdl;
 int success=0;
 int direct=SAMECLUSNODE(nb_handle->proc);
@@ -853,7 +853,7 @@ armci_hdl_t *armci_set_implicit_handle (int op, int proc) {
   armci_ihdl_t nbh;
   int i=impcount%ARMCI_MAX_IMPLICIT;
   if(hdl_flag[i]=='1')
-    ARMCI_Wait(&armci_nb_handle[i]);
+    PARMCI_Wait(&armci_nb_handle[i]);
 
   nbh = (armci_ihdl_t)&armci_nb_handle[i];
 #ifdef BGML
@@ -871,7 +871,7 @@ armci_hdl_t *armci_set_implicit_handle (int op, int proc) {
  
  
 /* wait for all non-blocking operations to finish */
-int ARMCI_WaitAll (void) {
+int PARMCI_WaitAll (void) {
 #ifdef BGML
   BGML_WaitAll();
 #elif ARMCIX
@@ -881,7 +881,7 @@ int ARMCI_WaitAll (void) {
   if(impcount) {
     for(i=0; i<ARMCI_MAX_IMPLICIT; i++) {
       if(hdl_flag[i] == '1') {
-        ARMCI_Wait(&armci_nb_handle[i]);
+        PARMCI_Wait(&armci_nb_handle[i]);
         hdl_flag[i]='0';
       }
     }
@@ -892,7 +892,7 @@ int ARMCI_WaitAll (void) {
 }
  
 /* wait for all non-blocking operations to a particular process to finish */
-int ARMCI_WaitProc (int proc) {
+int PARMCI_WaitProc (int proc) {
 #ifdef BGML
   BGML_WaitProc(proc);
 #elif ARMCIX
@@ -903,7 +903,7 @@ int ARMCI_WaitProc (int proc) {
     for(i=0; i<ARMCI_MAX_IMPLICIT; i++) {
       if(hdl_flag[i]=='1' && 
 	 ((armci_ihdl_t)&armci_nb_handle[i])->proc==proc) {
-        ARMCI_Wait(&armci_nb_handle[i]);
+        PARMCI_Wait(&armci_nb_handle[i]);
         hdl_flag[i]='0';
       }
     }
@@ -949,7 +949,7 @@ int armci_notify(int proc)
 # ifdef MEM_FENCE
    if(SAMECLUSNODE(proc)) MEM_FENCE;
 # endif
-   ARMCI_Put(&pnotify->sent,&(_armci_notify_arr[proc]+armci_me)->received, 
+   PARMCI_Put(&pnotify->sent,&(_armci_notify_arr[proc]+armci_me)->received, 
              sizeof(pnotify->sent),proc);
    return(pnotify->sent);
 #endif
@@ -1013,7 +1013,7 @@ int armci_util_int_getval(int* p)
 }
 
 
-int ARMCI_Test(armci_hdl_t *usr_hdl)
+int PARMCI_Test(armci_hdl_t *usr_hdl)
 {
 armci_ihdl_t nb_handle = (armci_ihdl_t)usr_hdl;
 int success=0;
@@ -1054,7 +1054,8 @@ void ARMCI_Ckpt_create_ds(armci_ckpt_ds_t *ckptds, int count)
     armci_create_ckptds(ckptds,count);
 }
 
-int ARMCI_Ckpt_init(char *filename, ARMCI_Group *grp, int savestack, int saveheap, armci_ckpt_ds_t *ckptds)
+int ARMCI_Ckpt_init(char *filename, ARMCI_Group *grp, int savestack, 
+        int saveheap, armci_ckpt_ds_t *ckptds)
 {
 int rid;
     rid = armci_icheckpoint_init(filename,grp,savestack,saveheap,ckptds);
@@ -1136,6 +1137,8 @@ char *ptr;
 
 #if defined(LAPI) || defined(GM) || defined(VAPI) || defined(QUADRICS)
     if(armci_rem_gpc(GET, darr, 2, &send, proc, 1, nb_handle))
+#else
+#  error "ARMCI_Gpc_exec not implemented for this platform.  Disable GPC to compile"
 #endif
       return FAIL2;
     return 0;

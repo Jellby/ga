@@ -18,6 +18,10 @@
 #
 #........................................................................
 
+ifndef ARMCI_DIR_NAME
+   ARMCI_DIR_NAME=armci
+endif
+
 ifndef TARGET
 error:
 	@echo "TARGET machine not defined "
@@ -38,10 +42,16 @@ endif
 LIB_DISTRIB  = ../../lib
 LIB_TARGETS = *.x *.p
       INCDIR = ../../include
-LIB_INCLUDES = -I$(INCDIR)
+LIB_INCLUDES = -I$(INCDIR) $(COMM_INCLUDES) $(MP_INCLUDES)
 
-include ../../armci/config/makecoms.h
-include ../../armci/config/makemp.h
+ifeq ($(ARMCI_NETWORK),PORTALS)
+  ARMCI_DIR_NAME = armci-portals
+else
+  ARMCI_DIR_NAME = armci
+endif
+
+include ../../$(ARMCI_DIR_NAME)/config/makecoms.h
+include ../../$(ARMCI_DIR_NAME)/config/makemp.h
 include ../../config/makefile.h
 
 ifndef LIBDIR
@@ -69,6 +79,8 @@ endif
 TESTUTILC = util.o
 TESTUTIL= $(TESTUTILC) ffflush.o
 
+NOPT=-O2
+
 FOPT= $(NOPT)
 COPT= $(NOPT)
 
@@ -77,24 +89,27 @@ COPT= $(NOPT)
 #
 #.PRECIOUS: %.o
 
+all: test.x patch.x ndim.x perf.x testc.x ntestc.x ga-mpi.x
 
 ifeq ($(P_FILE),YES)
 %.x : %.o $(TESTUTIL) $(LIBDIR)/libglobal.a $(LIBDIR)/libarmci.a  $(EXTRA)
 	echo "`whoami` `hostname` 4 `pwd`/$@ /tmp" > $@.p
 	if [ -f $(basename $@).c ]; then\
-		$(LINK.c) $(NOPT) $(CLDOPT) -o $@ $< $(TESTUTILC) $(LIBS) $(CLIBS);\
+		$(LINK.c) $(COPT) $(CLDOPT) -o $@ $< $(TESTUTILC) $(LIBS) $(CLIBS);\
 	else\
-		$(LINK.f) $(NOPT) $(FLDOPT) -o $@ $< $(TESTUTIL) $(LIBS) $(FLIBS);\
+		$(LINK.f) $(FOPT) $(FLDOPT) -o $@ $< $(TESTUTIL) $(LIBS) $(FLIBS);\
         fi
 else
 %.x : %.o $(TESTUTIL) $(LIBDIR)/libglobal.a  $(LIBDIR)/libarmci.a $(EXTRA)
 	if [ -f $(basename $@).c ]; then\
-		$(LINK.c) $(NOPT) $(CLDOPT) -o $@ $< $(TESTUTILC) $(LIBS) $(CLIBS);\
+		$(LINK.c) $(COPT) $(CLDOPT) -o $@ $< $(TESTUTILC) $(LIBS) $(CLIBS);\
 	else\
-		$(LINK.f) $(NOPT) $(FLDOPT) -o $@ $< $(TESTUTIL) $(LIBS) $(FLIBS);\
+		$(LINK.f) $(FOPT) $(FLDOPT) -o $@ $< $(TESTUTIL) $(LIBS) $(FLIBS);\
         fi
 endif
 
+%.o : %.c
+	$(CC) $(COPT) $(COPT_REN) $(INCLUDES) $(DEFINES) $(CDEFS) -c $<
 
 %.p:
 	echo "`whoami` `hostname` 4 `pwd`/$(basename $@) /tmp" > $@

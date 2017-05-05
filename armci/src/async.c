@@ -115,7 +115,7 @@ strided_dscr_t *dscr;
 }
 
 #if 0 /*this function has been added in armci.c*/
-int ARMCI_Wait(int req_id)
+int PARMCI_Wait(int req_id)
 {
 int dsc_id = REQ_TO_DSC_ID(req_id);
 void *buf;
@@ -128,7 +128,7 @@ void *buf;
    buf = _armci_buf_ptr_from_id(dsc_id);
 
    if(dsc_id >MAX_PENDING_REQ) 
-       armci_die2("ARMCI_Wait: bad id",dsc_id,MAX_PENDING_REQ);
+       armci_die2("PARMCI_Wait: bad id",dsc_id,MAX_PENDING_REQ);
 
    /* when 0 it means the request was completed to get the buffer */
    if(armci_pending_dscr[dsc_id].reqid == 0) return 0;

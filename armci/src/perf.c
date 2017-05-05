@@ -22,7 +22,7 @@
 #define FORCE_1D_
 
 #ifndef ABS
-#define ABS(a) ((a)>0? (a): -(a))
+#define ARMCI_ABS(a) ((a)>0? (a): -(a))
 #endif
 
 /* tells to use ARMCI_Malloc_local instead of plain malloc */
@@ -570,7 +570,7 @@ void check_result(double *src_buf, double *dst_buf, int *stride, int *count,
         
         size = count[0] / sizeof(double);
         for(j=0; j<size; j++)
-            if(ABS(((double *)((char *)src_buf+idx))[j] - 
+            if(ARMCI_ABS(((double *)((char *)src_buf+idx))[j] - 
                ((double *)((char *)dst_buf+idx))[j]) > 0.000001 ){
                 fprintf(stdout,"Error:%s comparison failed: (%d) (%f :%f) %d\n",
                         check_type, j, ((double *)((char *)src_buf+idx))[j],

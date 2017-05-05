@@ -16,14 +16,19 @@ endif
 
 MSG_COMMS=MPI
 #defines communication libs and symbols
-include ../armci/config/makemp.h
-include ../armci/config/makecoms.h
+ifeq ($(ARMCI_NETWORK),PORTALS)
+  ARMCI_DIR_NAME = armci-portals
+else
+  ARMCI_DIR_NAME = armci
+endif
+include ../$(ARMCI_DIR_NAME)/config/makemp.h
+include ../$(ARMCI_DIR_NAME)/config/makecoms.h
 
 LIBRARY = libtcgmsg-mpi.a
 LIBRARY_SHARED = libtcgmsg-mpi.so
 LIB_DISTRIB = ../lib
 INCDIR = ../include
-LIB_INCLUDES += -I$(INCDIR) -I../armci/src $(MP_INCLUDES)
+LIB_INCLUDES += -I$(INCDIR) -I../$(ARMCI_DIR_NAME)/src $(MP_INCLUDES)
 LIB_DEFINES += -DARMCI
 LIB_TARGETS = *.x
 
@@ -52,11 +57,12 @@ endif
 
 OBJ = checkbyte.o	drand48.o	pbeginf.o	sizeof.o\
       collect.o		misc.o		p2p.o		pfilecopy.o\
-      evlog.o		evon.o		random.o 	nxtval-armci.o wrap.o
+      evlog.o		evon.o		random.o 	nxtval-armci.o wrap.o\
+	  capi.o		llog.o		niceftn.o
 
       OBJ += $(EXTRA_OBJ) 
 
-HEADERS = sndrcv.h srftoc.h msgtypesc.h msgtypesf.h tcgmsg.fh
+HEADERS = sndrcv.h srftoc.h msgtypesc.h msgtypesf.h tcgmsg.fh tcgmsg.h
 ifdef GA_USE_VAMPIR
   HEADERS += tcgmsg_vampir.h ../global/ga_vt.h
   EXTRA_OBJ += tcgmsg_vampir.o ga_vt.o

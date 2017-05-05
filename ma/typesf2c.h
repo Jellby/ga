@@ -41,9 +41,13 @@
         DoublePrecision imag;
    }DoubleComplex;
 
+#ifdef NO_REAL_32
+   typedef DoubleComplex SingleComplex;
+#else
    typedef struct{
         float real;
         float imag;
    }SingleComplex;
+#endif
 
 #endif /* _TYPES_F2C_H_ */

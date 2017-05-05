@@ -3,7 +3,7 @@
  */
 
 /*
- * Portable dynamic memory allocator.
+ * Porma_table dynamic memory allocator.
  */
 
 #include <stdio.h>
@@ -85,7 +85,11 @@
  * problem is solved, but the sum of sizes of preceding fields can
  * still potentially cause difficulty.
  */
+#if defined(BGP) || defined(BGQ)
+#define ALIGNMENT	32
+#else
 #define ALIGNMENT	sizeof(long)
+#endif
 
 /* min size of block split and placed on free list */
 #define MINBLOCKSIZE	round((long)(ALIGNMENT + BLOCK_OVERHEAD_FIXED), \
@@ -574,7 +578,7 @@ private void ad_print(ad, block_type)
     Integer	memhandle;	/* memhandle for AD */
 
     /* convert AD to memhandle */
-    memhandle = table_lookup_assoc((TableData)ad);
+    memhandle = ma_table_lookup_assoc((TableData)ad);
 
     /* print to stdout */
     (void)printf("%s block '%s', handle ",
@@ -1614,10 +1618,10 @@ private Boolean mh2ad(memhandle, adout, location, caller)
     }
 
     /* convert memhandle to AD */
-    if (!table_verify(memhandle, caller))
+    if (!ma_table_verify(memhandle, caller))
         return MA_FALSE;
     else
-        ad = (AD *)table_lookup(memhandle);
+        ad = (AD *)ma_table_lookup(memhandle);
 
     /* attempt to avoid crashes due to corrupt addresses */
     if (!reasonable_address((Pointer)ad))
@@ -1726,7 +1730,7 @@ private void mh_free(ad)
     Integer	memhandle;	/* memhandle for AD */
 
     /* convert AD to memhandle */
-    if ((memhandle = table_lookup_assoc((TableData)ad)) == TABLE_HANDLE_NONE)
+    if ((memhandle = ma_table_lookup_assoc((TableData)ad)) == TABLE_HANDLE_NONE)
     {
         (void)sprintf(ma_ebuf,
             "cannot find memhandle for block address 0x%lx",
@@ -1735,7 +1739,7 @@ private void mh_free(ad)
     }
     else
         /* free memhandle */
-        table_deallocate(memhandle);
+        ma_table_deallocate(memhandle);
 }
 
 /* ------------------------------------------------------------------------- */
@@ -2040,7 +2044,7 @@ public Boolean MA_allocate_heap(
 #endif /* STATS */
 
     /* convert AD to memhandle */
-    if ((*memhandle = table_allocate((TableData)ad)) == TABLE_HANDLE_NONE)
+    if ((*memhandle = ma_table_allocate((TableData)ad)) == TABLE_HANDLE_NONE)
         /* failure */
         return MA_FALSE;
     else
@@ -2139,7 +2143,7 @@ public Boolean MA_free_heap(Integer memhandle) /* the block to deallocate */
     block_free_heap(ad);
 
     /* free memhandle */
-    table_deallocate(memhandle);
+    ma_table_deallocate(memhandle);
 
     /* success */
     return MA_TRUE;
@@ -3085,7 +3089,7 @@ public Boolean MA_pop_stack(Integer memhandle) /* the block to deallocate */
 #endif /* STATS */
 
     /* free memhandle */
-    table_deallocate(memhandle);
+    ma_table_deallocate(memhandle);
 
     /* success */
     return MA_TRUE;
@@ -3298,7 +3302,7 @@ public Boolean MA_push_stack(
 #endif /* STATS */
 
     /* convert AD to memhandle */
-    if ((*memhandle = table_allocate((TableData)ad)) == TABLE_HANDLE_NONE)
+    if ((*memhandle = ma_table_allocate((TableData)ad)) == TABLE_HANDLE_NONE)
         /* failure */
         return MA_FALSE;
     else

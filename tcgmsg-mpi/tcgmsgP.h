@@ -25,9 +25,9 @@ extern int       _tcg_initialized;
 #endif
 
 
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a)   (((a) >= 0)   ? (a) : (-(a)))
+#define TCG_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define TCG_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define TCG_ABS(a)   (((a) >= 0)   ? (a) : (-(a)))
 
 #define TCG_ERR_LEN 80
 #define ERR_STR_LEN TCG_ERR_LEN + MPI_MAX_ERROR_STRING
@@ -36,7 +36,7 @@ extern  char  tcgmsg_err_string[ERR_STR_LEN];
 #define tcgmsg_test_statusM(_str, _status)\
 {\
   if( _status != MPI_SUCCESS){\
-      int _tot_len, _len = MIN(ERR_STR_LEN, strlen(_str));\
+      int _tot_len, _len = TCG_MIN(ERR_STR_LEN, strlen(_str));\
       strncpy(tcgmsg_err_string, _str, _len);\
       MPI_Error_string( _status, tcgmsg_err_string + _len, &_tot_len);\
       Error(tcgmsg_err_string, (int)_status);\

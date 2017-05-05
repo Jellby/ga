@@ -37,10 +37,10 @@ static logical patch_intersect(ilo, ihi, jlo, jhi, ilop, ihip, jlop, jhip)
      /* find the intersection and update (ilop: ihip, jlop: jhip) */
      if( *ihi < *ilop || *ihip < *ilo) return FALSE; /* don't intersect */
      if( *jhi < *jlop || *jhip < *jlo) return FALSE; /* don't intersect */
-     *ilop = MAX(*ilo,*ilop);
-     *ihip = MIN(*ihi,*ihip);
-     *jlop = MAX(*jlo,*jlop);
-     *jhip = MIN(*jhi,*jhip);
+     *ilop = GA_MAX(*ilo,*ilop);
+     *ihip = GA_MIN(*ihi,*ihip);
+     *jlop = GA_MAX(*jlo,*jlop);
+     *jhip = GA_MIN(*jhi,*jhip);
 
      return TRUE;
 }
@@ -249,11 +249,15 @@ DoublePrecision FATR ga_ddot_patch_dp_(g_a, t_a, ailo, aihi, ajlo, ajhi,
      Integer *g_b, *bilo, *bihi, *bjlo, *bjhi;    /* patch of g_b */
 
 #if defined(CRAY_T3D) || defined(WIN32)
+
      _fcd   t_a, t_b;                          /* transpose operators */
-{ return ga_ddot_patch_dp(g_a, _fcdtocp(t_a), ailo, aihi, ajlo, ajhi,
-                       g_b, _fcdtocp(t_b), bilo, bihi, bjlo, bjhi);}
+
+{ return ga_ddot_patch_dp(g_a, _fcdtocp(t_a), ailo, aihi, ajlo, ajhi, g_b, _fcdtocp(t_b), bilo, bihi, bjlo, bjhi); }
+
 #else 
+
      char    *t_a, *t_b;                          /* transpose operators */
-{ return ga_ddot_patch_dp(g_a, t_a, ailo, aihi, ajlo, ajhi,
-                       g_b, t_b, bilo, bihi, bjlo, bjhi);}
+
+{ return ga_ddot_patch_dp(g_a, t_a, ailo, aihi, ajlo, ajhi, g_b, t_b, bilo, bihi, bjlo, bjhi); }
+
 #endif

@@ -8,8 +8,12 @@ ifeq ($(OSNAME),AIX)
                       print "-DAIX52" }')
 #lsdev -C -l aio0
 #aio0 Defined  Asynchronous I/O (Legacy)
-USE_OLDAIO= $(shell /usr/sbin/lsdev -C -l aio0  2>&1|grep Lega|awk ' /Legacy/  {print "Y"}')
-
+ifdef USE_OLDAIO
+     USE_OLDAIO=Y
+else   
+     USE_OLDAIO= $(shell /usr/sbin/lsdev -C -l aio0  2>&1|grep Lega|awk ' /Legacy/  {print "Y"}')
+endif
+      
 ifeq ($(USE_OLDAIO),Y)
      LIB_DEFINES += -D_AIO_AIX_SOURCE
 endif
@@ -43,15 +47,17 @@ ifdef LARGE_FILES
     LIB_DEFINES += $(shell getconf LFS_CFLAGS)
   endif  
 
-ifeq ($(TARGET), BGL)
-	LIB_DEFINES += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
-                  -D_LARGEFILE64_SOURCE
-endif
+  ifeq ($(TARGET), BGL)
+      LIB_DEFINES += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE
+  endif
 
-ifeq ($(TARGET), BGP)
-	LIB_DEFINES += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
-                  -D_LARGEFILE64_SOURCE
-endif
+  ifeq ($(TARGET), BGP)
+      LIB_DEFINES += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE
+  endif
+
+  ifeq ($(TARGET), BGQ)
+      LIB_DEFINES += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE -D_LARGEFILE64_SOURCE
+  endif
 
 #
 # HP targets tested on HPUX 11.0
@@ -65,13 +71,6 @@ endif
     LIB_DEFINES +=  -D_LARGEFILE64_SOURCE 
     LIB_DEFINES += $(shell getconf XBS5_LP64_OFF64_CFLAGS)
   endif  
-#
-# BGL
-#
-  ifeq ($(TARGET), BGL)
-    LIB_DEFINES += -D_FILE_OFFSET_BITS=64 -D_LARGEFILE_SOURCE \
-                   -D_LARGEFILE64_SOURCE
-  endif
 
   LIB_DEFINES += -DLARGE_FILES
 endif

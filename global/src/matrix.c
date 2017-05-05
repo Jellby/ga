@@ -760,13 +760,13 @@ void gai_norm_infinity_block(Integer *g_a, void *ptr,
       pi = (int *) ptr;
       for (i = 0; i < ihiA - iloA + 1; i++)
         for (j = 0; j < jhiA - jloA + 1; j++)
-          isum[iloA + i - 1] += ABS (pi[j * ld + i]);
+          isum[iloA + i - 1] += GA_ABS(pi[j * ld + i]);
       break;
       case C_LONG:
       pl = (long *) ptr;
       for (i = 0; i < ihiA - iloA + 1; i++)
         for (j = 0; j < jhiA - jloA + 1; j++)
-          lsum[iloA + i - 1] += ABS (pl[j * ld + i]);
+          lsum[iloA + i - 1] += GA_ABS(pl[j * ld + i]);
       break;
       case C_DCPL:
       pz = (DoubleComplex *) ptr;
@@ -794,13 +794,13 @@ void gai_norm_infinity_block(Integer *g_a, void *ptr,
       pf = (float *) ptr;
       for (i = 0; i < ihiA - iloA + 1; i++)
         for (j = 0; j < jhiA - jloA + 1; j++)
-          fsum[iloA + i - 1] += ABS (pf[j * ld + i]);
+          fsum[iloA + i - 1] += GA_ABS(pf[j * ld + i]);
       break;
       case C_DBL:
       pd = (double *) ptr;
       for (i = 0; i < ihiA - iloA + 1; i++)
         for (j = 0; j < jhiA - jloA + 1; j++)
-          dsum[iloA + i - 1] += ABS (pd[j * ld + i]);
+          dsum[iloA + i - 1] += GA_ABS(pd[j * ld + i]);
       break;
       default:
       ga_error ("gai_norm_infinity_block: wrong data type ", type);
@@ -1104,13 +1104,13 @@ void gai_norm1_block(Integer *g_a, void *ptr,
       pi = (int *) ptr;
       for (j = 0; j < jhiA - jloA + 1; j++)
         for (i = 0; i < ihiA - iloA + 1; i++)
-          isum[jloA + j - 1 ] += ABS (pi[j * ld + i]);
+          isum[jloA + j - 1 ] += GA_ABS(pi[j * ld + i]);
       break;
       case C_LONG:
       pl = (long *) ptr;
       for (j = 0; j < jhiA - jloA + 1; j++)
         for (i = 0; i < ihiA - iloA + 1; i++)
-          lsum[jloA + j  - 1] += ABS (pl[j * ld + i]);
+          lsum[jloA + j  - 1] += GA_ABS(pl[j * ld + i]);
       break;
       case C_DCPL:
       pz = (DoubleComplex *) ptr;
@@ -1140,13 +1140,13 @@ void gai_norm1_block(Integer *g_a, void *ptr,
       pf = (float *) ptr;
       for (j = 0; j < jhiA - jloA + 1; j++)
         for (i = 0; i < ihiA - iloA + 1; i++)
-          fsum[jloA + j  - 1 ] += ABS (pf[j * ld + i]);
+          fsum[jloA + j  - 1 ] += GA_ABS(pf[j * ld + i]);
       break;
       case C_DBL:
       pd = (double *) ptr;
       for (j = 0; j < jhiA - jloA + 1; j++)
         for (i = 0; i < ihiA - iloA + 1; i++)
-          dsum[jloA + j - 1 ] += ABS (pd[j * ld + i]);
+          dsum[jloA + j - 1 ] += GA_ABS(pd[j * ld + i]);
       break;
       default:
       ga_error ("gai_norm1_block: wrong data type ", type);
@@ -1387,10 +1387,10 @@ void gai_get_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
   /* determine subset of my patch to access */
   if (iloA > 0)
   {
-    lo[0] = MAX (iloA, jloA);
-    lo[1] = MAX (iloA, jloA);
-    hi[0] = MIN (ihiA, jhiA);
-    hi[1] = MIN (ihiA, jhiA);
+    lo[0] = GA_MAX(iloA, jloA);
+    lo[1] = GA_MAX(iloA, jloA);
+    hi[0] = GA_MIN(ihiA, jhiA);
+    hi[1] = GA_MIN(ihiA, jhiA);
 
 
 
@@ -1399,8 +1399,8 @@ void gai_get_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
 
       /*allocate a buffer for the given vector g_v */
       size = GAsizeof (type);
-      vlo = MAX (iloA, jloA);
-      vhi = MIN (ihiA, jhiA);
+      vlo = GA_MAX(iloA, jloA);
+      vhi = GA_MIN(ihiA, jhiA);
       nelem = vhi - vlo + 1;
       buf = malloc (nelem * size);
       if (buf == NULL)
@@ -1413,6 +1413,7 @@ void gai_get_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
       {
         case C_INT:
           ia = (int *) ptr;
+          ia += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             ((int *) buf)[i] = *ia;
@@ -1421,6 +1422,7 @@ void gai_get_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
           break;
         case C_LONG:
           la = (long *) ptr;
+          la += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             ((long *) buf)[i] = *la;
@@ -1429,6 +1431,7 @@ void gai_get_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
           break;
         case C_FLOAT:
           fa = (float *) ptr;
+          fa += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             ((float *) buf)[i] = *fa;
@@ -1437,6 +1440,7 @@ void gai_get_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
           break;
         case C_DBL:
           da = (double *) ptr;
+          da += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             ((double *) buf)[i] = *da;
@@ -1445,6 +1449,7 @@ void gai_get_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
           break;
         case C_DCPL:
           dca = (DoubleComplex *) ptr;
+          dca += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             (((DoubleComplex *) buf)[i]).real = (*dca).real;
@@ -1455,6 +1460,7 @@ void gai_get_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
 
         case C_SCPL:
           fca = (SingleComplex *) ptr;
+          fca += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             (((SingleComplex *) buf)[i]).real = (*fca).real;
@@ -1506,7 +1512,7 @@ ga_get_diag_ (Integer * g_a, Integer * g_v)
     ga_error ("ga_get_diag: wrong dimension for g_v.", vndim);
 
 
-  if (vdims != MIN (dim1, dim2))
+  if (vdims != GA_MIN(dim1, dim2))
     ga_error
       ("ga_get_diag: The size of the first array's diagonal is greater than the size of the second array.",
        type);
@@ -1600,10 +1606,10 @@ void gai_add_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
   /* determine subset of my patch to access */
   if (iloA > 0)
   {
-    lo[0] = MAX (iloA, jloA);
-    lo[1] = MAX (iloA, jloA);
-    hi[0] = MIN (ihiA, jhiA);
-    hi[1] = MIN (ihiA, jhiA);
+    lo[0] = GA_MAX(iloA, jloA);
+    lo[1] = GA_MAX(iloA, jloA);
+    hi[0] = GA_MIN(ihiA, jhiA);
+    hi[1] = GA_MIN(ihiA, jhiA);
 
 
 
@@ -1612,8 +1618,8 @@ void gai_add_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
 
       /*allocate a buffer for the given vector g_v */
       size = GAsizeof (type);
-      vlo = MAX (iloA, jloA);
-      vhi = MIN (ihiA, jhiA);
+      vlo = GA_MAX(iloA, jloA);
+      vhi = GA_MIN(ihiA, jhiA);
       nelem = vhi - vlo + 1;
       buf = malloc (nelem * size);
       if (buf == NULL)
@@ -1628,6 +1634,7 @@ void gai_add_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
       {
         case C_INT:
           ia = (int *) ptr;
+          ia += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             *ia += ((int *) buf)[i];
@@ -1636,6 +1643,7 @@ void gai_add_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
           break;
         case C_LONG:
           la = (long *) ptr;
+          la += ld*(lo[1]-jloA) + lo[0]-iloA; 
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             *la += ((long *) buf)[i];
@@ -1644,6 +1652,7 @@ void gai_add_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
           break;
         case C_FLOAT:
           fa = (float *) ptr;
+          fa += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             *fa += ((float *) buf)[i];
@@ -1652,6 +1661,7 @@ void gai_add_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
           break;
         case C_DBL:
           da = (double *) ptr;
+          da += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             *da += ((double *) buf)[i];
@@ -1660,6 +1670,7 @@ void gai_add_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
           break;
         case C_DCPL:
           dca = (DoubleComplex *) ptr;
+          dca += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             (*dca).real += (((DoubleComplex *) buf)[i]).real;
@@ -1670,6 +1681,7 @@ void gai_add_diagonal_block(Integer *g_a, void *ptr, Integer *g_v,
 
         case C_SCPL:
           fca = (SingleComplex *) ptr;
+          fca += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             (*fca).real += (((SingleComplex *) buf)[i]).real;
@@ -1719,7 +1731,7 @@ ga_add_diagonal_ (Integer * g_a, Integer * g_v)
     ga_error ("ga_add_diagonal: wrong dimension for g_v.", vndim);
 
 
-  if (vdims != MIN (dim1, dim2))
+  if (vdims != GA_MIN(dim1, dim2))
     ga_error
       ("ga_add_diagonal: The size of the first array's diagonal is greater than the size of the second array.",
        type);
@@ -1809,10 +1821,10 @@ void gai_set_diagonal_block(Integer *g_a, void *ptr, Integer *g_v, Integer *loA,
   /* determine subset of my patch to access */
   if (iloA > 0)
   {
-    lo[0] = MAX (iloA, jloA);
-    lo[1] = MAX (iloA, jloA);
-    hi[0] = MIN (ihiA, jhiA);
-    hi[1] = MIN (ihiA, jhiA);
+    lo[0] = GA_MAX(iloA, jloA);
+    lo[1] = GA_MAX(iloA, jloA);
+    hi[0] = GA_MIN(ihiA, jhiA);
+    hi[1] = GA_MIN(ihiA, jhiA);
 
 
 
@@ -1821,8 +1833,8 @@ void gai_set_diagonal_block(Integer *g_a, void *ptr, Integer *g_v, Integer *loA,
 
       /*allocate a buffer for the given vector g_v */
       size = GAsizeof (type);
-      vlo = MAX (iloA, jloA);
-      vhi = MIN (ihiA, jhiA);
+      vlo = GA_MAX(iloA, jloA);
+      vhi = GA_MIN(ihiA, jhiA);
       nelem = vhi - vlo + 1;
       buf = malloc (nelem * size);
       if (buf == NULL)
@@ -1836,6 +1848,7 @@ void gai_set_diagonal_block(Integer *g_a, void *ptr, Integer *g_v, Integer *loA,
       {
         case C_INT:
           ia = (int *) ptr;
+          ia += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             *ia = ((int *) buf)[i];
@@ -1844,6 +1857,7 @@ void gai_set_diagonal_block(Integer *g_a, void *ptr, Integer *g_v, Integer *loA,
           break;
         case C_LONG:
           la = (long *) ptr;
+          la += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             *la = ((long *) buf)[i];
@@ -1852,6 +1866,7 @@ void gai_set_diagonal_block(Integer *g_a, void *ptr, Integer *g_v, Integer *loA,
           break;
         case C_FLOAT:
           fa = (float *) ptr;
+          fa += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             *fa = ((float *) buf)[i];
@@ -1860,6 +1875,7 @@ void gai_set_diagonal_block(Integer *g_a, void *ptr, Integer *g_v, Integer *loA,
           break;
         case C_DBL:
           da = (double *) ptr;
+          da += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             *da = ((double *) buf)[i];
@@ -1868,6 +1884,7 @@ void gai_set_diagonal_block(Integer *g_a, void *ptr, Integer *g_v, Integer *loA,
           break;
         case C_DCPL:
           dca = (DoubleComplex *) ptr;
+          dca += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             (*dca).real = (((DoubleComplex *) buf)[i]).real;
@@ -1878,6 +1895,7 @@ void gai_set_diagonal_block(Integer *g_a, void *ptr, Integer *g_v, Integer *loA,
 
         case C_SCPL:
           fca = (SingleComplex *) ptr;
+          fca += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             (*fca).real = (((SingleComplex *) buf)[i]).real;
@@ -1929,7 +1947,7 @@ ga_set_diagonal_ (Integer * g_a, Integer * g_v)
     ga_error ("ga_set_diagonal: wrong dimension for g_v.", vndim);
 
 
-  if (vdims != MIN (dim1, dim2))
+  if (vdims != GA_MIN(dim1, dim2))
     ga_error
       ("ga_set_diagonal: The size of the first array's diagonal is greater than the size of the second array.",
        type);
@@ -2020,10 +2038,10 @@ void gai_shift_diagonal_block(Integer *g_a, void *ptr, Integer *loA, Integer *hi
   /* determine subset of my patch to access */
   if (iloA > 0)
   {
-    lo[0] = MAX (iloA, jloA);
-    lo[1] = MAX (iloA, jloA);
-    hi[0] = MIN (ihiA, jhiA);
-    hi[1] = MIN (ihiA, jhiA);
+    lo[0] = GA_MAX(iloA, jloA);
+    lo[1] = GA_MAX(iloA, jloA);
+    hi[0] = GA_MIN(ihiA, jhiA);
+    hi[1] = GA_MIN(ihiA, jhiA);
     if (hi[0] >= lo[0]) /*make sure the equality sign is there since it is the singleton case */
     {                   /* we got a block containing diagonal elements */
 
@@ -2031,6 +2049,7 @@ void gai_shift_diagonal_block(Integer *g_a, void *ptr, Integer *loA, Integer *hi
       {
         case C_INT:
           ia = (int *) ptr;
+          ia += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             *ia += *((int *) c);
@@ -2039,6 +2058,7 @@ void gai_shift_diagonal_block(Integer *g_a, void *ptr, Integer *loA, Integer *hi
           break;
         case C_LONG:
           la = (long *) ptr;
+          la += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             *la += *((long *) c);
@@ -2047,6 +2067,7 @@ void gai_shift_diagonal_block(Integer *g_a, void *ptr, Integer *loA, Integer *hi
           break;
         case C_FLOAT:
           fa = (float *) ptr;
+          fa += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             *fa += *((float *) c);
@@ -2055,6 +2076,7 @@ void gai_shift_diagonal_block(Integer *g_a, void *ptr, Integer *loA, Integer *hi
           break;
         case C_DBL:
           da = (double *) ptr;
+          da += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             *da += *((double *) c);
@@ -2063,6 +2085,7 @@ void gai_shift_diagonal_block(Integer *g_a, void *ptr, Integer *loA, Integer *hi
           break;
         case C_DCPL:
           dca = (DoubleComplex *) ptr;
+          dca += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             (*dca).real += (*((DoubleComplex *) c)).real;
@@ -2073,6 +2096,7 @@ void gai_shift_diagonal_block(Integer *g_a, void *ptr, Integer *loA, Integer *hi
 
         case C_SCPL:
           fca = (SingleComplex *) ptr;
+          fca += ld*(lo[1]-jloA) + lo[0]-iloA;
           for (i = 0; i < hi[0] - lo[0] + 1; i++)
           {
             (*fca).real += (*((SingleComplex *) c)).real;
@@ -2264,10 +2288,10 @@ void FATR ga_zero_diagonal_(Integer * g_a)
     nga_distribution_ (g_a, &me, loA, hiA);
     /* determine subset of my patch to access */
     if (loA[0] > 0) {
-      lo[0] = MAX (loA[0], loA[1]);
-      lo[1] = MAX (loA[0], loA[1]);
-      hi[0] = MIN (hiA[0], hiA[1]);
-      hi[1] = MIN (hiA[0], hiA[1]);
+      lo[0] = GA_MAX(loA[0], loA[1]);
+      lo[1] = GA_MAX(loA[0], loA[1]);
+      hi[0] = GA_MIN(hiA[0], hiA[1]);
+      hi[1] = GA_MIN(hiA[0], hiA[1]);
       if (hi[0] >= lo[0]) {
                               /* we got a block containing diagonal elements */
         nga_access_ptr (g_a, lo, hi, &ptr, &ld);
@@ -2284,10 +2308,10 @@ void FATR ga_zero_diagonal_(Integer * g_a)
     if (!ga_uses_proc_grid_(g_a)) {
       for (idx = me; idx < num_blocks_a; idx += nproc) {
         nga_distribution_(g_a, &idx, loA, hiA);
-        lo[0] = MAX (loA[0], loA[1]);
-        lo[1] = MAX (loA[0], loA[1]);
-        hi[0] = MIN (hiA[0], hiA[1]);
-        hi[1] = MIN (hiA[0], hiA[1]);
+        lo[0] = GA_MAX(loA[0], loA[1]);
+        lo[1] = GA_MAX(loA[0], loA[1]);
+        hi[0] = GA_MIN(hiA[0], hiA[1]);
+        hi[1] = GA_MIN(hiA[0], hiA[1]);
 
         if (hi[0] >= lo[0]) {
           nga_access_block_ptr(g_a, &idx, &ptr, lld);
@@ -2324,10 +2348,10 @@ void FATR ga_zero_diagonal_(Integer * g_a)
           if (hiA[i] > adims[i]) hiA[i] = adims[i];
           if (hiA[i] < loA[i]) chk = 0;
         }
-        lo[0] = MAX (loA[0], loA[1]);
-        lo[1] = MAX (loA[0], loA[1]);
-        hi[0] = MIN (hiA[0], hiA[1]);
-        hi[1] = MIN (hiA[0], hiA[1]);
+        lo[0] = GA_MAX(loA[0], loA[1]);
+        lo[1] = GA_MAX(loA[0], loA[1]);
+        hi[0] = GA_MIN(hiA[0], hiA[1]);
+        hi[1] = GA_MIN(hiA[0], hiA[1]);
 
         if (hi[0] >= lo[0]) {
           nga_access_block_grid_ptr(g_a, index, &ptr, lld);

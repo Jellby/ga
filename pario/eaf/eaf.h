@@ -51,8 +51,39 @@ void eaf_print_stats(int fd);
 
 int eaf_truncate(int fd, eaf_off_t length);
 
-int eaf_length(int fd, eaf_off_t *length);
+/* This section represents a new C interface */
 
+int EAF_Write(int fd, eaf_off_t offset, const void *buf, size_t bytes);
 
+int EAF_Awrite(int fd, eaf_off_t offset, const void *buf, size_t bytes,
+	       int *req_id);
+
+int EAF_Read(int fd, eaf_off_t offset, void *buf, size_t bytes);
+
+int EAF_Aread(int fd, eaf_off_t offset, void *buf, size_t bytes, 
+	      int *req_id);
+
+int EAF_Wait(int fd, int id);
+
+int EAF_Probe(int id, int *status);
+
+int EAF_Open(const char *fname, int type, int *fd);
+
+int EAF_Close(int fd);
+
+int EAF_Delete(const char *fname);
+
+int EAF_Length(int fd, eaf_off_t *length);
+
+int EAF_Stat(const char *path, int *avail_kb, char *fstype, int fslen);
+
+int EAF_Eof(int code);
+
+void EAF_Errmsg(int code, char *msg);
+
+void EAF_Print_stats(int fd);
+
+int EAF_Truncate(int fd, eaf_off_t length);
+ 
 #endif
 #endif

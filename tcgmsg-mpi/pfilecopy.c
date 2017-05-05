@@ -16,7 +16,7 @@
 #undef CRAY
 #endif
 
-void PFILECOPY_(type, node0, filename)
+void tcgi_pfilecopy(type, node0, filename)
      long *type, *node0;
      char *filename;
 /*
@@ -109,6 +109,12 @@ void PFILECOPY_(type, node0, filename)
 #endif
 }
 
+void PFILECOPY_(type, node0, filename)
+     long *type, *node0;
+     char *filename;
+{
+    tcgi_pfilecopy(type, node0, filename);
+}
 
 #if defined(IPSC) || defined(WIN32)
 #define bcopy(a, b, n) memcpy((b), (a), (n))
@@ -189,7 +195,7 @@ void PFCOPY_(type, node0, fname, len)
 
   /* Now call the C routine to do the work */
 
-  PFILECOPY_(type, node0, filename);
+  tcgi_pfilecopy(type, node0, filename);
 
   (void) free(filename);
 #ifdef GA_USE_VAMPIR

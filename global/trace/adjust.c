@@ -17,8 +17,8 @@
 /* this value must be exactly like in the GA package source */
 #define GA_OFFSET 1000
 
-#define ABS(x) ((x)>0 ? (x) :(-x))
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define GA_ABS(x) ((x)>0 ? (x) :(-x))
+#define GA_MAX(a,b) (((a) >= (b)) ? (a) : (b))
 
 /* if enabled, program prints GA usage statistics & requires EXTRA MEMORY 
  * NOT recommended for large number of arrays/processes and/or event types
@@ -176,7 +176,7 @@ char *foutname="adjust.ed", fdstrname[15], finname[8];
    /* print out the distribution first */
    
    for(i=0;i<events*2;i++){
-      base = ABS((long int)times[1]); base -=1;
+      base = GA_ABS((long int)times[1]); base -=1;
       flag = ((long int)times[1]) < 0 ? -1 : 1; 
       for(k=base;k<7+base;k++)fprintf(fout,"%d ",*(record+k)); 
       fprintf(fout,"%d ",flag);
@@ -258,8 +258,8 @@ long int ia,  ie;
         }
         if(ia)printf(" %6d  %12d \t     %14g %14g\n",a-GA_OFFSET,ia, ta, ta/ia);
      }
-     total_cm += t; total_cp += MAX(tl-t,0.);
-     printf(" Time in GAs:      %14g\n Time outside GAs: %14g\n\n",t,MAX(tl-t,0.));
+     total_cm += t; total_cp += GA_MAX(tl-t,0.);
+     printf(" Time in GAs:      %14g\n Time outside GAs: %14g\n\n",t,GA_MAX(tl-t,0.));
   }
 
   printf("\n Total CPU time used [node-seconds]: \n");

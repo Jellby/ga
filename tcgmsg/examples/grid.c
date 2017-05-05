@@ -25,9 +25,9 @@ extern char *malloc();
 #endif
 extern void exit();
 
-#define MAX(a,b) (((a)>(b)) ? (a) : (b))
-#define MIN(a,b) (((a)<(b)) ? (a) : (b))
-#define ABS(a)   (((a)>=0 ) ? (a) : -(a))
+#define TCG_MAX(a,b) (((a)>(b)) ? (a) : (b))
+#define TCG_MIN(a,b) (((a)<(b)) ? (a) : (b))
+#define TCG_ABS(a)   (((a)>=0 ) ? (a) : -(a))
 
 #define LO -3.1415926535       /* Phsyical dimensions   */
 #define HI  3.1415926535
@@ -318,8 +318,8 @@ void PlotGrid(grid, ngrid, ncols, nrows)
     for (i=0; i<ncols; i++)
       for (j=0; j<nrows; j++) {
 	value = VALUE(grid[i][j]);
-	value = MIN(value, 63);
-	value = MAX(value, 0);
+	value = TCG_MIN(value, 63);
+	value = TCG_MAX(value, 0);
 	*temp++ = (unsigned char) value;
       }
     break;
@@ -328,8 +328,8 @@ void PlotGrid(grid, ngrid, ncols, nrows)
     for (i=0; i<ncols; i++)
       for (j=0; j<nrows; j++) {
 	value = VALUE(grid[i][j] - Solution(MAPCOL(i), MAPROW(j)));
-	value = MIN(value, 63);
-	value = MAX(value, 0);
+	value = TCG_MIN(value, 63);
+	value = TCG_MAX(value, 0);
 	*temp++ = (unsigned char) value;
       }
     break;
@@ -347,8 +347,8 @@ void PlotGrid(grid, ngrid, ncols, nrows)
 	residual = grid[i+1][j] + grid[i-1][j] + grid[i][j+1] +
 	  grid[i][j-1] - 4.0*grid[i][j];
 	value = VALUE(residual*factor);
-	value = MIN(value, 63);
-	value = MAX(value, 0);
+	value = TCG_MIN(value, 63);
+	value = TCG_MAX(value, 0);
 	*temp++ = (unsigned char) value;
       }
     }
@@ -466,7 +466,7 @@ double Operate(grid, ncols, nrows, ngrid, do_sums)
       new = 0.25 * (ggp[j] + ggm[j] + gg[j-1] + gg[j+1]);
       new = new + omega*(new - gg[j]);
       diff = new - gg[j];
-      residual += ABS(diff);
+      residual += TCG_ABS(diff);
       gg[j] = new;
     }
   }
@@ -490,7 +490,7 @@ double Operate(grid, ncols, nrows, ngrid, do_sums)
       new = 0.25 * (ggp[j] + ggm[j] + gg[j-1] + gg[j+1]);
       new = new + omega*(new - gg[j]);
       diff = new - gg[j];
-      residual += ABS(diff);
+      residual += TCG_ABS(diff);
       gg[j] = new;
     }
   }
@@ -587,10 +587,10 @@ void Solve(grid, ncols, nrows, ngrid, niter, nprint, thresh)
   long iter, do_sums, nsums;
   double residual, error;
 #ifdef PLOT
-  long nplots = MAX(5, ngrid/10);  /* Only plot when have changed a lot */
+  long nplots = TCG_MAX(5, ngrid/10);  /* Only plot when have changed a lot */
 #endif
 
-  nsums = MIN(10, nprint);     /* Need sums whenever we print */
+  nsums = TCG_MIN(10, nprint);     /* Need sums whenever we print */
   if (nprint%nsums)
     nprint= nprint + nsums - (nprint%nsums); /* Make nprint a multiple 
 					        of nsums */
@@ -714,9 +714,9 @@ void Partition(ngrid, pncols, pnrows)
   long row_chunk = (ngrid-1) / nrow_P;
   long row_extra = (ngrid-1) - row_chunk*nrow_P;
 
-  col_low = my_col_P*col_chunk + MIN(my_col_P,col_extra); /* Col of top LHS */
+  col_low = my_col_P*col_chunk + TCG_MIN(my_col_P,col_extra); /* Col of top LHS */
 
-  row_low = my_row_P*row_chunk + MIN(my_row_P,row_extra); /* Row of top LHS */
+  row_low = my_row_P*row_chunk + TCG_MIN(my_row_P,row_extra); /* Row of top LHS */
 
   *pncols = col_chunk + ( (my_col_P<col_extra) ? 1 : 0 ) + 1;
   *pnrows = row_chunk + ( (my_row_P<row_extra) ? 1 : 0 ) + 1;
@@ -768,8 +768,8 @@ int main(argc, argv)
   ParseArguments(argc, argv, 
 		 &maxgrid, &niter, &nprint, &nlevel, &thresh);
 
-  ngrid1 = MAX(ncol_P,maxgrid>>(nlevel-1));
-  ngrid1 = MAX(nrow_P,ngrid1);                 /* Size of first grid */
+  ngrid1 = TCG_MAX(ncol_P,maxgrid>>(nlevel-1));
+  ngrid1 = TCG_MAX(nrow_P,ngrid1);                 /* Size of first grid */
   maxgrid = ngrid1<<(nlevel-1);                /* Actual size of final grid */
 
   if (!(buffer = (double *) malloc((unsigned) (sizeof(double)*(maxgrid+1)))))

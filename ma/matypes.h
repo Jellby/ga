@@ -24,11 +24,11 @@ typedef Integer Boolean;	/* MA_TRUE or MA_FALSE */
 typedef char * Pointer;		/* generic pointer */
 
 /* not all C compilers support long double */
-#ifdef UseIntrinsicLongDouble
-    typedef long double MA_LongDouble;
-#else /* UseIntrinsicLongDouble */
-    typedef struct {double dummy[2];} MA_LongDouble;
-#endif /* UseIntrinsicLongDouble */
+#ifdef HAVE_LONG_DOUBLE
+typedef long double MA_LongDouble;
+#else /* HAVE_LONG_DOUBLE */
+typedef struct {double dummy[2];} MA_LongDouble;
+#endif /* HAVE_LONG_DOUBLE */
 
 /* no C compilers support complex types */
 typedef struct {float dummy[2];} MA_SingleComplex;

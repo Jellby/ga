@@ -220,7 +220,7 @@ int lo,hi,ld;
        if(!m_dvec) GA_Error("create mirrored dvec failed",na);
     }
 
-    ga_vecptr = (double *)GA_Malloc_local(na*sizeof(double));
+    ga_vecptr = (double *)ARMCI_Malloc_local(na*sizeof(double));
 
     
     if(me==0)fclose(fd);

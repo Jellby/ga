@@ -17,7 +17,7 @@ c vector boxes lack arithmetic precision
 #include "mafdecls.fh"
 #include "global.fh"
 #include "testutil.fh"
-#include "tcgmsg.fh"
+c#include "tcgmsg.fh"
       integer heap, stack, fudge, ma_heap, me
       integer nmax, DIM, nwidth, MAXPROC, nloop
       parameter (nmax = 4, DIM = 2, nwidth = 2, MAXPROC = 2000)
@@ -37,8 +37,18 @@ c
 c***  Intitialize a message passing library
 c
 #ifdef MPI
+#include "mpif.h"
       integer ierr
+#ifdef DCMF
+      integer required, provided
+      required=MPI_THREAD_MULTIPLE
+      call mpi_init_thread(required, provided, ierr)
+      if (provided.ne.MPI_THREAD_MULTIPLE) then
+        call ga_error('provided.ne.MPI_THREAD_MULTIPLE',provided)
+      endif
+#else
       call mpi_init(ierr)
+#endif
 #else
       call pbeginf
 #endif
@@ -183,6 +193,7 @@ c
 c      go to 122
 c      update array using the non-blocking directional update
 c
+      t1 = util_timer()
       k = 0
       do i = -1, 1
         mask(1) = i
@@ -201,6 +212,7 @@ c
         call nga_nbwait(handles(i))
       end do
       call ga_sync
+      t1 = util_timer() - t1
 
       if (me.eq.0) then
         write(6,*) '*'

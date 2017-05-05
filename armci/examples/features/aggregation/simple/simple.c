@@ -94,9 +94,9 @@
 
 /***************************** macros ************************/
 #define COPY(src, dst, bytes) memcpy((dst),(src),(bytes))
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) <0) ? -(a) : (a))
+#define ARMCI_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define ARMCI_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define ARMCI_ABS(a) (((a) <0) ? -(a) : (a))
 
 /***************************** global data *******************/
 int me, nproc;
@@ -311,7 +311,7 @@ void test_aggregate(int dryrun) {
     /* Verify */
     if(!(me==0))
       for(j=0; j<elems[1]; j++) {
-	if( ABS(ddst_put[me][j]-j*1.001) > 0.1) {
+	if( ARMCI_ABS(ddst_put[me][j]-j*1.001) > 0.1) {
 	  ARMCI_Error("aggregate put failed...1", 0);
 	}
       }
@@ -321,7 +321,7 @@ void test_aggregate(int dryrun) {
     if(me==0) {
       for(i=1; i<nproc; i++) {
 	for(j=0; j<elems[1]; j++) {
-	  if( ABS(ddst_get[me][i*elems[1]+j]-j*1.001*(i+1)) > 0.1) {
+	  if( ARMCI_ABS(ddst_get[me][i*elems[1]+j]-j*1.001*(i+1)) > 0.1) {
 	    ARMCI_Error("aggregate get failed...1", 0);
 	  }
 	}

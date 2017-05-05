@@ -510,7 +510,7 @@ Integer bndim, bdims[MAXDIM];
      if(type != Type) ga_error("type not correct", *g_b);
      nga_distribution_(g_b, &me, lo, hi);
      if(lo[0]>0){
-	nga_access_ptr(g_b, lo, hi, &ptr_b, ld);
+        nga_access_ptr(g_b, lo, hi, &ptr_b, ld);
         if (ga_has_ghosts_(g_b)) {
           GET_ELEMS_W_GHOSTS(ndim,lo,hi,ld,&elemsb);
         } else {
@@ -734,12 +734,6 @@ SingleComplex sum;
         return sum;
 }
 
-
-#if defined(CRAY) || defined(WIN32) ||defined(HITACHI)
-# define gai_zdot_ GAI_ZDOT
-#elif defined(F2C2_)
-# define gai_zdot_ gai_zdot__
-#endif
 void FATR gai_zdot_(g_a, g_b, retval)
         Integer *g_a, *g_b;
         DoubleComplex *retval;  
@@ -747,16 +741,16 @@ void FATR gai_zdot_(g_a, g_b, retval)
      gai_dot(C_DCPL, g_a, g_b, retval);
 }
 
-#if defined(CRAY) || defined(WIN32) ||defined(HITACHI)
-# define gai_cdot_ GAI_CDOT
-#elif defined(F2C2_)
-# define gai_cdot_ gai_cdot__
-#endif
+
 void FATR gai_cdot_(g_a, g_b, retval)
         Integer *g_a, *g_b;
         SingleComplex *retval;  
 {
+#if defined(NO_REAL_32)
+     gai_dot(C_DCPL, g_a, g_b, retval);
+#else
      gai_dot(C_SCPL, g_a, g_b, retval);
+#endif
 }
 
 
@@ -821,23 +815,23 @@ void FATR ga_scale_(Integer *g_a, void* alpha)
         for(i=0;i<elems;i++) lla[i]  *= *(long long*)alpha;
         break;
         case C_DCPL:
-           ca = (DoubleComplex*)ptr;
-           scale= *(DoubleComplex*)alpha;
-           for(i=0;i<elems;i++){
-               DoubleComplex val = ca[i]; 
-               ca[i].real = scale.real*val.real  - val.imag * scale.imag;
-               ca[i].imag = scale.imag*val.real  + val.imag * scale.real;
-           }
-           break;
+        ca = (DoubleComplex*)ptr;
+        scale= *(DoubleComplex*)alpha;
+        for(i=0;i<elems;i++){
+          DoubleComplex val = ca[i]; 
+          ca[i].real = scale.real*val.real  - val.imag * scale.imag;
+          ca[i].imag = scale.imag*val.real  + val.imag * scale.real;
+        }
+        break;
         case C_SCPL:
-           cfa = (SingleComplex*)ptr;
-           cfscale= *(SingleComplex*)alpha;
-           for(i=0;i<elems;i++){
-               SingleComplex val = cfa[i]; 
-               cfa[i].real = cfscale.real*val.real  - val.imag * cfscale.imag;
-               cfa[i].imag = cfscale.imag*val.real  + val.imag * cfscale.real;
-           }
-           break;
+        cfa = (SingleComplex*)ptr;
+        cfscale= *(SingleComplex*)alpha;
+        for(i=0;i<elems;i++){
+          SingleComplex val = cfa[i]; 
+          cfa[i].real = cfscale.real*val.real  - val.imag * cfscale.imag;
+          cfa[i].imag = cfscale.imag*val.real  + val.imag * cfscale.real;
+        }
+        break;
         case C_DBL:
         da = (double*)ptr;
         for(i=0;i<elems;i++) da[i] *= *(double*)alpha;

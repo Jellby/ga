@@ -22,12 +22,12 @@ using namespace std;
 #define OP_SCALE_ROWS           9
 #define OP_SCALE_COLS           10
 
-#define ABS(a)   (((a) >= 0) ? (a) : (-(a)))
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define GA_ABS(a)   (((a) >= 0) ? (a) : (-(a)))
+#define GA_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define GA_MIN(a,b) (((a) <= (b)) ? (a) : (b))
 
 # define THRESH 1e-5
-#define MISMATCHED(x,y) ABS((x)-(y))>=THRESH
+#define MISMATCHED(x,y) GA_ABS((x)-(y))>=THRESH
 
 
 void  
@@ -988,17 +988,17 @@ test_norm_infinity (GA::GlobalArray * g_a) {
   switch (type)
     {
     case C_INT:
-      result = (double) ABS (ival);
+      result = (double) GA_ABS(ival);
       break;
     case C_LONG:
-      result = (double) ABS (lval);
+      result = (double) GA_ABS(lval);
       break;
     case C_FLOAT:
-      result = (double) ABS (fval);
+      result = (double) GA_ABS(fval);
       break;
 
     case C_DBL:
-      result = ABS (dval);
+      result = GA_ABS(dval);
       break;
 
     case C_DCPL:
@@ -1072,17 +1072,17 @@ test_norm1 (GA::GlobalArray * g_a)
   switch (type)
     {
     case C_INT:
-      result = (double) ABS (ival);
+      result = (double) GA_ABS(ival);
       break;
     case C_LONG:
-      result = (double) ABS (lval);
+      result = (double) GA_ABS(lval);
       break;
     case C_FLOAT:
-      result = (double) ABS (fval);
+      result = (double) GA_ABS(fval);
       break;
 
     case C_DBL:
-      result = ABS (dval);
+      result = GA_ABS(dval);
       break;
 
     case C_DCPL:
@@ -1498,7 +1498,7 @@ test_shift_diagonal (GA::GlobalArray *g_a) {
 
   g_a->inquire (&type, &ndim, dims);
 
-  dim = MIN (dims[0], dims[1]);
+  dim = GA_MIN(dims[0], dims[1]);
 
   dcval.real = -2.0;
   dcval.imag = -0.0;
@@ -1632,7 +1632,7 @@ do_work (int type, int op) {
     case OP_SET_DIAGONAL:
       g_a = GA::SERVICES.createGA (type, 2, dims, (char *)"A", NULL);
       /*find out the diagonal length of the matrix A */
-      vdim = MIN (dims[0], dims[1]);
+      vdim = GA_MIN(dims[0], dims[1]);
       g_v = GA::SERVICES.createGA (type, 1, &vdim, (char *)"V", NULL);
       test_set_diagonal (g_a, g_v);
       g_a->destroy ();
@@ -1641,7 +1641,7 @@ do_work (int type, int op) {
     case OP_ADD_DIAGONAL:
       g_a = GA::SERVICES.createGA (type, 2, dims, (char *)"A", NULL);
       /*find out the diagonal length of the matrix A */
-      vdim = MIN (dims[0], dims[1]);
+      vdim = GA_MIN(dims[0], dims[1]);
       g_v = GA::SERVICES.createGA (type, 1, &vdim, (char *)"V", NULL);
       test_add_diagonal (g_a, g_v);
       g_a->destroy ();
@@ -1650,7 +1650,7 @@ do_work (int type, int op) {
     case OP_GET_DIAGONAL:
       g_a = GA::SERVICES.createGA (type, 2, dims, (char *)"A", NULL);
       /*find out the diagonal length of the matrix A */
-      vdim = MIN (dims[0], dims[1]);
+      vdim = GA_MIN(dims[0], dims[1]);
       g_v = GA::SERVICES.createGA (type, 1, &vdim, (char *)"V", NULL);
       test_get_diagonal (g_a, g_v);
       g_a->destroy ();

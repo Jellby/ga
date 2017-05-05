@@ -44,16 +44,25 @@ c vector boxes lack arithmetic precision
       logical status, ltest
       parameter (heap=400*400*4, fudge=100, stack=400*400*4)
 c
-      mdim = nmax
-c     
 c***  Intitialize a message passing library
 c
 #ifdef MPI
       integer ierr
+#ifdef DCMF
+#include "mpif.h"
+      integer required, provided
+      required=MPI_THREAD_MULTIPLE
+      call mpi_init_thread(required, provided, ierr)
+      if (provided.ne.MPI_THREAD_MULTIPLE) then
+        call ga_error('provided.ne.MPI_THREAD_MULTIPLE',provided)
+      endif
+#else
       call mpi_init(ierr)
+#endif
 #else
       call pbeginf
 #endif
+      mdim = nmax
 c
 c***  Initialize GA
 c

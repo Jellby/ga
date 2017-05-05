@@ -21,7 +21,7 @@ void IGOP_(ptype, x, pn, op)
 {
 long *work   = (long *) gop_work;
 long nleft  = *pn;
-long buflen = MIN(nleft,IGOP_BUF_SIZE); /* Try to get even sized buffers */
+long buflen = TCG_MIN(nleft,IGOP_BUF_SIZE); /* Try to get even sized buffers */
 long nbuf   = (nleft-1) / buflen + 1;
 long n;
 
@@ -40,13 +40,13 @@ long n;
 
   if (strncmp(op,"abs",3) == 0) {
     n = *pn;
-    while(n--) x[n] = ABS(x[n]);
+    while(n--) x[n] = TCG_ABS(x[n]);
   }
 
   while (nleft) {
     int root = 0; 
     int ierr = MPI_SUCCESS;
-    int ndo = MIN(nleft, buflen);
+    int ndo = TCG_MIN(nleft, buflen);
 
     if (strncmp(op,"+",1) == 0)
       ierr   = MPI_Reduce(x, work, ndo, MPI_LONG, MPI_SUM, root, TCGMSG_Comm);
@@ -86,7 +86,7 @@ void DGOP_(ptype, x, pn, op)
 {
 double *work=  gop_work;
 long nleft  = *pn;
-long buflen = MIN(nleft,DGOP_BUF_SIZE); /* Try to get even sized buffers */
+long buflen = TCG_MIN(nleft,DGOP_BUF_SIZE); /* Try to get even sized buffers */
 long nbuf   = (nleft-1) / buflen + 1;
 long n;
 
@@ -97,13 +97,13 @@ long n;
 
   if (strncmp(op,"abs",3) == 0) {
     n = *pn;
-    while(n--) x[n] = ABS(x[n]);
+    while(n--) x[n] = TCG_ABS(x[n]);
   }
 
   while (nleft) {
     int root = 0; 
     int ierr = MPI_SUCCESS;
-    int ndo = MIN(nleft, buflen);
+    int ndo = TCG_MIN(nleft, buflen);
 
     if (strncmp(op,"+",1) == 0)
       ierr   = MPI_Reduce(x, work, ndo, TCG_DBL, MPI_SUM, root, TCGMSG_Comm);

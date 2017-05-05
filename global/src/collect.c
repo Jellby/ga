@@ -87,7 +87,7 @@ void ga_msg_sync_()
     if(p_grp>0)
        armci_msg_group_barrier(&(PGRP_LIST[p_grp].group));
     else
-       MPI_Barrier(MPI_COMM_WORLD);
+       armci_msg_barrier();
 #else
      long type=GA_TYPE_SYN;
 #  ifdef LAPI
@@ -109,15 +109,11 @@ void ga_msg_pgroup_sync_(Integer *grp_id)
 #     endif
     }
     else {
-#     ifdef MPI       
-        MPI_Barrier(MPI_COMM_WORLD);
+#     if defined(MPI) || defined(LAPI)
+       armci_msg_barrier();
 #     else
-        long type=GA_TYPE_SYN;
-#       ifdef LAPI
-          armci_msg_barrier();
-#       else
-          SYNCH_(&type);
-#       endif
+       long type=GA_TYPE_SYN;
+       SYNCH_(&type);
 #    endif
     }
 }
@@ -457,6 +453,27 @@ void ga_igop(type, x, n, op)
 #endif
 }
 
+void ga_c_igop(type, x, n, op)
+     Integer type, n;
+     int *x;
+     char *op;
+{
+     Integer p_grp = ga_pgroup_get_default_();
+            _ga_sync_begin = 1; _ga_sync_end=1; /*remove any previous masking*/
+#if defined(ARMCI_COLLECTIVES) || defined(MPI)
+            if (p_grp > 0) {
+              ga_pgroup_igop(p_grp,type,x,n,op);
+            } else {
+              armci_msg_igop(x, (int)n, op);
+            }
+#else
+#   ifdef EXT_INT
+            ga_error_("TCGMSG IGOP is not supported on 64 bit platforms",0);
+#   endif
+            IGOP_(&type, (Integer*)x, &n, op);
+#endif
+}
+
 
 void ga_pgroup_fgop(p_grp, type, x, n, op)
      Integer type, n, p_grp;
@@ -501,7 +518,7 @@ void ga_fgop(type, x, n, op)
 void ga_gop(Integer type, void *x, Integer n, char *op)
 {
     Integer ga_type_gop = GA_TYPE_GOP; 
-    Integer *ix=NULL;
+    int *ix=NULL;
     DoublePrecision *dx=NULL;
     float *fx=NULL;
     long *lx=NULL;
@@ -509,8 +526,8 @@ void ga_gop(Integer type, void *x, Integer n, char *op)
     
     switch (type){
        case C_INT:
-          ix = (Integer*)x;
-          ga_igop(ga_type_gop, ix, n, op);
+          ix = (int*)x;
+          ga_c_igop(ga_type_gop, ix, n, op);
           break;
 
        case C_DCPL:

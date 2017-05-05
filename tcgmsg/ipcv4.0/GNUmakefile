@@ -14,9 +14,9 @@ OBJ =  brdcst.o    nodeid.o    setdbg.o                          \
           xdrstuff.o  waitcom.o   random.o    niceftn.o \
 	  mdtob.o     mitob.o     mitod.o   \
 	  mdtoi.o     globalop.o  evlog.o   \
-          evon.o      pfilecopy.o 
+          evon.o      pfilecopy.o  capi.o
 
- HEADERS =  msgtypesf.h msgtypesc.h sndrcv.h srftoc.h ../tcgmsg.fh
+ HEADERS =  msgtypesf.h msgtypesc.h sndrcv.h srftoc.h ../tcgmsg.fh tcgmsg.h
 
   LIB_TARGETS = *.x *.o parallel msgtypesf.h msgtf.h testf.f
   INCDIR      = ../../include
@@ -125,7 +125,7 @@ SYSTEM_V += DECOSF CONVEX-SPP LINUX64 MACX
 ifeq ($(TARGET),$(findstring $(TARGET),$(SYSTEM_V)))
      LIB_DEFINES += -DSYSV -DSHMEM
 endif
-NEED_MEMALIGN = DECOSF CRAY-T3E CRAY-YMP HPUX HPUX64 LAPI IBM IBM64 NEC MACX
+NEED_MEMALIGN = DECOSF CRAY-T3E CRAY-YMP HPUX HPUX64 LAPI IBM IBM64 NEC MACX MACX64
 
 ifeq ($(TARGET),$(findstring $(TARGET),$(NEED_MEMALIGN)))
         OBJ+= memalign.o
@@ -136,8 +136,8 @@ ifdef GA_USE_VAMPIR
    OBJ += tcgmsg_vampir.o ga_vt.o
 endif
          
-include ../../armci/config/makecoms.h
-include ../../armci/config/makemp.h
+include ../../$(ARMCI_DIR_NAME)/config/makecoms.h
+include ../../$(ARMCI_DIR_NAME)/config/makemp.h
 include ../../config/makefile.h
 include ../../config/makelib.h
 

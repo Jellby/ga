@@ -7,7 +7,7 @@
 /* end_generated_IBM_copyright_prolog                               */
 /********************************************************************/
 
-/* $Id$ */
+/* $Id: bgml.c 5070 2009-07-10 17:57:46Z manoj $ */
 
 #include <assert.h>
 #include "bgml.h"

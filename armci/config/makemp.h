@@ -151,6 +151,20 @@ ifeq ($(MSG_COMMS),MPI)
   endif
   MP_LIBS += $(MPI_LIB_NAME)
   MP_DEFINES += -DMPI
+else
+  ifeq (y,$(findstring y,$(USE_MPI)))
+    ifdef MPI_INCLUDE
+      MP_TMP_INCLUDES = $(MPI_INCLUDE)
+    endif
+    ifdef MPI_LIB
+      MP_LIBS += -L$(MPI_LIB)
+    endif
+    ifdef LIBMPI
+        MPI_LIB_NAME = $(LIBMPI)
+    endif
+    MP_LIBS += $(MPI_LIB_NAME)
+    MP_DEFINES += -DMPI
+  endif
 endif
 #
 #

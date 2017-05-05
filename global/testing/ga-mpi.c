@@ -79,6 +79,9 @@ int root=0, grp_me=-1;
      if(ihi-ilo+1 >0){
         max_row=(DoublePrecision*)malloc(sizeof(DoublePrecision)*(ihi-ilo+1));
         if (!max_row) GA_Error("malloc 3 failed",(ihi-ilo+1));
+        for (i=0; i<(ihi-ilo+1); i++) {
+            max_row[i] = 0.0;
+        }
      }
      NGA_Proc_topology(g_a, me, coord);  /* block coordinates */
      prow = coord[0];
@@ -152,7 +155,14 @@ int heap=20000, stack=20000;
 int me, nproc;
 
 #ifdef MPI
-    MPI_Init(&argc, &argv);                       /* initialize MPI */
+#ifdef DCMF
+    int desired = MPI_THREAD_MULTIPLE;
+    int provided;
+    MPI_Init_thread(&argc, &argv, desired, &provided);
+    if ( provided != MPI_THREAD_MULTIPLE ) printf("provided != MPI_THREAD_MULTIPLE\n");
+#else
+  MPI_Init (&argc, &argv);	/* initialize MPI */
+#endif
 #else
     PBEGIN_(argc, argv);                        /* initialize TCGMSG */
 #endif

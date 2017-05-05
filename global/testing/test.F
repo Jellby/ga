@@ -17,9 +17,14 @@ c vector boxes lack arithmetic precision
 c#define NEW_API
 c#define MIRROR
 #define GA3
-c#define NGA_GATSCAT
+#define NGA_GATSCAT
 c#define BLOCK_CYCLIC
 c#define USE_SCALAPACK_DISTR
+c#define USE_RESTRICTED
+
+#ifdef USE_RESTRICTED
+#  define NEW_API
+#endif
 
 #define MEM_INC 1000
 
@@ -43,8 +48,18 @@ c
 c***  Intitialize a message passing library
 c
 #ifdef MPI
+#include "mpif.h"
       integer ierr
+#ifdef DCMF
+      integer required, provided
+      required=MPI_THREAD_MULTIPLE
+      call mpi_init_thread(required, provided, ierr)
+      if (provided.ne.MPI_THREAD_MULTIPLE) then
+        call ga_error('provided.ne.MPI_THREAD_MULTIPLE',provided)
+      endif
+#else
       call mpi_init(ierr)
+#endif
 #else
       call pbeginf
 #endif
@@ -62,6 +77,9 @@ c     we can also use GA_set_memory_limit BEFORE first ga_create call
 c
       ma_heap = heap/nproc + fudge 
       ma_heap = 2*ma_heap
+#ifdef USE_RESTRICTED
+      ma_heap = 2*ma_heap
+#endif
       call GA_set_memory_limit(util_mdtob(ma_heap))
 c
       if(ga_nodeid().eq.0)then
@@ -125,6 +143,7 @@ c
       endif
 
       call check_dbl()
+#if 1
 c
 c***  Check support for single precision complex arrays
 c
@@ -184,6 +203,7 @@ c***  Check if memory limits are enforced
 c
       call check_mem(util_mdtob(ma_heap*ga_nnodes()))
 c
+#endif
       if(me.eq.0) call ga_print_stats()
       if(me.eq.0) print *,' ' 
       if(me.eq.0) print *,'All tests successful ' 
@@ -239,6 +259,10 @@ c
       double precision nwords
       logical found
       integer lprocs,inode,iproc,nnodes,lproc
+#ifdef USE_RESTRICTED
+      integer num_rstrctd
+      integer rstrctd_list(maxproc/2)
+#endif
 #ifdef BLOCK_CYCLIC
       integer block_size(2), proc_grid(2)
 #endif
@@ -252,6 +276,13 @@ c
       nnodes = ga_cluster_nnodes()
       iproc = mod(me,lprocs)
       nloop = Min(maxloop,n)
+#ifdef USE_RESTRICTED
+      num_rstrctd = nproc/2
+      if (num_rstrctd.eq.0) num_rstrctd = 1
+      do i = 1, num_rstrctd
+        rstrctd_list(i) = (num_rstrctd/2) + i-1
+      end do
+#endif
 #ifdef BLOCK_CYCLIC
       block_size(1) = 32
       block_size(2) = 32
@@ -291,6 +322,9 @@ c     call setdbg(1)
       dims(2) = n
       call ga_set_data(g_a,ndim,dims,MT_DBL)
       call ga_set_array_name(g_a,'a')
+#ifdef USE_RESTRICTED
+      call ga_set_restricted(g_a, rstrctd_list, num_rstrctd)
+#endif
 #ifdef BLOCK_CYCLIC
 #ifdef USE_SCALAPACK_DISTR
       call ga_set_block_cyclic_proc_grid(g_a,block_size,proc_grid)
@@ -484,6 +518,7 @@ c
 c
 c     Each node accumulates into disjoint sections of the array
 c
+#if 1
       if (me .eq. 0) then
          write(6,9) 
  9       format('> Checking accumulate ... ')
@@ -609,6 +644,7 @@ c
            write(6,*)
          endif
       endif
+#endif
 c
 c     Check the ga_add function
 c
@@ -1156,6 +1192,10 @@ c
       double precision nwords
       complex   x, sum1, sum2, factor
       integer lprocs, inode, iproc, lproc
+#ifdef USE_RESTRICTED
+      integer num_rstrctd
+      integer rstrctd_list(maxproc/2)
+#endif
       intrinsic int
       iran(i) = int(util_drand(0)*real(i)) + 1
 c
@@ -1166,6 +1206,13 @@ c
       nnodes = ga_cluster_nnodes()
       iproc = mod(me,lprocs)
       nloop = Min(maxloop,n)
+#ifdef USE_RESTRICTED
+      num_rstrctd = nproc/2
+      if (num_rstrctd.eq.0) num_rstrctd = 1
+      do i = 1, num_rstrctd
+        rstrctd_list(i) = (num_rstrctd/2) + i-1
+      end do
+#endif
 c
 c     a() is a local copy of what the global array should start as
 c
@@ -1193,6 +1240,9 @@ c     call setdbg(1)
       g_a = ga_create_handle()
       call ga_set_data(g_a,ndim,dims,MT_SCPL)
       call ga_set_array_name(g_a,'a')
+#ifdef USE_RESTRICTED
+      call ga_set_restricted(g_a, rstrctd_list, num_rstrctd)
+#endif
 #  ifdef MIRROR
       p_mirror = ga_pgroup_get_mirror()
       call ga_set_pgroup(g_a,p_mirror)
@@ -1724,6 +1774,10 @@ c
       double precision nwords
       double complex   x, sum1, sum2, factor
       integer lprocs, inode, iproc, lproc
+#ifdef USE_RESTRICTED
+      integer num_rstrctd
+      integer rstrctd_list(maxproc/2)
+#endif
 #ifdef BLOCK_CYCLIC
       integer block_size(2), proc_grid(2)
 #endif
@@ -1737,6 +1791,13 @@ c
       nnodes = ga_cluster_nnodes()
       iproc = mod(me,lprocs)
       nloop = Min(maxloop,n)
+#ifdef USE_RESTRICTED
+      num_rstrctd = nproc/2
+      if (num_rstrctd.eq.0) num_rstrctd = 1
+      do i = 1, num_rstrctd
+        rstrctd_list(i) = (num_rstrctd/2) + i-1
+      end do
+#endif
 #ifdef BLOCK_CYCLIC
       block_size(1) = 32
       block_size(2) = 32
@@ -1774,6 +1835,9 @@ c     call setdbg(1)
       g_a = ga_create_handle()
       call ga_set_data(g_a,ndim,dims,MT_DCPL)
       call ga_set_array_name(g_a,'a')
+#ifdef USE_RESTRICTED
+      call ga_set_restricted(g_a, rstrctd_list, num_rstrctd)
+#endif
 #ifdef BLOCK_CYCLIC
 #ifdef USE_SCALAPACK_DISTR
       call ga_set_block_cyclic_proc_grid(g_a,block_size,proc_grid)
@@ -2314,6 +2378,10 @@ c
       parameter (maxproc = 4096)
       double precision crap, sum1, real
       integer buf
+#ifdef USE_RESTRICTED
+      integer num_rstrctd
+      integer rstrctd_list(maxproc/2)
+#endif
 #ifdef BLOCK_CYCLIC
       integer block_size(2), proc_grid(2)
       integer map(4,maxproc), block_list(maxproc), found, np,k
@@ -2330,6 +2398,13 @@ c
       lprocs = ga_cluster_nprocs(inode)
       nnodes = ga_cluster_nnodes()
       iproc = mod(me,lprocs)
+#ifdef USE_RESTRICTED
+      num_rstrctd = nproc/2
+      if (num_rstrctd.eq.0) num_rstrctd = 1
+      do i = 1, num_rstrctd
+        rstrctd_list(i) = (num_rstrctd/2) + i-1
+      end do
+#endif
 #ifdef BLOCK_CYCLIC
       block_size(1) = 32
       block_size(2) = 32
@@ -2364,6 +2439,9 @@ c
       g_a = ga_create_handle()
       call ga_set_data(g_a,ndim,dims,MT_INT)
       call ga_set_array_name(g_a,'a')
+#ifdef USE_RESTRICTED
+      call ga_set_restricted(g_a, rstrctd_list, num_rstrctd)
+#endif
 #ifdef BLOCK_CYCLIC
 #ifdef USE_SCALAPACK_DISTR
       call ga_set_block_cyclic_proc_grid(g_a,block_size,proc_grid)
@@ -2833,6 +2911,10 @@ c---------------------------------------------------------------------
       real x, sum1, sum2
       logical found
       integer lprocs, inode, iproc, lproc
+#ifdef USE_RESTRICTED
+      integer num_rstrctd
+      integer rstrctd_list(maxproc/2)
+#endif
 #ifdef BLOCK_CYCLIC
       integer block_size(2), proc_grid(2)
 #endif
@@ -2846,6 +2928,13 @@ c---------------------------------------------------------------------
       nnodes = ga_cluster_nnodes()
       iproc = mod(me,lprocs)
       nloop = Min(maxloop,n)
+#ifdef USE_RESTRICTED
+      num_rstrctd = nproc/2
+      if (num_rstrctd.eq.0) num_rstrctd = 1
+      do i = 1, num_rstrctd
+        rstrctd_list(i) = (num_rstrctd/2) + i-1
+      end do
+#endif
 #ifdef BLOCK_CYCLIC
       block_size(1) = 32
       block_size(2) = 32
@@ -2882,6 +2971,9 @@ c
       g_a = ga_create_handle()
       call ga_set_data(g_a,ndim,dims,MT_REAL)
       call ga_set_array_name(g_a,'a')
+#ifdef USE_RESTRICTED
+      call ga_set_restricted(g_a, rstrctd_list, num_rstrctd)
+#endif
 #ifdef BLOCK_CYCLIC
 #ifdef USE_SCALAPACK_DISTR
       call ga_set_block_cyclic_proc_grid(g_a,block_size,proc_grid)

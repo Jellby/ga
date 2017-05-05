@@ -1,23 +1,24 @@
-*README*                                       Last change: 2005 Jan 11
+*README*                                       
+Last change: 2009 Jan 11
 
-                                   ARMCI
-                   Aggregate Remote Memory Copy Interface
-             http://www.emsl.pnl.gov:2080/docs/parsoft/armci
+ARMCI
+Aggregate Remote Memory Copy Interface
+http://www.emsl.pnl.gov:2080/docs/parsoft/armci
 
- This document lists the platforms supported by ARMCI and operating system
- configuration/settings for these platform. Additional limited documentation
- is available at ./doc/armci.pdf. Test programs test.c and perf.c are in ./src
- directory. SPLASH LU benchmark it in ./examples directory.
- Contact info for bugs, questions etc. email: parsoft-support@emsl.pnl.gov
+This document lists the platforms supported by ARMCI and operating system
+configuration/settings for these platform. Additional limited documentation
+is available at ./doc/armci.pdf. Test programs test.c and perf.c are in ./src
+directory. SPLASH LU benchmark it in ./examples directory.
+Contact info for bugs, questions etc. email: parsoft-support@emsl.pnl.gov
 
- Index
-    1. Supported Platforms
-    2. General Settings
-    3. Building ARMCI on SGI.
-    4. Building ARMCI on IBM.
-    5. Building ARMCI on CRAY.
-    6. Building ARMCI on other platforms
-    7. Platform specific issues/tuning
+Index
+1. Supported Platforms
+2. General Settings
+3. Building ARMCI on SGI.
+4. Building ARMCI on IBM.
+5. Building ARMCI on CRAY.
+6. Building ARMCI on other platforms
+7. Platform specific issues/tuning
 
 =============================================================================
 

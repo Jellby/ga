@@ -14,7 +14,7 @@ LIB_INCLUDES = -I$(INCDIR)
 
 
 ifndef OLD_GA
-include ../../armci/config/makecoms.h
+include ../../$(ARMCI_DIR_NAME)/config/makecoms.h
 endif
 include ../makefile.h
 include ../../config/makefile.h

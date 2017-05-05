@@ -15,7 +15,7 @@ ifeq ($(ARMCI_NETWORK), PORTALS)
 endif
 
 ifndef OLD_GA
-include ../../armci/config/makecoms.h
+include ../../$(ARMCI_DIR_NAME)/config/makecoms.h
 endif
 include ../makefile.h
 include ../../config/makefile.h

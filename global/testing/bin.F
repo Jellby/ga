@@ -12,7 +12,18 @@ c
 c***  Intitialize a message passing library
 c
 #ifdef MPI
-      call mpi_init
+#include "mpif.h"
+      integer ierr
+#ifdef DCMF
+      integer required, provided
+      required=MPI_THREAD_MULTIPLE
+      call mpi_init_thread(required, provided, ierr)
+      if (provided.ne.MPI_THREAD_MULTIPLE) then
+        call ga_error('provided.ne.MPI_THREAD_MULTIPLE',provided)
+      endif
+#else
+      call mpi_init(ierr)
+#endif
 #else
       call pbeginf
 #endif
@@ -141,7 +152,7 @@ C
       integer isum, icount, jcount, itoff
       double precision result
       integer i1, i2, ibin
-      double precision drand
+      double precision util_drand
       logical ga_create_bin
 C
 C
@@ -213,8 +224,8 @@ c
       itoff=nen*nelements
       do i=ilo,ihi
 c        print *, 'rand=',10.0*util_drand(0),
-c    *             nint(10.0*util_drand(0)), util_drand(0),drand(0)
-         ielm1(i-ilo+1)=max(1,min(nbins_max,1+nint(20.0*drand(0))))
+c    *             nint(10.0*util_drand(0)), util_drand(0),util_drand(0)
+         ielm1(i-ilo+1)=max(1,min(nbins_max,1+nint(20.0*util_drand(0))))
       enddo  
       call ssortii(ielm1,ielm1,num,1)
       if(num.gt.0) call nga_put(g_ielm1,ilo,ihi,ielm1,1)

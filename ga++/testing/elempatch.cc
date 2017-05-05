@@ -25,12 +25,12 @@ using namespace std;
 #define C_DCPL MT_C_DCPL
 #define C_LONG MT_C_LONGINT
 #define C_SCPL MT_C_SCPL
-#define ABS(a)   (((a) >= 0) ? (a) : (-(a)))
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define GA_ABS(a)   (((a) >= 0) ? (a) : (-(a)))
+#define GA_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define GA_MIN(a,b) (((a) <= (b)) ? (a) : (b))
 
 #define THRESH 1e-5
-#define MISMATCHED(x,y) ABS((x)-(y))>=THRESH
+#define MISMATCHED(x,y) GA_ABS((x)-(y))>=THRESH
 
 #define OP_ELEM_MULT 0
 #define OP_ELEM_DIV 1
@@ -155,10 +155,10 @@ test_fun (int type, int dim, int OP) {
       if (me == 0)
 	printf ("Testing GA_Abs_value...");
       g_a->absValuePatch (lo, hi);
-      ival = ABS (ival);
-      dval = ABS (dval);
-      fval = ABS (fval);
-      lval = ABS (lval);
+      ival = GA_ABS(ival);
+      dval = GA_ABS(dval);
+      fval = GA_ABS(fval);
+      lval = GA_ABS(lval);
       dcval.real = dcval.real * dcval.real + dcval.imag * dcval.imag;
       dcval.imag = 0.0;
       g_d->fillPatch (lo, hi, val);
@@ -231,10 +231,10 @@ test_fun (int type, int dim, int OP) {
 	printf ("Testin GA_Elem_maximum...");
       g_b->fillPatch (lo, hi, val2);
       g_c->elemMaximumPatch (g_a, lo, hi, g_b, lo, hi, lo, hi);
-      ival = MAX (ival, ival2);
-      dval = MAX (dval, dval2);
-      fval = MAX (fval, fval2);
-      lval = MAX (lval, lval2);
+      ival = GA_MAX(ival, ival2);
+      dval = GA_MAX(dval, dval2);
+      fval = GA_MAX(fval, fval2);
+      lval = GA_MAX(lval, lval2);
       tmp = dcval.real * dcval.real + dcval.imag * dcval.imag;
       tmp2 = dcval2.real * dcval2.real + dcval2.imag * dcval2.imag;
       if (tmp2 > tmp)
@@ -246,10 +246,10 @@ test_fun (int type, int dim, int OP) {
 	printf ("Testin GA_Elem_minimum...");
       g_b->fillPatch (lo, hi, val2);
       g_c->elemMinimumPatch (g_a, lo, hi, g_b, lo, hi, lo, hi);
-      ival = MIN (ival, ival2);
-      dval = MIN (dval, dval2);
-      fval = MIN (fval, fval2);
-      lval = MIN (lval, lval2);
+      ival = GA_MIN(ival, ival2);
+      dval = GA_MIN(dval, dval2);
+      fval = GA_MIN(fval, fval2);
+      lval = GA_MIN(lval, lval2);
       tmp = dcval.real * dcval.real + dcval.imag * dcval.imag;
       tmp2 = dcval2.real * dcval2.real + dcval2.imag * dcval2.imag;
       if (tmp2 < tmp)
@@ -330,7 +330,7 @@ test_fun (int type, int dim, int OP) {
     case C_DCPL:
       r = dcmax.real - dcmin.real;
       im = dcmax.imag - dcmin.imag;
-      result = (int) (ABS (r) + ABS (im));
+      result = (int) (GA_ABS(r) + GA_ABS(im));
       break;
     case C_DBL:
       result = (int) (dmax - dmin);

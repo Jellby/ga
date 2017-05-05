@@ -5,6 +5,7 @@
 #define _ARMCI_P_H
 #include <stdlib.h>
 #include "armci.h"
+#include "parmci.h"
 #include "message.h"
 
 /*#define ARMCI_PR_DBG(__ARMCI_ST,__ARMCI_NU) \
@@ -289,10 +290,10 @@ extern void armci_init_fence();
 #endif
 
 
-#define MAX(a,b) (((a)>(b))?(a):(b))
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define ABS(a)   (((a) >= 0) ? (a) : (-(a)))
-#define ACC(op)  ((((int)(op))-ARMCI_ACC_INT)>=0)
+#define ARMCI_MAX(a,b) (((a)>(b))?(a):(b))
+#define ARMCI_MIN(a,b) (((a)<(b))?(a):(b))
+#define ARMCI_ABS(a)   (((a) >= 0) ? (a) : (-(a)))
+#define ARMCI_ACC(op)  ((((int)(op))-ARMCI_ACC_INT)>=0)
 
 #ifdef CLUSTER
    extern char *_armci_fence_arr;
@@ -315,7 +316,7 @@ extern void armci_init_fence();
 
 #if defined(LAPI) || defined(ELAN_ACC)
 #  define ORDER(op,proc)\
-        if( proc == armci_me || ( ACC(op) && ACC(PENDING_OPER(proc))) );\
+        if( proc == armci_me || ( ARMCI_ACC(op) && ARMCI_ACC(PENDING_OPER(proc))) );\
         else  FENCE_NODE(proc)
 #  define UPDATE_FENCE_INFO(proc_)
 #elif defined(CLUSTER) && !defined(QUADRICS) && !defined(HITACHI)\

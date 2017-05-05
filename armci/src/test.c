@@ -37,14 +37,26 @@
 # include "bgml.h"
 # define MP_BARRIER()      bgml_barrier(3);
 # define MP_FINALIZE()
-# define MP_INIT(arc, argv)
+# define MP_INIT(argc, argv)
 # define MP_MYID(pid)      *(pid)=BGML_Messager_rank();
 # define MP_PROCS(pproc)   *(pproc)=BGML_Messager_size();
 #else
 #   include <mpi.h>
 #   define MP_BARRIER()      MPI_Barrier(MPI_COMM_WORLD)
 #   define MP_FINALIZE()     MPI_Finalize()
+#ifdef DCMF
+#   define MP_INIT(arc,argv) \
+    int desired = MPI_THREAD_MULTIPLE; \
+    int provided; \
+    printf("using MPI_Init_thread\n"); \
+    MPI_Init_thread(&argc, &argv, desired, &provided); \
+    if ( provided == MPI_THREAD_MULTIPLE ) printf("provided = MPI_THREAD_MULTIPLE\n"); \
+    else if ( provided == MPI_THREAD_SERIALIZED ) printf("provided = MPI_THREAD_SERIALIZED\n"); \
+    else if ( provided == MPI_THREAD_FUNNELED ) printf("provided = MPI_THREAD_FUNNELED\n"); \
+    else if ( provided == MPI_THREAD_SINGLE ) printf("provided = MPI_THREAD_SINGLE\n");
+#else
 #   define MP_INIT(arc,argv) MPI_Init(&(argc),&(argv))
+#endif
 #   define MP_MYID(pid)      MPI_Comm_rank(MPI_COMM_WORLD, (pid))
 #   define MP_PROCS(pproc)   MPI_Comm_size(MPI_COMM_WORLD, (pproc));
 #endif
@@ -98,9 +110,9 @@
 
 /***************************** macros ************************/
 #define COPY(src, dst, bytes) memcpy((dst),(src),(bytes))
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) <0) ? -(a) : (a))
+#define ARMCI_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define ARMCI_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define ARMCI_ABS(a) (((a) <0) ? -(a) : (a))
 
 /***************************** global data *******************/
 int me, nproc;
@@ -315,10 +327,10 @@ void compare_patches(double eps, int ndim, double *patch1, int lo1[], int hi1[],
 		
 
                 diff = patch1[idx1] - patch2[idx2];
-                max  = MAX(ABS(patch1[idx1]),ABS(patch2[idx2]));
+                max  = ARMCI_MAX(ARMCI_ABS(patch1[idx1]),ARMCI_ABS(patch2[idx2]));
                 if(max == 0. || max <eps) max = 1.; 
 
-		if(eps < ABS(diff)/max){
+		if(eps < ARMCI_ABS(diff)/max){
 			char msg[48];
 			sprintf(msg,"(proc=%d):%f",me,patch1[idx1]);
 			print_subscript("ERROR: a",ndim,subscr1,msg);
@@ -691,7 +703,7 @@ int i,j=0,k=0,kc=0,dst=0;
     if(isput)facto=1.89;
     for(i=0;i<datalen;i++){
        if(dst!=me)
-         if(ABS((data[i] -(me+facto+dst)*((kc+1)*(j%PTR_ARR_LEN + 1))))>0.001){
+         if(ARMCI_ABS((data[i] -(me+facto+dst)*((kc+1)*(j%PTR_ARR_LEN + 1))))>0.001){
            printf("\n%d:while verifying data of a op from proc=%d ",me,dst);
            printf("giov index=%d ptr_arr_index=%d \n :element index=%d",kc,
                    (j%PTR_ARR_LEN),k);
@@ -1017,7 +1029,7 @@ void test_vector()
 
             cols =  hiA[1]-loA[1]+1; 
             rows =  hiA[0]-loA[0]+1; 
-            mrc =MIN(cols,rows);
+            mrc =ARMCI_MIN(cols,rows);
 
             /* generate a data descriptor for a lower-triangular patch */
             for(i=0; i < mrc; i++){
@@ -1060,7 +1072,7 @@ void test_vector()
                ij[1] = loB[1]+i;
                pdst[i-1]= (double*)b[proc] + Index(ndim, ij, dimsB);
 
-               mrc = MIN(i,rows);
+               mrc = ARMCI_MIN(i,rows);
                dsc[i-1].bytes = mrc*sizeof(double);
                dsc[i-1].src_ptr_array = &psrc[i-1];
                dsc[i-1].dst_ptr_array = &pdst[i-1];
@@ -1461,16 +1473,16 @@ void test_rput()
     }
     if(me==0)printf("OK\nfloat data type: ");
     for(i=0; i<elems; i++) {
-      if( ABS(fdst[me][i]-10.01*(i+1)) > 0.1)
+      if( ARMCI_ABS(fdst[me][i]-10.01*(i+1)) > 0.1)
 	ARMCI_Error("Float register-originated put failed", 0);
-      if( ABS(fdst_get[i]-100.01*(i+1)) > 0.1)
+      if( ARMCI_ABS(fdst_get[i]-100.01*(i+1)) > 0.1)
 	ARMCI_Error("Float register-originated get failed", 0);
     }
     if(me==0)printf("OK\ndouble data type: ");
     for(i=0; i<elems; i++) {
-      if(ABS(ddst[me][i]-10.001*(i+1)) > 0.1)
+      if(ARMCI_ABS(ddst[me][i]-10.001*(i+1)) > 0.1)
 	ARMCI_Error("Double register-originated put failed",0);
-      if(ABS(ddst_get[i]-100.001*(i+1)) > 0.1)
+      if(ARMCI_ABS(ddst_get[i]-100.001*(i+1)) > 0.1)
 	ARMCI_Error("Double register-originated get failed",0);
     }
     if(me==0){printf("OK\n"); fflush(stdout);}
@@ -1607,7 +1619,7 @@ void test_aggregate() {
     
     for(i=0; i<nproc; i++) {
       for(j=0; j<elems[1]; j++) {
-	if( ABS(ddst_put[me][i*elems[1]+j]-j*1.001*(i+1)) > 0.1) {
+	if( ARMCI_ABS(ddst_put[me][i*elems[1]+j]-j*1.001*(i+1)) > 0.1) {
 	  ARMCI_Error("aggregate put failed...1", 0);
 	}
       }
@@ -1617,7 +1629,7 @@ void test_aggregate() {
 
     for(i=0; i<nproc; i++) {
       for(j=0; j<elems[1]; j++) {
-	if( ABS(ddst_get[me][i*elems[1]+j]-j*1.001*(i+1)) > 0.1) {
+	if( ARMCI_ABS(ddst_get[me][i*elems[1]+j]-j*1.001*(i+1)) > 0.1) {
 	  ARMCI_Error("aggregate get failed...1", 0);
 	}
       }
@@ -1737,7 +1749,7 @@ void test_implicit() {
     
     for(i=0; i<nproc; i++) {
       for(j=0; j<elems[1]; j++) {
-	if( ABS(ddst_put[me][i*elems[1]+j]-j*1.001*(i+1)) > 0.1) {
+	if( ARMCI_ABS(ddst_put[me][i*elems[1]+j]-j*1.001*(i+1)) > 0.1) {
 	  ARMCI_Error("implicit handle(s) failed...(a)", 0);
 	}
       }
@@ -1746,7 +1758,7 @@ void test_implicit() {
 
     for(i=0; i<nproc; i++) {
       for(j=0; j<elems[1]; j++) {
-	if( ABS(ddst_get[me][i*elems[1]+j]-j*1.001*(i+1)) > 0.1) {
+	if( ARMCI_ABS(ddst_get[me][i*elems[1]+j]-j*1.001*(i+1)) > 0.1) {
 	  ARMCI_Error("implicit handles(s) failed...(b)", 0);
 	}
       }

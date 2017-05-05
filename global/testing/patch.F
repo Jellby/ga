@@ -28,8 +28,18 @@ c
 c***  Initialize a message passing library
 c
 #ifdef MPI
+#include "mpif.h"
       integer ierr
+#ifdef DCMF
+      integer required, provided
+      required=MPI_THREAD_MULTIPLE
+      call mpi_init_thread(required, provided, ierr)
+      if (provided.ne.MPI_THREAD_MULTIPLE) then
+        call ga_error('provided.ne.MPI_THREAD_MULTIPLE',provided)
+      endif
+#else
       call mpi_init(ierr)
+#endif
 #else
       call pbeginf
 #endif

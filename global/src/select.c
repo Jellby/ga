@@ -2,7 +2,7 @@
 #include <string.h>
 #include "global.h"
 #include "globalp.h"
-#include "../../armci/src/message.h"
+#include "message.h"
   
 #if defined(CRAY)
 #  include <fortran.h>
@@ -276,7 +276,7 @@ void nga_select_elem_(Integer *g_a, char* op, void* val, Integer *subscript)
     *(DoublePrecision*)val = info.v.dval;
   }else if(type==C_FLOAT){
     int size = sizeof(double) + sizeof(Integer)*ndim;
-    armci_msg_sel(&info,size,op,ARMCI_DOUBLE,participate);
+    armci_msg_sel(&info,size,op,ARMCI_FLOAT,participate);
     *(float*)val = info.v.fval;       
   }else if(type==C_SCPL){
     int size = sizeof(info); /* for simplicity we send entire info */

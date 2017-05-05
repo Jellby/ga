@@ -13,9 +13,9 @@
 #define IBUF_SIZE (BUF_SIZE * sizeof(DoublePrecision)/sizeof(Integer)) 
 DoublePrecision _gops_work[BUF_SIZE];
 
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) >= 0) ? (a) : (-(a)))
+#define TCG_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define TCG_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define TCG_ABS(a) (((a) >= 0) ? (a) : (-(a)))
 
 static void idoop(n, op, x, work)
      long n;
@@ -30,24 +30,24 @@ static void idoop(n, op, x, work)
       *x++ *= *work++;
   else if (strncmp(op,"max",3) == 0)
     while(n--) {
-      *x = MAX(*x, *work);
+      *x = TCG_MAX(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"min",3) == 0)
     while(n--) {
-      *x = MIN(*x, *work);
+      *x = TCG_MIN(*x, *work);
       x++; work++;
     }
   else if (strncmp(op,"absmax",6) == 0)
     while(n--) {
-      register long x1 = ABS(*x), x2 = ABS(*work);
-      *x = MAX(x1, x2);
+      register long x1 = TCG_ABS(*x), x2 = TCG_ABS(*work);
+      *x = TCG_MAX(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"absmin",6) == 0)
     while(n--) {
-      register long x1 = ABS(*x), x2 = ABS(*work);
-      *x = MIN(x1, x2);
+      register long x1 = TCG_ABS(*x), x2 = TCG_ABS(*work);
+      *x = TCG_MIN(x1, x2);
       x++; work++;
     }
   else if (strncmp(op,"or",2) == 0) 

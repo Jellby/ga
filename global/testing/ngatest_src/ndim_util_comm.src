@@ -2,8 +2,8 @@
       implicit none
       integer lo(1),hi(1),lop(1),hip(1),ndim
       integer i, range, swap, val,iran
-      double precision drand
-      iran(range) = int(drand(0)*dble(range)) + 1
+      double precision util_drand
+      iran(range) = int(util_drand(0)*dble(range)) + 1
 c     iran(range) = range/2 
       do i = 1, ndim
          range = hi(i)-lo(i)+1
@@ -27,8 +27,8 @@ c
       implicit none
       integer lo(1),hi(1),lop(1),hip(1),ndim
       integer i, range, val,iran
-      double precision drand
-      iran(range) = int(drand(0)*dble(range)) + 1
+      double precision util_drand
+      iran(range) = int(util_drand(0)*dble(range)) + 1
 c     iran(range) = range/2
       do i = 1, ndim
          range = 2*(hi(i)-lo(i)+1)

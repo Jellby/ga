@@ -9,11 +9,7 @@
 #include "base.h"
 
 #include <math.h>
-#ifdef WIN32
-#include <armci.h>
-#else
-#include <../../armci/src/armci.h>
-#endif
+#include "armci.h"
 
 #ifdef KSR
 #  define dgemm_ sgemm_

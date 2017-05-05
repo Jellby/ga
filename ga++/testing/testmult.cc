@@ -11,10 +11,10 @@
 #define PERMUTE_ 
 
 #define GA_DATA_TYPE MT_C_FLOAT
-#define ABS(a) (((a) >= 0) ? (a) : (-(a)))
+#define GA_ABS(a) (((a) >= 0) ? (a) : (-(a)))
 #define TOLERANCE 0.000001
 
-#ifdef MPI
+#ifdef MPIPP
 #define CLOCK_ MPI_Wtime
 #else
 #define CLOCK_ TCGTIME_

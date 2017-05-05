@@ -27,14 +27,14 @@ int locks_per_proc, size;
     locks_per_proc = num_locks; /* this is am altix hack and no clue why this is works */
     size=locks_per_proc*sizeof(PAD_LOCK_T);
     ptr_arr = (void**)malloc(armci_nproc*sizeof(void*));
-    ARMCI_Malloc(ptr_arr, size);
+    PARMCI_Malloc(ptr_arr, size);
     _armci_int_mutexes = (PAD_LOCK_T*) ptr_arr;
     bzero((char*)ptr_arr[armci_me],size);
 }
 
 void DeleteLocks(lockset_t lockid) { 
     ptr_arr = (void**)_armci_int_mutexes;
-    ARMCI_Free(ptr_arr[armci_me]);
+    PARMCI_Free(ptr_arr[armci_me]);
     _armci_int_mutexes = (PAD_LOCK_T*)0; 
 }
 
@@ -49,7 +49,7 @@ int locks_per_proc, size;
   ptr_arr = (void**)malloc(armci_nproc*sizeof(void*));
   locks_per_proc = (num_locks*armci_nclus)/armci_nproc + 1;
   size=locks_per_proc*sizeof(PAD_LOCK_T);
-  ARMCI_Malloc(ptr_arr, size);
+  PARMCI_Malloc(ptr_arr, size);
   _armci_int_mutexes = (PAD_LOCK_T*) ptr_arr[armci_master];
   
   if(!_armci_int_mutexes) armci_die("Failed to create spinlocks",size);

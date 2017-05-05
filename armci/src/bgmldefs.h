@@ -7,7 +7,7 @@
 /* end_generated_IBM_copyright_prolog                               */
 /********************************************************************/
 
-/* $Id$ */
+/* $Id: bgmldefs.h 5070 2009-07-10 17:57:46Z manoj $ */
 
 #ifndef _bgmldefs_h
 #define _bgmldefs_h

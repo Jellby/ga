@@ -128,7 +128,7 @@ Revised on February 26, 2002.
 
 
 # define THRESH 1e-5
-#define MISMATCHED(x,y) ABS((x)-(y))>=THRESH
+#define MISMATCHED(x,y) GA_ABS((x)-(y))>=THRESH
 
 #define N 100
 #define BLOCK_SIZE 20
@@ -278,15 +278,15 @@ fill_func3 (int nelem, int type, void *buf)
     {
     case C_FLOAT:
       for (i = 0; i < nelem; i++)
-	((float *) buf)[i] = (float) ABS (ifun (i));
+	((float *) buf)[i] = (float) GA_ABS(ifun (i));
       break;
     case C_LONG:
       for (i = 0; i < nelem; i++)
-	((long *) buf)[i] = (long) ABS (ifun (i));
+	((long *) buf)[i] = (long) GA_ABS(ifun (i));
       break;
     case C_DBL:
       for (i = 0; i < nelem; i++)
-	((double *) buf)[i] = (double) ABS (ifun (i));
+	((double *) buf)[i] = (double) GA_ABS(ifun (i));
       break;
     case C_DCPL:
       for (i = 0; i < 2 * nelem - 1; i = i + 2)
@@ -308,7 +308,7 @@ fill_func3 (int nelem, int type, void *buf)
       break;
     case C_INT:
       for (i = 0; i < nelem; i++)
-	((int *) buf)[i] = ABS (ifun (i));
+	((int *) buf)[i] = GA_ABS(ifun (i));
       break;
     default:
       ga_error (" wrong data type ", type);
@@ -641,21 +641,21 @@ test_fun (int type, int dim, int OP)
       if (me == 0)
 	printf ("Testing GA_Abs_value...");
       GA_Abs_value_patch (g_a, lo, hi);
-      ivresult = ABS (ival);
-      dvresult = ABS (dval);
-      fvresult = ABS (fval);
-      lvresult = ABS (lval);
+      ivresult = GA_ABS(ival);
+      dvresult = GA_ABS(dval);
+      fvresult = GA_ABS(fval);
+      lvresult = GA_ABS(lval);
       
-      if (ABS(dcval.real) >= ABS(dcval.imag)) {
+      if (GA_ABS(dcval.real) >= GA_ABS(dcval.imag)) {
 	if (dcval.real == (double)0.0) {
 	  dcvresult.real = (double)0.0;
 	} else {
 	  x1 = dcval.imag/dcval.real;
-	  dcvresult.real = ABS(dcval.real)*sqrt(((double)1.0)+(x1*x1));
+	  dcvresult.real = GA_ABS(dcval.real)*sqrt(((double)1.0)+(x1*x1));
 	}
       } else {
 	x1 = dcval.real/dcval.imag;
-	dcvresult.real = ABS(dcval.imag)*sqrt(((double)1.0)+(x1*x1));
+	dcvresult.real = GA_ABS(dcval.imag)*sqrt(((double)1.0)+(x1*x1));
       }
       dcvresult.imag = 0.0;
       NGA_Fill_patch (g_d, lo, hi, vresult);
@@ -664,31 +664,31 @@ test_fun (int type, int dim, int OP)
         needs_scaled_result = 1;
 	NGA_Fill_patch(g_f,lo,hi,val3);
 	GA_Abs_value_patch (g_f, lo, hi);
-	if (ABS(dcval3.real) >= ABS(dcval3.imag)) {
+	if (GA_ABS(dcval3.real) >= GA_ABS(dcval3.imag)) {
 	  if (dcval3.real == (double)0.0) {
 	    dcbvresult.real = (double)0.0;
 	  } else {
 	    x1 = dcval3.imag/dcval3.real;
-	    dcbvresult.real = ABS(dcval3.real)*sqrt(((double)1.0)+(x1*x1));
+	    dcbvresult.real = GA_ABS(dcval3.real)*sqrt(((double)1.0)+(x1*x1));
 	  }
 	} else {
 	  x1 = dcval3.real/dcval3.imag;
-	  dcbvresult.real = ABS(dcval3.imag)*sqrt(((double)1.0)+(x1*x1));
+	  dcbvresult.real = GA_ABS(dcval3.imag)*sqrt(((double)1.0)+(x1*x1));
 	}
 	dcbvresult.imag = (double)0.0;
 	NGA_Fill_patch (g_i, lo, hi, bvresult);
 	NGA_Fill_patch(g_k,lo,hi,&dcval6);
 	GA_Abs_value_patch (g_k, lo, hi);
-	if (ABS(dcval6.real) >= ABS(dcval6.imag)) {
+	if (GA_ABS(dcval6.real) >= GA_ABS(dcval6.imag)) {
 	  if (dcval6.real == (double)0.0) {
 	    dcbvresult.real = (double)0.0;
 	  } else {
 	    x1 = dcval6.imag/dcval6.real;
-	    dcbvresult.real = ABS(dcval6.real)*sqrt(((double)1.0)+(x1*x1));
+	    dcbvresult.real = GA_ABS(dcval6.real)*sqrt(((double)1.0)+(x1*x1));
 	  }
 	} else {
 	  x1 = dcval6.real/dcval6.imag;
-	  dcbvresult.real = ABS(dcval6.imag)*sqrt(((double)1.0)+(x1*x1));
+	  dcbvresult.real = GA_ABS(dcval6.imag)*sqrt(((double)1.0)+(x1*x1));
 	}
 	NGA_Fill_patch (g_n, lo, hi, bvresult);
       }
@@ -696,31 +696,31 @@ test_fun (int type, int dim, int OP)
         needs_scaled_result = 1;
 	NGA_Fill_patch(g_f,lo,hi,val3);
 	GA_Abs_value_patch (g_f, lo, hi);
-	if (ABS(fcval3.real) >= ABS(fcval3.imag)) {
+	if (GA_ABS(fcval3.real) >= GA_ABS(fcval3.imag)) {
 	  if (fcval3.real == (float )0.0) {
 	    fcbvresult.real = (float )0.0;
 	  } else {
 	    fx1 = fcval3.imag/fcval3.real;
-	    fcbvresult.real = ABS(fcval3.real)*sqrt(((float)1.0)+(fx1*fx1));
+	    fcbvresult.real = GA_ABS(fcval3.real)*sqrt(((float)1.0)+(fx1*fx1));
 	  }
 	} else {
 	  fx1 = fcval3.real/fcval3.imag;
-	  fcbvresult.real = ABS(fcval3.imag)*sqrt(((float)1.0)+(fx1*fx1));
+	  fcbvresult.real = GA_ABS(fcval3.imag)*sqrt(((float)1.0)+(fx1*fx1));
 	}
 	fcbvresult.imag = (float)0.0;
 	NGA_Fill_patch (g_i, lo, hi, bvresult);
 	NGA_Fill_patch(g_k,lo,hi,&dcval6);
 	GA_Abs_value_patch (g_k, lo, hi);
-	if (ABS(fcval6.real) >= ABS(fcval6.imag)) {
+	if (GA_ABS(fcval6.real) >= GA_ABS(fcval6.imag)) {
 	  if (fcval6.real == (float)0.0) {
 	    fcbvresult.real = (float)0.0;
 	  } else {
 	    fx1 = fcval6.imag/fcval6.real;
-	    fcbvresult.real = ABS(fcval6.real)*sqrt(((float)1.0)+(fx1*fx1));
+	    fcbvresult.real = GA_ABS(fcval6.real)*sqrt(((float)1.0)+(fx1*fx1));
 	  }
 	} else {
 	  fx1 = fcval6.real/fcval6.imag;
-	  fcbvresult.real = ABS(fcval6.imag)*sqrt(((float)1.0)+(fx1*fx1));
+	  fcbvresult.real = GA_ABS(fcval6.imag)*sqrt(((float)1.0)+(fx1*fx1));
 	}
 	NGA_Fill_patch (g_n, lo, hi, bvresult);
       }
@@ -748,7 +748,7 @@ test_fun (int type, int dim, int OP)
       fvresult = ((float)1.0) / fval;
       lvresult = ((long)1) / lval;
       
-      if (ABS(dcval.real) >= ABS(dcval.imag)) {
+      if (GA_ABS(dcval.real) >= GA_ABS(dcval.imag)) {
 	if (dcval.real != (double)0.0) {
 	  tmp = dcval.imag/dcval.real;
 	  tmp2 = ((double)1.0)/((((double)1.0)+(tmp*tmp))*dcval.real);
@@ -769,7 +769,7 @@ test_fun (int type, int dim, int OP)
         needs_scaled_result = 1;
 	NGA_Fill_patch (g_f, lo, hi, val3);
 	GA_Recip_patch (g_f, lo, hi);
-	if (ABS(dcval3.real) >= ABS(dcval3.imag)) {
+	if (GA_ABS(dcval3.real) >= GA_ABS(dcval3.imag)) {
 	  if (dcval3.real == (double)0.0) {
 	    printf("Error testing GA_Recip, dcval3.real = 0.0\n");
 	  } else {
@@ -787,7 +787,7 @@ test_fun (int type, int dim, int OP)
 	NGA_Fill_patch (g_i, lo, hi, bvresult);
 	NGA_Fill_patch(g_k,lo,hi,&dcval6);
 	GA_Recip_patch (g_k, lo, hi);
-	if (ABS(dcval6.real) >= ABS(dcval6.imag)) {
+	if (GA_ABS(dcval6.real) >= GA_ABS(dcval6.imag)) {
 	  if (dcval6.real == (double)0.0) {
 	    printf("Error testing GA_Recip, dcval6.real = 0.0\n");
 	  } else {
@@ -808,7 +808,7 @@ test_fun (int type, int dim, int OP)
         needs_scaled_result = 1;
 	NGA_Fill_patch (g_f, lo, hi, val3);
 	GA_Recip_patch (g_f, lo, hi);
-	if (ABS(fcval3.real) >= ABS(fcval3.imag)) {
+	if (GA_ABS(fcval3.real) >= GA_ABS(fcval3.imag)) {
 	  if (fcval3.real == (float )0.0) {
 	    printf("Error testing GA_Recip, fcval3.real = 0.0\n");
 	  } else {
@@ -826,7 +826,7 @@ test_fun (int type, int dim, int OP)
 	NGA_Fill_patch (g_i, lo, hi, bvresult);
 	NGA_Fill_patch(g_k,lo,hi,&dcval6);
 	GA_Recip_patch (g_k, lo, hi);
-	if (ABS(fcval6.real) >= ABS(fcval6.imag)) {
+	if (GA_ABS(fcval6.real) >= GA_ABS(fcval6.imag)) {
 	  if (fcval6.real == (float)0.0) {
 	    printf("Error testing GA_Recip, fcval6.real = 0.0\n");
 	  } else {
@@ -871,7 +871,7 @@ test_fun (int type, int dim, int OP)
       dcvresult.real = 0.0;
       dcvresult.imag = 0.0;
       
-      if (ABS(dcval2.real) >= ABS(dcval2.imag)) {
+      if (GA_ABS(dcval2.real) >= GA_ABS(dcval2.imag)) {
 	if (dcval2.real != (double)0.0) {
 	  tmp = dcval2.imag/dcval2.real;
 	  tmp2 = ((double)1.0)/(dcval2.real*(((double)1.0)+(tmp*tmp)));
@@ -895,7 +895,7 @@ test_fun (int type, int dim, int OP)
 	GA_Elem_divide_patch (g_f, lo, hi, g_g, lo, hi, g_h, lo, hi);
 	dcbvresult.real = (double)0.0;
 	dcbvresult.imag = (double)0.0;
-	if (ABS(dcval4.real) >= ABS(dcval4.imag)) {
+	if (GA_ABS(dcval4.real) >= GA_ABS(dcval4.imag)) {
 	  if (dcval4.real != (double)0.0) {
 	    tmp = dcval4.imag/dcval4.real;
 	    tmp2 = ((double)1.0)/(dcval4.real*(((double)1.0)+(tmp*tmp)));
@@ -916,7 +916,7 @@ test_fun (int type, int dim, int OP)
 	GA_Elem_divide_patch (g_k, lo, hi, g_l, lo, hi, g_m, lo, hi);
 	dcbvresult.real = (double)0.0;
 	dcbvresult.imag = (double)0.0;
-	if (ABS(dcval7.real) >= ABS(dcval7.imag)) {
+	if (GA_ABS(dcval7.real) >= GA_ABS(dcval7.imag)) {
 	  if (dcval7.real != (double)0.0) {
 	    tmp = dcval7.imag/dcval7.real;
 	    tmp2 = ((double)1.0)/(dcval7.real*(((double)1.0)+(tmp*tmp)));
@@ -940,7 +940,7 @@ test_fun (int type, int dim, int OP)
 	GA_Elem_divide_patch (g_f, lo, hi, g_g, lo, hi, g_h, lo, hi);
 	fcbvresult.real = (float)0.0;
 	fcbvresult.imag = (float)0.0;
-	if (ABS(fcval4.real) >= ABS(fcval4.imag)) {
+	if (GA_ABS(fcval4.real) >= GA_ABS(fcval4.imag)) {
 	  if (fcval4.real != (float)0.0) {
 	    tmpf = fcval4.imag/fcval4.real;
 	    tmp2f = ((float)1.0)/(fcval4.real*(((float)1.0)+(tmpf*tmpf)));
@@ -961,7 +961,7 @@ test_fun (int type, int dim, int OP)
 	GA_Elem_divide_patch (g_k, lo, hi, g_l, lo, hi, g_m, lo, hi);
 	fcbvresult.real = (float)0.0;
 	fcbvresult.imag = (float)0.0;
-	if (ABS(fcval7.real) >= ABS(fcval7.imag)) {
+	if (GA_ABS(fcval7.real) >= GA_ABS(fcval7.imag)) {
 	  if (fcval7.real != (float)0.0) {
 	    tmpf = fcval7.imag/fcval7.real;
 	    tmp2f = ((float)1.0)/(fcval7.real*(((float)1.0)+(tmpf*tmpf)));
@@ -985,13 +985,13 @@ test_fun (int type, int dim, int OP)
 	printf ("Testing GA_Elem_maximum...");
       /*NGA_Fill_patch (g_b, lo, hi, val2);*/
       GA_Elem_maximum_patch (g_a, lo, hi, g_b, lo, hi, g_c, lo, hi);
-      ivresult = MAX (ival, ival2);
-      dvresult = MAX (dval, dval2);
-      fvresult = MAX (fval, fval2);
-      lvresult = MAX (lval, lval2);
-      tmp  = MAX(ABS(dcval.real),ABS(dcval.imag));
-      tmp2 = MAX(ABS(dcval2.real),ABS(dcval2.imag));
-      tmp  = MAX(tmp,tmp2);
+      ivresult = GA_MAX(ival, ival2);
+      dvresult = GA_MAX(dval, dval2);
+      fvresult = GA_MAX(fval, fval2);
+      lvresult = GA_MAX(lval, lval2);
+      tmp  = GA_MAX(GA_ABS(dcval.real),GA_ABS(dcval.imag));
+      tmp2 = GA_MAX(GA_ABS(dcval2.real),GA_ABS(dcval2.imag));
+      tmp  = GA_MAX(tmp,tmp2);
       dcvresult.real = dcval.real;
       dcvresult.imag = dcval.imag;
       if (tmp != 0.0) {
@@ -1013,9 +1013,9 @@ test_fun (int type, int dim, int OP)
 	NGA_Fill_patch (g_f, lo, hi, val3);
 	NGA_Fill_patch (g_g, lo, hi, val4);
 	GA_Elem_maximum_patch (g_f, lo, hi, g_g, lo, hi, g_h, lo, hi);
-	tmp  = MAX(ABS(dcval3.real),ABS(dcval3.imag));
-	tmp2 = MAX(ABS(dcval4.real),ABS(dcval4.imag));
-	tmp  = MAX(tmp,tmp2);
+	tmp  = GA_MAX(GA_ABS(dcval3.real),GA_ABS(dcval3.imag));
+	tmp2 = GA_MAX(GA_ABS(dcval4.real),GA_ABS(dcval4.imag));
+	tmp  = GA_MAX(tmp,tmp2);
 	dcvresult.real = dcval3.real;
 	dcvresult.imag = dcval3.imag;
 	if (tmp != 0.0) {
@@ -1035,9 +1035,9 @@ test_fun (int type, int dim, int OP)
 	NGA_Fill_patch (g_k, lo, hi, &dcval6);
 	NGA_Fill_patch (g_l, lo, hi, &dcval7);
 	GA_Elem_maximum_patch (g_k, lo, hi, g_l, lo, hi, g_m, lo, hi);
-	tmp  = MAX(ABS(dcval6.real),ABS(dcval6.imag));
-	tmp2 = MAX(ABS(dcval7.real),ABS(dcval7.imag));
-	tmp  = MAX(tmp,tmp2);
+	tmp  = GA_MAX(GA_ABS(dcval6.real),GA_ABS(dcval6.imag));
+	tmp2 = GA_MAX(GA_ABS(dcval7.real),GA_ABS(dcval7.imag));
+	tmp  = GA_MAX(tmp,tmp2);
 	dcvresult.real = dcval6.real;
 	dcvresult.imag = dcval6.imag;
 	if (tmp != 0.0) {
@@ -1061,13 +1061,13 @@ test_fun (int type, int dim, int OP)
 	printf ("Testing GA_Elem_minimum...");
       NGA_Fill_patch (g_b, lo, hi, val2);
       GA_Elem_minimum_patch (g_a, lo, hi, g_b, lo, hi, g_c, lo, hi);
-      ivresult = MIN (ival, ival2);
-      dvresult = MIN (dval, dval2);
-      fvresult = MIN (fval, fval2);
-      lvresult = MIN (lval, lval2);
-      tmp  = MAX(ABS(dcval.real),ABS(dcval.imag));
-      tmp2 = MAX(ABS(dcval2.real),ABS(dcval2.imag));
-      tmp  = MAX(tmp,tmp2);
+      ivresult = GA_MIN(ival, ival2);
+      dvresult = GA_MIN(dval, dval2);
+      fvresult = GA_MIN(fval, fval2);
+      lvresult = GA_MIN(lval, lval2);
+      tmp  = GA_MAX(GA_ABS(dcval.real),GA_ABS(dcval.imag));
+      tmp2 = GA_MAX(GA_ABS(dcval2.real),GA_ABS(dcval2.imag));
+      tmp  = GA_MAX(tmp,tmp2);
       dcvresult.real = dcval.real;
       dcvresult.imag = dcval.imag;
       if (tmp != 0.0) {
@@ -1089,9 +1089,9 @@ test_fun (int type, int dim, int OP)
 	NGA_Fill_patch (g_f, lo, hi, val3);
 	NGA_Fill_patch (g_g, lo, hi, val4);
 	GA_Elem_minimum_patch (g_f, lo, hi, g_g, lo, hi, g_h, lo, hi);
-	tmpf  = MAX(ABS(fcval3.real),ABS(fcval3.imag));
-	tmp2f = MAX(ABS(fcval4.real),ABS(fcval4.imag));
-	tmpf  = MAX(tmpf,tmp2f);
+	tmpf  = GA_MAX(GA_ABS(fcval3.real),GA_ABS(fcval3.imag));
+	tmp2f = GA_MAX(GA_ABS(fcval4.real),GA_ABS(fcval4.imag));
+	tmpf  = GA_MAX(tmpf,tmp2f);
 	fcvresult.real = fcval3.real;
 	fcvresult.imag = fcval3.imag;
 	if (tmpf != 0.0) {
@@ -1111,9 +1111,9 @@ test_fun (int type, int dim, int OP)
 	NGA_Fill_patch (g_k, lo, hi, &dcval6);
 	NGA_Fill_patch (g_l, lo, hi, &dcval7);
 	GA_Elem_minimum_patch (g_k, lo, hi, g_l, lo, hi, g_m, lo, hi);
-	tmpf  = MAX(ABS(fcval6.real),ABS(fcval6.imag));
-	tmp2f = MAX(ABS(fcval7.real),ABS(fcval7.imag));
-	tmpf  = MAX(tmpf,tmp2f);
+	tmpf  = GA_MAX(GA_ABS(fcval6.real),GA_ABS(fcval6.imag));
+	tmp2f = GA_MAX(GA_ABS(fcval7.real),GA_ABS(fcval7.imag));
+	tmpf  = GA_MAX(tmpf,tmp2f);
 	fcvresult.real = fcval6.real;
 	fcvresult.imag = fcval6.imag;
 	if (tmpf != 0.0) {
@@ -1148,10 +1148,10 @@ test_fun (int type, int dim, int OP)
       	  here to determine the minimum g_j value, but for
       	  now we set it to -2.
       	*/
-      	aresulti = ((int)(ABS(ival2)/ABS(ival))) - resulti;
-      	aresultd = ABS(dval2/dval) - resultd;
-      	aresultf = ((float)ABS(fval2/fval)) - resultf;
-      	aresultl = ((long)(ABS(lval2)/ABS(lval))) - resultl;
+      	aresulti = ((int)(GA_ABS(ival2)/GA_ABS(ival))) - resulti;
+      	aresultd = GA_ABS(dval2/dval) - resultd;
+      	aresultf = ((float)GA_ABS(fval2/fval)) - resultf;
+      	aresultl = ((long)(GA_ABS(lval2)/GA_ABS(lval))) - resultl;
       }
       break;
 
@@ -1322,7 +1322,7 @@ test_fun (int type, int dim, int OP)
   	*/
   	r = dcmax.real;
   	im = dcmax.imag;
-  	if ((ABS(r) + ABS(im)) == (double)0.0) {
+  	if ((GA_ABS(r) + GA_ABS(im)) == (double)0.0) {
  	  result = 0;
   	} else {
  	  result = 1;
@@ -1331,14 +1331,14 @@ test_fun (int type, int dim, int OP)
 	  result2 = 0;
  	  r = dcmax2.real;
  	  im = dcmax2.imag;
- 	  if ((ABS(r) + ABS(im)) == (double)0.0) {
+ 	  if ((GA_ABS(r) + GA_ABS(im)) == (double)0.0) {
  	    result2 = 0;
  	  } else {
  	    result2 = 1;
  	  }
  	  r = dcmax3.real;
  	  im = dcmax3.imag;
- 	  if ((ABS(r) + ABS(im)) == (double)0.0) {
+ 	  if ((GA_ABS(r) + GA_ABS(im)) == (double)0.0) {
  	    result3 = 0;
  	  } else {
  	    result3 = 1;
@@ -1353,7 +1353,7 @@ test_fun (int type, int dim, int OP)
   	*/
   	rf = fcmax.real;
   	imf = fcmax.imag;
-  	if ((ABS(rf) + ABS(imf)) == (float)0.0) {
+  	if ((GA_ABS(rf) + GA_ABS(imf)) == (float)0.0) {
  	  result = 0;
   	} else {
  	  result = 1;
@@ -1362,14 +1362,14 @@ test_fun (int type, int dim, int OP)
 	  result2 = 0;
  	  rf = fcmax2.real;
  	  imf = fcmax2.imag;
- 	  if ((ABS(rf) + ABS(imf)) == (float)0.0) {
+ 	  if ((GA_ABS(rf) + GA_ABS(imf)) == (float)0.0) {
  	    result2 = 0;
  	  } else {
  	    result2 = 1;
  	  }
  	  rf = fcmax3.real;
  	  imf = fcmax3.imag;
- 	  if ((ABS(rf) + ABS(imf)) == (float)0.0) {
+ 	  if ((GA_ABS(rf) + GA_ABS(imf)) == (float)0.0) {
  	    result3 = 0;
  	  } else {
  	    result3 = 1;
@@ -1565,7 +1565,14 @@ main (argc, argv)
   int ok = 1;
 
 #ifdef MPI
+#ifdef DCMF
+    int desired = MPI_THREAD_MULTIPLE;
+    int provided;
+    MPI_Init_thread(&argc, &argv, desired, &provided);
+    if ( provided != MPI_THREAD_MULTIPLE ) printf("provided != MPI_THREAD_MULTIPLE\n");
+#else
   MPI_Init (&argc, &argv);	/* initialize MPI */
+#endif
 #else
   PBEGIN_ (argc, argv);		/* initialize TCGMSG */
 #endif

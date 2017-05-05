@@ -18,6 +18,11 @@ c vector boxes lack arithmetic precision
 c#define MIRROR
 c#define GA3
 c#define NGA_GATSCAT
+#define USE_RESTRICTED
+
+#ifdef USE_RESTRICTED
+#  define NEW_API
+#endif
 
       program main
       implicit none
@@ -34,8 +39,18 @@ c
 c***  Intitialize a message passing library
 c
 #ifdef MPI
+#include "mpif.h"
       integer ierr
+#ifdef DCMF
+      integer required, provided
+      required=MPI_THREAD_MULTIPLE
+      call mpi_init_thread(required, provided, ierr)
+      if (provided.ne.MPI_THREAD_MULTIPLE) then
+        call ga_error('provided.ne.MPI_THREAD_MULTIPLE',provided)
+      endif
+#else
       call mpi_init(ierr)
+#endif
 #else
       call pbeginf
 #endif
@@ -55,6 +70,9 @@ c     MA must be initialized before any global array is allocated
 c
       ma_heap = heap/nproc + fudge 
       ma_heap = 2*ma_heap
+#ifdef USE_RESTRICTED
+      ma_heap = 2*ma_heap
+#endif
       status = ma_init(MT_DCPL, stack, ma_heap)
       if (.not. status) call ga_error('ma_init failed',-1) 
 c
@@ -64,7 +82,7 @@ c
 c
 c***  Create process groups on SMP nodes
 c
-#if 0
+#if 1
       midnode = nproc/2
       do i = 1, midnode
         proclist(i) = i-1
@@ -76,7 +94,7 @@ c
       end do
       nprocs = nproc - midnode
       proc_group(1) = ga_pgroup_create(proclist, nprocs)
-c      call ga_pgroup_set_default(proc_group(inode))
+      call ga_pgroup_set_default(proc_group(inode))
       if (me.lt.midnode) then
         call ga_pgroup_set_default(proc_group(0))
         call runtest
@@ -129,7 +147,6 @@ c     same key for all processes means automatic control of rank assignment
       call ga_sync()                  
 #endif
 
-      call ga_sync()
       call ga_pgroup_set_default(ga_pgroup_get_world())
 c
 c***  Check if memory limits are enforced 
@@ -297,6 +314,10 @@ c
       integer lprocs,inode,iproc,nnodes
       intrinsic int
       integer tlo(2),thi(2),tld(2),index
+#ifdef USE_RESTRICTED
+      integer num_rstrctd
+      integer rstrctd_list(maxproc/2)
+#endif
       iran(i) = int(util_drand(0)*real(i)) + 1
 c     
       nproc = ga_nnodes()
@@ -306,6 +327,13 @@ c
       nnodes = ga_cluster_nnodes()
       iproc = mod(me,lprocs)
       nloop = Min(maxloop,n)
+#ifdef USE_RESTRICTED
+      num_rstrctd = nproc/2
+      if (num_rstrctd.eq.0) num_rstrctd = 1
+      do i = 1, num_rstrctd
+        rstrctd_list(i) = (num_rstrctd/2) + i-1
+      end do
+#endif
 c     
 c     a() is a local copy of what the global array should start as
 c
@@ -335,6 +363,9 @@ c     call setdbg(1)
       dims(2) = n
       call ga_set_data(g_a,ndim,dims,MT_DBL)
       call ga_set_array_name(g_a,'a')
+#ifdef USE_RESTRICTED
+      call ga_set_restricted(g_a, rstrctd_list, num_rstrctd)
+#endif
 #  ifdef MIRROR
       p_mirror = ga_pgroup_get_mirror()
       call ga_set_pgroup(g_a,p_mirror)
@@ -1173,6 +1204,10 @@ c
       double precision nwords
       double complex   x, sum1, sum2, factor
       integer lprocs, inode, iproc
+#ifdef USE_RESTRICTED
+      integer num_rstrctd
+      integer rstrctd_list(maxproc/2)
+#endif
       intrinsic int
       iran(i) = int(util_drand(0)*real(i)) + 1
 c
@@ -1183,6 +1218,13 @@ c
       nnodes = ga_cluster_nnodes()
       iproc = mod(me,lprocs)
       nloop = Min(maxloop,n)
+#ifdef USE_RESTRICTED
+      num_rstrctd = nproc/2
+      if (num_rstrctd.eq.0) num_rstrctd = 1
+      do i = 1, num_rstrctd
+        rstrctd_list(i) = (num_rstrctd/2) + i-1
+      end do
+#endif
 c
 c     a() is a local copy of what the global array should start as
 c
@@ -1210,6 +1252,9 @@ c     call setdbg(1)
       g_a = ga_create_handle()
       call ga_set_data(g_a,ndim,dims,MT_DCPL)
       call ga_set_array_name(g_a,'a')
+#ifdef USE_RESTRICTED
+      call ga_set_restricted(g_a, rstrctd_list, num_rstrctd)
+#endif
 #  ifdef MIRROR
       p_mirror = ga_pgroup_get_mirror()
       call ga_set_pgroup(g_a,p_mirror)
@@ -1734,6 +1779,10 @@ c
       integer map(5,maxproc), found, np,k
       double precision crap, sum1, real
       integer buf
+#ifdef USE_RESTRICTED
+      integer num_rstrctd
+      integer rstrctd_list(maxproc/2)
+#endif
       intrinsic int
       iran(i) = int(util_drand(0)*real(i)) + 1
 c     
@@ -1743,6 +1792,13 @@ c
       lprocs = ga_cluster_nprocs(inode)
       nnodes = ga_cluster_nnodes()
       iproc = mod(me,lprocs)
+#ifdef USE_RESTRICTED
+      num_rstrctd = nproc/2
+      if (num_rstrctd.eq.0) num_rstrctd = 1
+      do i = 1, num_rstrctd
+        rstrctd_list(i) = (num_rstrctd/2) + i-1
+      end do
+#endif
 c     
 c     a() is a local copy of what the global array should start as
 c
@@ -1767,6 +1823,9 @@ c
       g_a = ga_create_handle()
       call ga_set_data(g_a,ndim,dims,MT_INT)
       call ga_set_array_name(g_a,'a')
+#ifdef USE_RESTRICTED
+      call ga_set_restricted(g_a, rstrctd_list, num_rstrctd)
+#endif
 #  ifdef MIRROR
       p_mirror = ga_pgroup_get_mirror()
       call ga_set_pgroup(g_a,p_mirror)
@@ -2182,6 +2241,10 @@ c---------------------------------------------------------------------
       real x, sum1, sum2
       logical found
       integer lprocs, inode, iproc
+#ifdef USE_RESTRICTED
+      integer num_rstrctd
+      integer rstrctd_list(maxproc/2)
+#endif
       intrinsic int
       iran(i) = int(util_drand(0)*real(i)) + 1
 
@@ -2192,6 +2255,13 @@ c---------------------------------------------------------------------
       nnodes = ga_cluster_nnodes()
       iproc = mod(me,lprocs)
       nloop = Min(maxloop,n)
+#ifdef USE_RESTRICTED
+      num_rstrctd = nproc/2
+      if (num_rstrctd.eq.0) num_rstrctd = 1
+      do i = 1, num_rstrctd
+        rstrctd_list(i) = (num_rstrctd/2) + i-1
+      end do
+#endif
 c     
 c     a() is a local copy of what the global array should start as
 c
@@ -2218,6 +2288,9 @@ c
       g_a = ga_create_handle()
       call ga_set_data(g_a,ndim,dims,MT_REAL)
       call ga_set_array_name(g_a,'a')
+#ifdef USE_RESTRICTED
+      call ga_set_restricted(g_a, rstrctd_list, num_rstrctd)
+#endif
 #  ifdef MIRROR
       write(6,*) 'Getting p_mirror'
       p_mirror = ga_pgroup_get_mirror()

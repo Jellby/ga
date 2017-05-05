@@ -3,8 +3,13 @@
       INCDIR = ../../../include
 LIB_INCLUDES = -I$(INCDIR)
 
-include ../../../armci/config/makecoms.h
-include ../../../armci/config/makemp.h
+export ARMCI_DIR_NAME := armci
+ifeq ($(ARMCI_NETWORK),PORTALS)
+  export ARMCI_DIR_NAME := armci-portals
+endif
+
+include ../../../$(ARMCI_DIR_NAME)/config/makecoms.h
+include ../../../$(ARMCI_DIR_NAME)/config/makemp.h
 include ../../../config/makefile.h
 
 ifndef LIBDIR

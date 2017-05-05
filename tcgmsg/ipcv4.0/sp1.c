@@ -895,9 +895,9 @@ void BRDCST_(type, buf, lenbuf, originator)
 
 /* global operation stuff */
 
-#define MAX(a,b) (((a) >= (b)) ? (a) : (b))
-#define MIN(a,b) (((a) <= (b)) ? (a) : (b))
-#define ABS(a) (((a) >= 0) ? (a) : (-(a)))
+#define TCG_MAX(a,b) (((a) >= (b)) ? (a) : (b))
+#define TCG_MIN(a,b) (((a) <= (b)) ? (a) : (b))
+#define TCG_ABS(a) (((a) >= 0) ? (a) : (-(a)))
 
 #define GOP_BUF_SIZE 50000                         /* global ops buffer size */
 static double gop_work[GOP_BUF_SIZE];
@@ -922,7 +922,7 @@ void DGOP_(ptype, x, pn, op)
   long originator = 0, status;
   double *work = gop_work;
   long nleft  = *pn;
-  long buflen = MIN(nleft,GOP_BUF_SIZE); /* Try to get even sized buffers */
+  long buflen = TCG_MIN(nleft,GOP_BUF_SIZE); /* Try to get even sized buffers */
   long nbuf   = (nleft-1) / buflen + 1;
   long n;
 
@@ -937,11 +937,11 @@ void DGOP_(ptype, x, pn, op)
 
   if (strncmp(op,"abs",3) == 0) {
     n = *pn;
-    while(n--) x[n] = ABS(x[n]);
+    while(n--) x[n] = TCG_ABS(x[n]);
   } 
   
   while (nleft) {
-    long ndo = MIN(nleft, buflen);
+    long ndo = TCG_MIN(nleft, buflen);
 
     if (strncmp(op,"+",1) == 0)
       mpc_reduce(x, work, ndo*sizeof(double), originator, d_vadd, allgrp);
@@ -979,7 +979,7 @@ void IGOP_(ptype, x, pn, op)
   long originator = 0, status;
   long *work = (long *) gop_work;
   long nleft  = *pn;
-  long buflen = MIN(nleft,2*GOP_BUF_SIZE); /* Try to get even sized buffers */
+  long buflen = TCG_MIN(nleft,2*GOP_BUF_SIZE); /* Try to get even sized buffers */
   long nbuf   = (nleft-1) / buflen + 1;
   long n;
 
@@ -994,11 +994,11 @@ void IGOP_(ptype, x, pn, op)
 
   if (strncmp(op,"abs",3) == 0) {
     n = *pn;
-    while(n--) x[n] = ABS(x[n]);
+    while(n--) x[n] = TCG_ABS(x[n]);
   } 
   
   while (nleft) {
-    long ndo = MIN(nleft, buflen);
+    long ndo = TCG_MIN(nleft, buflen);
 
     if (strncmp(op,"+",1) == 0)
       mpc_reduce(x, work, ndo*sizeof(long), originator, i_vadd, allgrp);

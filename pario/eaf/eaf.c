@@ -524,3 +524,80 @@ int eaf_length(int fd, eaf_off_t *length)
     if(!rc) *length = (eaf_off_t) len;
     return rc;
 }
+
+/* This section represents a new C API */
+
+int EAF_Write(int fd, eaf_off_t offset, const void *buf, size_t bytes)
+{
+    return eaf_write(fd, offset, buf, bytes);
+}
+
+int EAF_Awrite(int fd, eaf_off_t offset, const void *buf, size_t bytes, int *req_id)
+{
+    return eaf_awrite(fd, offset, buf, bytes, req_id);
+}
+
+int EAF_Read(int fd, eaf_off_t offset, void *buf, size_t bytes)
+{
+    return eaf_read(fd, offset, buf, bytes);
+}
+
+int EAF_Aread(int fd, eaf_off_t offset, void *buf, size_t bytes, int *req_id)
+{
+    return eaf_aread(fd, offset, buf, bytes, req_id);
+}
+
+int EAF_Wait(int fd, int id)
+{
+    return eaf_wait(fd, id);
+}
+
+int EAF_Probe(int id, int *status)
+{
+    return eaf_probe(id, status);
+}
+
+int EAF_Open(const char *fname, int type, int *fd)
+{
+    return eaf_open(fname, type, fd);
+}
+
+int EAF_Close(int fd)
+{
+    return eaf_close(fd);
+}
+
+int EAF_Delete(const char *fname)
+{
+    return eaf_delete(fname);
+}
+
+int EAF_Length(int fd, eaf_off_t *length)
+{
+    return eaf_length(fd, length);
+}
+
+int EAF_Stat(const char *path, int *avail_kb, char *fstype, int fslen)
+{
+    return eaf_stat(path, avail_kb, fstype, fslen);
+}
+
+int EAF_Eof(int code)
+{
+    return eaf_eof(code);
+}
+
+void EAF_Errmsg(int code, char *msg)
+{
+    eaf_errmsg(code, msg);
+}
+
+void EAF_Print_stats(int fd)
+{
+    eaf_print_stats(fd);
+}
+
+int EAF_Truncate(int fd, eaf_off_t length)
+{
+    return eaf_truncate(fd, length);
+}

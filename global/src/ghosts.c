@@ -100,23 +100,24 @@ Integer me = ga_nodeid_();
    GA_POP_NAME;
 }
 
-/*\  PROVIDE POINTER TO LOCALLY HELD DATA, ACCOUNTING FOR
+/*\  PROVIDE INDEX TO LOCALLY HELD DATA, ACCOUNTING FOR
  *   PRESENCE OF GHOST CELLS
 \*/
-void nga_access_ghost_element_(Integer* g_a, Integer* index,
+void FATR nga_access_ghost_element_(Integer* g_a, Integer* index,
                         Integer subscript[], Integer ld[])
 {
 char *ptr;
 Integer  handle = GA_OFFSET + *g_a;
 Integer i;
+Integer tmp_sub[MAXDIM];
 unsigned long    elemsize;
 unsigned long    lref, lptr;
 Integer me = ga_nodeid_();
    GA_PUSH_NAME("nga_access_ghost_element");
    /* Indices conform to Fortran convention. Shift them down 1 so that
       gam_LocationWithGhosts works. */
-   for (i=0; i<GA[handle].ndim; i++) subscript[i]--;
-   gam_LocationWithGhosts(me, handle, subscript, &ptr, ld);
+   for (i=0; i<GA[handle].ndim; i++) tmp_sub[i] = subscript[i] - 1;
+   gam_LocationWithGhosts(me, handle, tmp_sub, &ptr, ld);
    /*
     * return patch address as the distance elements from the reference address
     *
@@ -173,74 +174,185 @@ Integer me = ga_nodeid_();
    GA_POP_NAME;
 }
 
-/*\ PROVIDE ACCESS TO LOCAL PATCH OF A GLOBAL ARRAY WITH GHOST CELLS
+/*\  PROVIDE POINTER TO LOCALLY HELD DATA, ACCOUNTING FOR
+ *   PRESENCE OF GHOST CELLS
 \*/
-void FATR nga_access_ghosts_(Integer* g_a, Integer dims[],
-                      Integer* index, Integer ld[])
+void FATR nga_access_ghost_element_ptr(Integer* g_a, void *ptr,
+                        Integer subscript[], Integer ld[])
 {
-char     *ptr;
-Integer  handle = GA_OFFSET + *g_a;
-unsigned long    elemsize;
-unsigned long    lref, lptr;
+  char *lptr;
+  Integer  handle = GA_OFFSET + *g_a;
+  Integer i;
+  Integer tmp_sub[MAXDIM];
+  Integer me = ga_nodeid_();
+  GA_PUSH_NAME("nga_access_ghost_element_ptr");
+  /* Indices conform to Fortran convention. Shift them down 1 so that
+     gam_LocationWithGhosts works. */
+  for (i=0; i<GA[handle].ndim; i++) tmp_sub[i] = subscript[i] - 1;
+  gam_LocationWithGhosts(me, handle, tmp_sub, &ptr, ld);
 
-   GA_PUSH_NAME("nga_access_ghosts");
-   nga_access_ghost_ptr(g_a, dims, &ptr, ld);
+  *(char**)ptr = lptr;
+  GA_POP_NAME;
+}
 
-   /*
-    * return patch address as the distance elements from the reference address
-    *
-    * .in Fortran we need only the index to the type array: dbl_mb or int_mb
-    *  that are elements of COMMON in the the mafdecls.h include file
-    * .in C we need both the index and the pointer
-    */
+/*\ PROVIDE ACCESS TO LOCAL PATCH OF A GLOBAL ARRAY WITH GHOST CELLS
+  \*/
+void FATR nga_access_ghosts_(Integer* g_a, Integer dims[],
+    Integer* index, Integer ld[])
+{
+  char     *ptr;
+  Integer  handle = GA_OFFSET + *g_a;
+  unsigned long    elemsize;
+  unsigned long    lref, lptr;
 
-   elemsize = (unsigned long)GA[handle].elemsize;
+  GA_PUSH_NAME("nga_access_ghosts");
+  nga_access_ghost_ptr(g_a, dims, &ptr, ld);
 
-   /* compute index and check if it is correct */
-   switch (ga_type_c2f(GA[handle].type)){
-     case MT_F_DBL:
-        *index = (Integer) ((DoublePrecision*)ptr - DBL_MB);
-        lref = (unsigned long)DBL_MB;
-        break;
+  /*
+   * return patch address as the distance elements from the reference address
+   *
+   * .in Fortran we need only the index to the type array: dbl_mb or int_mb
+   *  that are elements of COMMON in the the mafdecls.h include file
+   * .in C we need both the index and the pointer
+   */
 
-     case MT_F_DCPL:
-        *index = (Integer) ((DoubleComplex*)ptr - DCPL_MB);
-        lref = (unsigned long)DCPL_MB;
-        break;
+  elemsize = (unsigned long)GA[handle].elemsize;
 
-     case MT_F_SCPL:
-        *index = (Integer) ((SingleComplex*)ptr - SCPL_MB);
-        lref = (unsigned long)SCPL_MB;
-        break;
+  /* compute index and check if it is correct */
+  switch (ga_type_c2f(GA[handle].type)){
+    case MT_F_DBL:
+      *index = (Integer) ((DoublePrecision*)ptr - DBL_MB);
+      lref = (unsigned long)DBL_MB;
+      break;
 
-     case MT_F_INT:
-        *index = (Integer) ((Integer*)ptr - INT_MB);
-        lref = (unsigned long)INT_MB;
-        break;
+    case MT_F_DCPL:
+      *index = (Integer) ((DoubleComplex*)ptr - DCPL_MB);
+      lref = (unsigned long)DCPL_MB;
+      break;
 
-     case MT_F_REAL:
-        *index = (Integer) ((float*)ptr - FLT_MB);
-        lref = (unsigned long)FLT_MB;
-        break;        
+    case MT_F_SCPL:
+      *index = (Integer) ((SingleComplex*)ptr - SCPL_MB);
+      lref = (unsigned long)SCPL_MB;
+      break;
 
-   }
+    case MT_F_INT:
+      *index = (Integer) ((Integer*)ptr - INT_MB);
+      lref = (unsigned long)INT_MB;
+      break;
+
+    case MT_F_REAL:
+      *index = (Integer) ((float*)ptr - FLT_MB);
+      lref = (unsigned long)FLT_MB;
+      break;        
+
+  }
 
 #ifdef BYTE_ADDRESSABLE_MEMORY
-   /* check the allignment */
-   lptr = (unsigned long)ptr;
-   if( lptr%elemsize != lref%elemsize ){ 
-       printf("%d: lptr=%lu(%lu) lref=%lu(%lu)\n",(int)GAme,lptr,lptr%elemsize,
-                                                    lref,lref%elemsize);
-       ga_error("nga_access: MA addressing problem: base address misallignment",
-                 handle);
-   }
+  /* check the allignment */
+  lptr = (unsigned long)ptr;
+  if( lptr%elemsize != lref%elemsize ){ 
+    printf("%d: lptr=%lu(%lu) lref=%lu(%lu)\n",(int)GAme,lptr,lptr%elemsize,
+        lref,lref%elemsize);
+    ga_error("nga_access: MA addressing problem: base address misallignment",
+        handle);
+  }
 #endif
 
-   /* adjust index for Fortran addressing */
-   (*index) ++ ;
-   FLUSH_CACHE;
+  /* adjust index for Fortran addressing */
+  (*index) ++ ;
+  FLUSH_CACHE;
 
-   GA_POP_NAME;
+  GA_POP_NAME;
+}
+
+/*\ RELEASE ACCESS TO A GHOST ELEMENT
+\*/
+void FATR nga_release_ghost_element_(Integer* g_a, Integer subscript[])
+{
+}
+
+/*\ RELEASE ACCESS & UPDATE A GHOST ELEMENT
+\*/
+void FATR nga_release_update_ghost_element_(Integer* g_a, Integer subscript[])
+{
+}
+
+/*\ RELEASE ACCESS TO A GHOST BLOCK
+\*/
+void FATR nga_release_ghosts_(Integer* g_a)
+{
+}
+
+/*\ RELEASE ACCESS & UPDATE A GHOST BLOCK
+\*/
+void FATR nga_release_update_ghosts_(Integer* g_a)
+{
+}
+
+/*\ GET DATA FROM LOCAL BLOCK
+\*/
+void FATR nga_get_ghost_block_(Integer *g_a,
+                               Integer *lo,
+                               Integer *hi,
+                               void *buf,
+                               Integer *ld)
+{
+  /* g_a:      Global array handle
+     lo[]:     Array of lower indices of patch of global array
+     hi[]:     Array of upper indices of patch of global array
+     buf[]:    Local buffer that array patch will be copied into
+     ld[]:     Array of physical ndim-1 dimensions of local buffer */
+  Integer handle=GA_OFFSET + *g_a, ndim;
+  Integer i, glo[MAXDIM], ghi[MAXDIM], ichk, me, grp_id;
+  Integer llo[MAXDIM];
+  int  stride_rem[MAXDIM], stride_loc[MAXDIM], count[MAXDIM];
+  Integer ldrem[MAXDIM];
+  Integer offset, factor, size;
+  char *ptr;
+
+  me = GAme;
+  grp_id = (Integer)GA[handle].p_handle;
+  if (grp_id>0) me = PGRP_LIST[grp_id].map_proc_list[me];
+  ndim = GA[handle].ndim;
+
+  /* Figure out whether or not lo and hi can be accessed completely
+     from local data */
+  nga_distribution_(g_a, &me, glo, ghi);
+  ichk = 1;
+  for (i=0; i<ndim; i++) {
+    if (lo[i] < glo[i]-(Integer)GA[handle].width[i]) ichk = 0;
+    if (hi[i] > ghi[i]+(Integer)GA[handle].width[i]) ichk = 0;
+    llo[i] = glo[i] - (Integer)GA[handle].width[i];
+    if (i<ndim-1) ldrem[i] = ghi[i] - glo[i] + 1
+      + 2*(Integer)GA[handle].width[i];
+  }
+
+  /* Get data. Use local copy if possible, otherwise use a periodic get */
+  if (ichk) {
+    offset = 0;
+    factor = 1;
+    size = GA[handle].elemsize;
+    for (i=0; i<ndim-1; i++) {
+      offset += (lo[i]-llo[i])*factor;
+      factor *= ghi[i] - glo[i] + 1 + 2*(Integer)GA[handle].width[i];
+    }
+    offset += (lo[ndim-1]-llo[ndim-1])*factor;
+    ptr = GA[handle].ptr[me] + size*offset;
+    /* compute number of elements in each dimension and store result in count */
+    gam_ComputeCount(ndim, lo, hi, count);
+
+    /* scale first element in count by element size. The ARMCI_GetS
+       routine uses this convention to figure out memory sizes.*/
+    count[0] *= size;
+
+    /* Return strides for memory containing global array on remote
+       processor indexed by proc (stride_rem) and for local buffer
+       buf (stride_loc) */
+    gam_setstride(ndim, size, ld, ldrem, stride_rem, stride_loc);
+    ARMCI_GetS(ptr,stride_rem,buf,stride_loc,count,ndim-1,me);
+  } else {
+    nga_periodic_get_(g_a,lo,hi,buf,ld);
+  }
 }
 
 /*\ UPDATE GHOST CELLS OF GLOBAL ARRAY USING SHIFT ALGORITHM
@@ -966,6 +1078,9 @@ logical FATR ga_update3_ghosts_(Integer *g_a)
   ndim = GA[handle].ndim;
   p_handle = GA[handle].p_handle;
 
+  /* obtain range of data that is held by local processor */
+  nga_distribution_(g_a,&me,lo_loc,hi_loc);
+
   /* initialize range increments and get array dimensions */
   for (idx=0; idx < ndim; idx++) {
     increment[idx] = 0;
@@ -983,8 +1098,6 @@ logical FATR ga_update3_ghosts_(Integer *g_a)
 
   /* Get pointer to local memory */
   ptr_loc = GA[handle].ptr[me];
-  /* obtain range of data that is held by local processor */
-  nga_distribution_(g_a,&me,lo_loc,hi_loc);
 
   /* loop over dimensions for sequential update using shift algorithm */
   for (idx=0; idx < ndim; idx++) {
@@ -2825,7 +2938,7 @@ logical ga_update5_ghosts_(Integer *g_a)
       }
       if(count[0]>1000000){
         /*tries to use armci direct put when possible */
-        ARMCI_PutS_flag_dir(ptr_loc, stride_loc, ptr_rem, stride_rem, count,
+        ARMCI_PutS_flag(ptr_loc, stride_loc, ptr_rem, stride_rem, count,
             (int)(ndim - 1), GA_Update_Flags[proc_rem]+msgcnt,
             *GA_Update_Signal, proc_rem);
       }
@@ -2855,7 +2968,7 @@ logical ga_update5_ghosts_(Integer *g_a)
       }
       if(count[0]>1000000){
         /*tries to use armci direct put when possible */
-        ARMCI_PutS_flag_dir(ptr_loc, stride_loc, ptr_rem, stride_rem, count,
+        ARMCI_PutS_flag(ptr_loc, stride_loc, ptr_rem, stride_rem, count,
             (int)(ndim - 1), GA_Update_Flags[proc_rem]+msgcnt,
             *GA_Update_Signal, proc_rem);
       }
@@ -3205,7 +3318,7 @@ logical FATR ga_update6_ghosts_(Integer *g_a)
    *
    * This implementation make use of a combination of explicit message
    * passing between processors on different nodes and shared memory
-   * copies with and additional flag between processors on the same node
+   * copies with an additional flag between processors on the same node
    * to perform the update. Separate message types for the messages and
    * the use of the additional flag are for the updates in each
    * coordinate direction are used to maintain synchronization locally

@@ -67,8 +67,8 @@ void armci_lockmem_scatter(void *ptr_array[], int len, int bytes, int proc)
      pmax=ptr_array[0];
 
      for(i = 0; i< len; i++){
-              pmin = MIN(ptr_array[i],pmin);
-              pmax = MAX(ptr_array[i],pmax);
+              pmin = ARMCI_MIN(ptr_array[i],pmin);
+              pmax = ARMCI_MAX(ptr_array[i],pmax);
      }
      pmax =  bytes-1 + (char*)pmax;
      ARMCI_LOCKMEM(pmin, pmax, proc);
@@ -194,10 +194,10 @@ int armci_acc_vector(int op,             /* operation code */
 
                /* copy as many blocks as possible into the local buffer */
                dl.bytes = dr.bytes;
-               nb = MIN(PWORKLEN,BUFSIZE/dr.bytes);
+               nb = ARMCI_MIN(PWORKLEN,BUFSIZE/dr.bytes);
 
                for(j=0; j< dr.ptr_array_len; j+= nb){
-                   int nblocks = MIN(nb, dr.ptr_array_len -j);
+                   int nblocks = ARMCI_MIN(nb, dr.ptr_array_len -j);
                    int k;
 
                    /* setup vector descriptor for remote memory copy 
@@ -351,7 +351,7 @@ char *ptr = (char*)buf;
       }
 }
 
-int ARMCI_PutV( armci_giov_t darr[], /* descriptor array */
+int PARMCI_PutV( armci_giov_t darr[], /* descriptor array */
                 int len,  /* length of descriptor array */
                 int proc  /* remote process(or) ID */
               )
@@ -404,8 +404,8 @@ int ARMCI_PutV( armci_giov_t darr[], /* descriptor array */
 #ifdef BGML
    armci_hdl_t nb_handle;
    ARMCI_INIT_HANDLE(&nb_handle);
-   ARMCI_NbPutV(darr, len, proc, &nb_handle);
-   ARMCI_Wait(&nb_handle);
+   PARMCI_NbPutV(darr, len, proc, &nb_handle);
+   PARMCI_Wait(&nb_handle);
 #elif ARMCIX
    ARMCIX_PutV (darr, len, proc);
 #else
@@ -438,7 +438,7 @@ int ARMCI_PutV( armci_giov_t darr[], /* descriptor array */
 }
 
 
-int ARMCI_GetV( armci_giov_t darr[], /* descriptor array */
+int PARMCI_GetV( armci_giov_t darr[], /* descriptor array */
                 int len,  /* length of descriptor array */
                 int proc  /* remote process(or) ID */
               )
@@ -491,8 +491,8 @@ int ARMCI_GetV( armci_giov_t darr[], /* descriptor array */
 #ifdef BGML
    armci_hdl_t nb_handle;
    ARMCI_INIT_HANDLE(&nb_handle);
-   ARMCI_NbGetV(darr, len, proc, &nb_handle);
-   ARMCI_Wait(&nb_handle);
+   PARMCI_NbGetV(darr, len, proc, &nb_handle);
+   PARMCI_Wait(&nb_handle);
 #elif ARMCIX
    ARMCIX_GetV (darr, len, proc);
 #else
@@ -526,7 +526,7 @@ int ARMCI_GetV( armci_giov_t darr[], /* descriptor array */
 
 
 
-int ARMCI_AccV( int op,              /* oeration code */
+int PARMCI_AccV( int op,              /* oeration code */
                 void *scale,         /*scaling factor for accumulate */
                 armci_giov_t darr[], /* descriptor array */
                 int len,             /* length of descriptor array */
@@ -563,8 +563,8 @@ int ARMCI_AccV( int op,              /* oeration code */
 #ifdef BGML
    armci_hdl_t nb_handle;
    ARMCI_INIT_HANDLE(&nb_handle);
-   ARMCI_NbAccV(op, scale, darr, len, proc, &nb_handle);
-   ARMCI_Wait(&nb_handle);
+   PARMCI_NbAccV(op, scale, darr, len, proc, &nb_handle);
+   PARMCI_Wait(&nb_handle);
 #elif ARMCIX
    ARMCIX_AccV (op, scale, darr, len, proc);
 #else
@@ -596,7 +596,7 @@ int ARMCI_AccV( int op,              /* oeration code */
 
 /*\ Non-blocking vector API
 \*/
-int ARMCI_NbPutV( armci_giov_t darr[], /* descriptor array */
+int PARMCI_NbPutV( armci_giov_t darr[], /* descriptor array */
                 int len,  /* length of descriptor array */
                 int proc, /* remote process(or) ID */
                 armci_hdl_t* usr_hdl  /*non-blocking request handle*/
@@ -693,7 +693,7 @@ int ARMCI_NbPutV( armci_giov_t darr[], /* descriptor array */
     else return 0;
 }
 
-int ARMCI_NbGetV( armci_giov_t darr[], /* descriptor array */
+int PARMCI_NbGetV( armci_giov_t darr[], /* descriptor array */
                 int len,  /* length of descriptor array */
                 int proc, /* remote process(or) ID */
                 armci_hdl_t* usr_hdl  /*non-blocking request handle*/
@@ -787,7 +787,7 @@ int ARMCI_NbGetV( armci_giov_t darr[], /* descriptor array */
 }
 
 
-int ARMCI_NbAccV( int op,              /* oeration code */
+int PARMCI_NbAccV( int op,              /* oeration code */
                 void *scale,         /*scaling factor for accumulate */
                 armci_giov_t darr[], /* descriptor array */
                 int len,             /* length of descriptor array */
