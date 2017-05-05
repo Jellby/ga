@@ -7,7 +7,7 @@
 #include "locks.h"
 #include "copy.h"
 #include <stdio.h>
-#if (defined(__i386__) || defined(__x86_64__)) && !defined(_CRAYC)
+#if defined(__i386__) || defined(__x86_64__) 
 #  include "atomics-i386.h"
 #endif
 
@@ -93,7 +93,7 @@ void armci_generic_rmw(int op, void *ploc, void *prem, int extra, int proc)
                 armci_put(&_a_ltemp,prem,sizeof(long),proc);
            break;
       case ARMCI_SWAP:
-#if (defined(__i386__) || defined(__x86_64__)) && !defined(_CRAYC)
+#if (defined(__i386__) || defined(__x86_64__))
         if(SERVER_CONTEXT || armci_nclus==1){
 	  atomic_exchange(ploc, prem, sizeof(int));
         }
@@ -121,25 +121,13 @@ void armci_generic_rmw(int op, void *ploc, void *prem, int extra, int proc)
 int PARMCI_Rmw(int op, void *ploc, void *prem, int extra, int proc)
 {
     if(!SAMECLUSNODE(proc)){
-    # if defined CRAY_REGISTER_ARMCI_MALLOC && HAVE_ONESIDED_FADD
-      if(op == ARMCI_FETCH_AND_ADD_LONG) {
-         armci_onesided_fadd(ploc, prem, extra, proc);
-      } else {
-    # endif
-         armci_rem_rmw(op, ploc, prem,  extra, proc);
-    # if defined CRAY_REGISTER_ARMCI_MALLOC && HAVE_ONESIDED_FADD
-      }
-    # endif
+      armci_rem_rmw(op, ploc, prem,  extra, proc);
       return 0;
     }
 
     switch (op) {
-      case ARMCI_FETCH_AND_ADD_LONG:
-      # if defined CRAY_REGISTER_ARMCI_MALLOC && HAVE_ONESIDED_FADD
-        armci_onesided_fadd(ploc, prem, extra, proc);
-        break;
-      # endif
       case ARMCI_FETCH_AND_ADD:
+      case ARMCI_FETCH_AND_ADD_LONG:
       case ARMCI_SWAP:
       case ARMCI_SWAP_LONG:
            armci_generic_rmw(op, ploc, prem,  extra, proc);

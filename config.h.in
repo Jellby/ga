@@ -131,9 +131,6 @@
 /* Module command when using Fortran 90 compiler e.g. use f90_unix */
 #undef FXX_MODULE
 
-/* for Gemini */
-#undef GEMINI
-
 /* TODO */
 #undef GM
 
@@ -251,12 +248,6 @@
 
 /* Define to 1 if you have the <ndir.h> header file, and it defines `DIR'. */
 #undef HAVE_NDIR_H
-
-/* set to 1 if libonesided has onesided_fadd (added in v1.6) */
-#undef HAVE_ONESIDED_FADD
-
-/* set to 1 if libonesided has onesided_mem_htflush (added in v1.5) */
-#undef HAVE_ONESIDED_MEM_HTFLUSH
 
 /* Define to 1 if you have the `pause' function. */
 #undef HAVE_PAUSE

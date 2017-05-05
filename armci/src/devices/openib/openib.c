@@ -1448,7 +1448,7 @@ static void vapi_connect_client()
         qp_attr.qp_state            = IBV_QPS_RTS;
         qp_attr.sq_psn              = 0;
         qp_attr.timeout             = 18;
-        qp_attr.retry_cnt           = 20;
+        qp_attr.retry_cnt           = 7;
         qp_attr.rnr_retry           = 7;
         qp_attr.max_rd_atomic  = 4;
 
@@ -1579,6 +1579,14 @@ void armci_server_initial_connection()
     armci_pbuf_init_buffer_env();
 #endif
     armci_init_nic(CLN_nic,1,1);
+    if (!armci_openib_server_poll) {
+	/*
+	 * Start a notify event request immediately after creation so
+	 * nothing is missed.
+	 */
+	rc = ibv_req_notify_cq(CLN_nic->rcq, 0);
+	dassert1(1,rc==0,rc);
+    }
 
     _gtmparr[armci_me] = CLN_nic->lid_arr[armci_me];
     armci_vapi_server_stage1 = 1;
@@ -1663,7 +1671,7 @@ void armci_server_initial_connection()
     qp_attr.qp_state            = IBV_QPS_RTS;
     qp_attr.sq_psn              = 0;
     qp_attr.timeout             = 18;
-    qp_attr.retry_cnt           = 20;
+    qp_attr.retry_cnt           = 7;
     qp_attr.rnr_retry           = 7;
     qp_attr.max_rd_atomic  = 4;
 
@@ -2097,7 +2105,6 @@ vapibuf_t *cbuf,*cbufs;
 request_header_t *msginfo,*msg;
 int c,i,need_ack,pollcount;
 static int mytag=1;
-static int doineednotify=1;
 int rrr,serverwcount=0;
 
 #ifdef CHANGE_SERVER_AFFINITY
@@ -2150,37 +2157,26 @@ int nslave=armci_clus_info[armci_clus_me].nslave;
       block_thread_signal(GPC_COMPLETION_SIGNAL);
 #endif
       bzero(pdscr, sizeof(*pdscr));
-      if (armci_openib_server_poll) {
+      do {
         rc = ibv_poll_cq(CLN_nic->rcq, 1, pdscr);
-        while (rc == 0) {
-          rc = ibv_poll_cq(CLN_nic->rcq, 1, pdscr);
-          if (armci_server_terminating) {
-            /* server got interrupted when clients terminate connections */
-            armci_server_transport_cleanup();
-            sleep(1);
-            _exit(0);
-          }
-        }
-      } else {
-          rc = ibv_poll_cq(CLN_nic->rcq, 1, pdscr);
-          if(rc==0){doineednotify=1;/*continue;*/}
-          if(doineednotify){
-            rc1 = ibv_req_notify_cq(CLN_nic->rcq, 0);
-	    dassert1(1,rc1==0,rc1);
-            rc1=ibv_get_cq_event(CLN_nic->rch,&CLN_nic->rcq,&CLN_nic->rcq_cntx);
-	    dassert1(1,rc1==0,rc1);
-            doineednotify=0;
-	    ibv_ack_cq_events(CLN_nic->rcq, 1);
-            rc = ibv_poll_cq(CLN_nic->rcq, 1, pdscr);
-          }
-
-	  if (armci_server_terminating) {
-	    /* server got interrupted when clients terminate connections */
-	    armci_server_transport_cleanup();
-	    sleep(1);
-	    _exit(0);
-	  }
-      }
+	if (armci_server_terminating) {
+	  /* server is interrupted when clients terminate connections */
+	  armci_server_transport_cleanup();
+	  sleep(1);
+	  _exit(0);
+	}
+	if (rc == 0 && !armci_openib_server_poll) {
+	  /* wait for a notify event */
+          rc1 = ibv_get_cq_event(CLN_nic->rch,&CLN_nic->rcq,&CLN_nic->rcq_cntx);
+          dassert1(1,rc1==0,rc1);
+          ibv_ack_cq_events(CLN_nic->rcq, 1);
+	  /* re-arm notify event */
+          rc1 = ibv_req_notify_cq(CLN_nic->rcq, 0);
+          dassert1(1,rc1==0,rc1);
+	  /* note: an event receive does not guarantee an actual completion */
+	  continue;
+	}
+      } while (rc == 0);
 
       if(DEBUG_SERVER) {
         printf("\n%d:pdscr=%p %p %d %d %d %d\n",armci_me,pdscr,&pdscr1,
@@ -2928,7 +2924,7 @@ void armci_client_direct_rdma_strided(int operation, int proc,
   struct ibv_send_wr *bad_wr;
   struct ibv_send_wr sdscr[WQE_LIST_COUNT][WQE_LIST_LENGTH];
   struct ibv_sge     sg_entry[WQE_LIST_COUNT][WQE_LIST_LENGTH];
-  stride_itr_t sitr, ditr;
+  stride_info_t sinfo, dinfo;
 
   THREAD_LOCK(armci_user_threads.net_lock);
 
@@ -2963,17 +2959,17 @@ void armci_client_direct_rdma_strided(int operation, int proc,
   }
 
   /*post requests in a loop*/
-  sitr = armci_stride_itr_init(src_ptr,stride_levels,src_stride_arr,seg_count);
-  ditr = armci_stride_itr_init(dst_ptr,stride_levels,dst_stride_arr,seg_count);
-  assert(armci_stride_itr_size(sitr)==armci_stride_itr_size(ditr));
+  armci_stride_info_init(&sinfo,src_ptr,stride_levels,src_stride_arr,seg_count);
+  armci_stride_info_init(&dinfo,dst_ptr,stride_levels,dst_stride_arr,seg_count);
+  assert(armci_stride_info_size(&sinfo)==armci_stride_info_size(&dinfo));
   
   dirdscr->numofsends=0;
   clst=ctr=0;
   bzero(busy, sizeof(int)*WQE_LIST_COUNT);
-  while(armci_stride_itr_has_more(sitr)) {
-    assert(armci_stride_itr_has_more(ditr));
-    uint64_t saddr = (uint64_t)armci_stride_itr_seg_ptr(sitr);
-    uint64_t daddr = (uint64_t)armci_stride_itr_seg_ptr(ditr);
+  while(armci_stride_info_has_more(&sinfo)) {
+    assert(armci_stride_info_has_more(&dinfo));
+    uint64_t saddr = (uint64_t)armci_stride_info_seg_ptr(&sinfo);
+    uint64_t daddr = (uint64_t)armci_stride_info_seg_ptr(&dinfo);
     if(operation == PUT) {
       sg_entry[clst][ctr].addr = saddr;
       sdscr[clst][ctr].wr.rdma.remote_addr = daddr;
@@ -2985,9 +2981,9 @@ void armci_client_direct_rdma_strided(int operation, int proc,
     assert(sg_entry[clst][ctr].length == seg_count[0]);
 
     ctr+=1;
-    armci_stride_itr_next(sitr);
-    armci_stride_itr_next(ditr);
-    if(ctr == WQE_LIST_LENGTH || !armci_stride_itr_has_more(sitr)) {
+    armci_stride_info_next(&sinfo);
+    armci_stride_info_next(&dinfo);
+    if(ctr == WQE_LIST_LENGTH || !armci_stride_info_has_more(&sinfo)) {
       sdscr[clst][ctr-1].next=NULL;
       sdscr[clst][ctr-1].send_flags=IBV_SEND_SIGNALED; /*only the last one*/
       for(c=0; c<ctr-1; c++) {
@@ -3012,8 +3008,8 @@ void armci_client_direct_rdma_strided(int operation, int proc,
       }
     }
   }
-  armci_stride_itr_destroy(&sitr);
-  armci_stride_itr_destroy(&ditr);
+  armci_stride_info_destroy(&sinfo);
+  armci_stride_info_destroy(&dinfo);
 
   if(!nbtag) {
     armci_send_complete(&dirdscr->sdescr,"armci_client_direct_get",dirdscr->numofsends);
@@ -3056,7 +3052,7 @@ void armci_server_rdma_strided_to_contig(char *src_ptr, int src_stride_arr[],
   struct ibv_send_wr *bad_wr, sdscr1;
   struct ibv_send_wr sdscr[WQE_LIST_COUNT][WQE_LIST_LENGTH];
   struct ibv_sge     sg_entry[WQE_LIST_COUNT][WQE_LIST_LENGTH];
-  stride_itr_t sitr;
+  stride_info_t sinfo;
   uint64_t daddr;
   ARMCI_MEMHDL_T *loc_memhdl;
   ARMCI_MEMHDL_T *rem_memhdl = &handle_array[proc];
@@ -3103,23 +3099,23 @@ void armci_server_rdma_strided_to_contig(char *src_ptr, int src_stride_arr[],
   }
 
   /*post requests in a loop*/
-  sitr = armci_stride_itr_init(src_ptr,stride_levels,src_stride_arr,seg_count);
+  sinfo = armci_stride_info_init(src_ptr,stride_levels,src_stride_arr,seg_count);
   
   clst=ctr=0;
   bzero(busy, sizeof(int)*WQE_LIST_COUNT);
   daddr = (uint64_t)dst_ptr;
-  while(armci_stride_itr_has_more(sitr)) {
-    uint64_t saddr = (uint64_t)armci_stride_itr_seg_ptr(sitr);
+  while(armci_stride_info_has_more(sinfo)) {
+    uint64_t saddr = (uint64_t)armci_stride_info_seg_ptr(sinfo);
     sg_entry[clst][ctr].addr = saddr;
     sdscr[clst][ctr].wr.rdma.remote_addr = daddr;
     assert(sg_entry[clst][ctr].length == seg_count[0]);
 
     ctr+=1;
     daddr += seg_count[0];
-    armci_stride_itr_next(sitr);
-    if(ctr == WQE_LIST_LENGTH || !armci_stride_itr_has_more(sitr)) {
+    armci_stride_info_next(sinfo);
+    if(ctr == WQE_LIST_LENGTH || !armci_stride_info_has_more(sinfo)) {
       sdscr[clst][ctr-1].next=NULL;
-      if(!armci_stride_itr_has_more(sitr)) {
+      if(!armci_stride_info_has_more(sinfo)) {
 	sdscr[clst][ctr-1].send_flags=IBV_SEND_SIGNALED; /*only the last one*/
       }
       for(c=0; c<ctr-1; c++) {
@@ -3146,7 +3142,7 @@ void armci_server_rdma_strided_to_contig(char *src_ptr, int src_stride_arr[],
 #endif
     }
   }
-  armci_stride_itr_destroy(&sitr);
+  armci_stride_info_destroy(&sinfo);
   assert(proc == msginfo->from);
   THREAD_UNLOCK(armci_user_threads.net_lock);
 }
@@ -3163,7 +3159,7 @@ void armci_server_rdma_strided_to_contig(char *src_ptr, int src_stride_arr[],
   int rc, ctr, wr_id, bytes;
   struct ibv_send_wr *bad_wr, sdscr1, sdscr;
   struct ibv_sge     sg_entry[MAX_NUM_SGE];
-  stride_itr_t sitr;
+  stride_info_t sinfo;
   uint64_t daddr;
   ARMCI_MEMHDL_T *loc_memhdl;
   ARMCI_MEMHDL_T *rem_memhdl = &handle_array[proc];
@@ -3211,24 +3207,24 @@ void armci_server_rdma_strided_to_contig(char *src_ptr, int src_stride_arr[],
   }
   
   /*post requests in a loop*/
-  sitr = armci_stride_itr_init(src_ptr,stride_levels,src_stride_arr,seg_count);
+  armci_stride_info_init(&sinfo,src_ptr,stride_levels,src_stride_arr,seg_count);
   
   numposts = numsegs = 0;
   ctr=0;
   daddr = (uint64_t)dst_ptr;
   bytes=0;
-  while(armci_stride_itr_has_more(sitr)) {
-    sg_entry[ctr].addr = (uint64_t)armci_stride_itr_seg_ptr(sitr);
+  while(armci_stride_info_has_more(&sinfo)) {
+    sg_entry[ctr].addr = (uint64_t)armci_stride_info_seg_ptr(&sinfo);
     assert(sg_entry[ctr].length == seg_count[0]);
 
     sdscr.num_sge += 1;
     bytes += seg_count[0];
     ctr+=1;
     numsegs += 1;
-    armci_stride_itr_next(sitr);
-    if(ctr == max_num_sge || !armci_stride_itr_has_more(sitr)) {
+    armci_stride_info_next(&sinfo);
+    if(ctr == max_num_sge || !armci_stride_info_has_more(&sinfo)) {
       sdscr.wr.rdma.remote_addr = daddr;
-      if(!armci_stride_itr_has_more(sitr)) {
+      if(!armci_stride_info_has_more(&sinfo)) {
 	sdscr.send_flags=IBV_SEND_SIGNALED; /*only the last one*/
       }
       else {
@@ -3246,7 +3242,7 @@ void armci_server_rdma_strided_to_contig(char *src_ptr, int src_stride_arr[],
     }
   }
 /*   printf("%d(s): scatgat write numposts=%d numsegs=%d\n",armci_me,numposts,numsegs); */
-  armci_stride_itr_destroy(&sitr);
+  armci_stride_info_destroy(&sinfo);
   assert(proc == msginfo->from);
   THREAD_UNLOCK(armci_user_threads.net_lock);
 }
@@ -3262,7 +3258,7 @@ void armci_server_rdma_contig_to_strided(char *src_ptr, int proc,
   int rc, ctr, wr_id, bytes;
   struct ibv_send_wr *bad_wr, sdscr1, sdscr;
   struct ibv_sge     sg_entry[MAX_NUM_SGE];
-  stride_itr_t ditr;
+  stride_info_t dinfo;
   uint64_t saddr;
   ARMCI_MEMHDL_T *loc_memhdl;
   ARMCI_MEMHDL_T *rem_memhdl = &handle_array[proc];
@@ -3310,24 +3306,24 @@ void armci_server_rdma_contig_to_strided(char *src_ptr, int proc,
   }
   
   /*post requests in a loop*/
-  ditr = armci_stride_itr_init(dst_ptr,stride_levels,dst_stride_arr,seg_count);
+  armci_stride_info_init(&dinfo,dst_ptr,stride_levels,dst_stride_arr,seg_count);
   
   numposts = numsegs = 0;
   ctr=0;
   saddr = (uint64_t)src_ptr;
   bytes=0;
-  while(armci_stride_itr_has_more(ditr)) {
-    sg_entry[ctr].addr = (uint64_t)armci_stride_itr_seg_ptr(ditr);
+  while(armci_stride_info_has_more(&dinfo)) {
+    sg_entry[ctr].addr = (uint64_t)armci_stride_info_seg_ptr(&dinfo);
     assert(sg_entry[ctr].length == seg_count[0]);
 
     sdscr.num_sge += 1;
     bytes += seg_count[0];
     ctr+=1;
     numsegs += 1;
-    armci_stride_itr_next(ditr);
-    if(ctr == max_num_sge || !armci_stride_itr_has_more(ditr)) {
+    armci_stride_info_next(&dinfo);
+    if(ctr == max_num_sge || !armci_stride_info_has_more(&dinfo)) {
       sdscr.wr.rdma.remote_addr = saddr;
-      if(!armci_stride_itr_has_more(ditr)) {
+      if(!armci_stride_info_has_more(&dinfo)) {
 	sdscr.send_flags=IBV_SEND_SIGNALED; /*only the last one*/
       }
       else {
@@ -3345,7 +3341,7 @@ void armci_server_rdma_contig_to_strided(char *src_ptr, int proc,
     }
   }
 /*   printf("%d(s): scatgat write numposts=%d numsegs=%d\n",armci_me,numposts,numsegs); */
-  armci_stride_itr_destroy(&ditr);
+  armci_stride_info_destroy(&dinfo);
   assert(proc == msginfo->from);
   THREAD_UNLOCK(armci_user_threads.net_lock);
 }
@@ -4141,7 +4137,7 @@ int loop=0;
 
 int armci_pin_memory(void *ptr, int stride_arr[], int count[], int strides)
 {
-    fprintf("stderr, [%d]:armci_pin_memory not implemented\n",armci_me);
+    fprintf(stderr, "[%d]:armci_pin_memory not implemented\n",armci_me);
     fflush(stderr);
     return 0;
 }
@@ -4431,7 +4427,7 @@ void process_recv_completion_from_client(armci_ud_rank *h, cbuf *v)
     qp_attr.qp_state            = IBV_QPS_RTS;
     qp_attr.sq_psn              = 0;
     qp_attr.timeout             = 18;
-    qp_attr.retry_cnt           = 20;
+    qp_attr.retry_cnt           = 7;
     qp_attr.rnr_retry           = 7;
     qp_attr.max_rd_atomic  = 4;
     rc = ibv_modify_qp(con->qp, &qp_attr,qp_attr_mask);
@@ -4982,7 +4978,7 @@ void process_recv_completion_from_server(armci_ud_rank *h, cbuf *v)
     qp_attr.qp_state            = IBV_QPS_RTS;
     qp_attr.sq_psn              = 0;
     qp_attr.timeout             = 18;
-    qp_attr.retry_cnt           = 20;
+    qp_attr.retry_cnt           = 7;
     qp_attr.rnr_retry           = 7;
     qp_attr.max_rd_atomic  = 4;
 

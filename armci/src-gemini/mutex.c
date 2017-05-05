@@ -158,9 +158,7 @@ int PARMCI_Destroy_mutexes()
         armci_serv_mutex_close();
 #    endif
 
-     // RMO: Forcing PARMCI_Free to be a collective operation
-     // if(glob_mutex[armci_me].count)
-     PARMCI_Free(glob_mutex[armci_me].token);
+     if(glob_mutex[armci_me].count)PARMCI_Free(glob_mutex[armci_me].token);
 
      free(tickets);
      free(glob_mutex);

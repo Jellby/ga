@@ -2134,7 +2134,7 @@ void NGA_Access_block_grid(int g_a, int index[], void *ptr, int ld[])
      Integer a=(Integer)g_a;
      Integer ndim = wnga_ndim(a);
      Integer _ga_work[MAXDIM], _ga_lo[MAXDIM];
-     COPYC2F(_ga_lo,index, ndim);
+     COPYC2F(index, _ga_lo, ndim);
      wnga_access_block_grid_ptr(a,_ga_lo,ptr,_ga_work);
      COPYF2C(_ga_work,ld, ndim-1);
 }
@@ -2144,7 +2144,7 @@ void NGA_Access_block_grid64(int g_a, int64_t index[], void *ptr, int64_t ld[])
      Integer a=(Integer)g_a;
      Integer ndim = wnga_ndim(a);
      Integer _ga_lo[MAXDIM], _ga_work[MAXDIM];
-     COPYC2F(_ga_lo,index, ndim);
+     COPYC2F(index, _ga_lo, ndim);
      wnga_access_block_grid_ptr(a,_ga_lo,ptr,_ga_work);
      COPYF2C_64(_ga_work,ld, ndim-1);
 }
@@ -2708,15 +2708,13 @@ void NGA_Scatter(int g_a, void *v, int* subsArray[], int n)
     Integer nv = (Integer)n;
     Integer ndim = wnga_ndim(a);
     Integer *_subs_array;
-#if 0
     _subs_array = (Integer *)malloc((int)ndim* n * sizeof(Integer));
     if(_subs_array == NULL) GA_Error("Memory allocation failed.", 0);
     for(idx=0; idx<n; idx++)
         for(i=0; i<ndim; i++)
             _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx][i] + 1;
-#endif
     
-    wnga_scatter(a, v, subsArray, 1, nv);
+    wnga_scatter(a, v, _subs_array, nv);
     
     free(_subs_array);
 }
@@ -2736,7 +2734,7 @@ void NGA_Scatter_flat(int g_a, void *v, int subsArray[], int n)
         for(i=0; i<ndim; i++)
             _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx*ndim+i] + 1;
     
-    wnga_scatter(a, v, _subs_array, 0, nv);
+    wnga_scatter(a, v, _subs_array, nv);
     
     free(_subs_array);
 }
@@ -2756,7 +2754,7 @@ void NGA_Scatter64(int g_a, void *v, int64_t* subsArray[], int64_t n)
         for(i=0; i<ndim; i++)
             _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx][i] + 1;
     
-    wnga_scatter(a, v, _subs_array, 0, nv);
+    wnga_scatter(a, v, _subs_array, nv);
     
     free(_subs_array);
 }
@@ -2776,7 +2774,7 @@ void NGA_Scatter_flat64(int g_a, void *v, int64_t subsArray[], int64_t n)
         for(i=0; i<ndim; i++)
             _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx*ndim+i] + 1;
     
-    wnga_scatter(a, v, _subs_array, 0, nv);
+    wnga_scatter(a, v, _subs_array, nv);
     
     free(_subs_array);
 }
@@ -2789,15 +2787,13 @@ void NGA_Scatter_acc(int g_a, void *v, int* subsArray[], int n, void *alpha)
     Integer nv = (Integer)n;
     Integer ndim = wnga_ndim(a);
     Integer *_subs_array;
-#if 0
     _subs_array = (Integer *)malloc((int)ndim* n * sizeof(Integer));
     if(_subs_array == NULL) GA_Error("Memory allocation failed.", 0);
     for(idx=0; idx<n; idx++)
         for(i=0; i<ndim; i++)
             _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx][i] + 1;
-#endif
     
-    wnga_scatter_acc(a, v, subsArray, 1, nv, alpha);
+    wnga_scatter_acc(a, v, _subs_array, nv, alpha);
     
     free(_subs_array);
 }
@@ -2817,7 +2813,7 @@ void NGA_Scatter_acc_flat(int g_a, void *v, int subsArray[], int n, void *alpha)
         for(i=0; i<ndim; i++)
             _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx*ndim+i] + 1;
     
-    wnga_scatter_acc(a, v, _subs_array, 0, nv, alpha);
+    wnga_scatter_acc(a, v, _subs_array, nv, alpha);
     
     free(_subs_array);
 }
@@ -2836,7 +2832,7 @@ void NGA_Scatter_acc64(int g_a, void *v, int64_t* subsArray[], int64_t n, void *
         for(i=0; i<ndim; i++)
             _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx][i] + 1;
     
-    wnga_scatter_acc(a, v, _subs_array, 0, nv, alpha);
+    wnga_scatter_acc(a, v, _subs_array, nv, alpha);
     
     free(_subs_array);
 }
@@ -2856,7 +2852,7 @@ void NGA_Scatter_acc_flat64(int g_a, void *v, int64_t subsArray[], int64_t n, vo
         for(i=0; i<ndim; i++)
             _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx*ndim+i] + 1;
     
-    wnga_scatter_acc(a, v, _subs_array, 0, nv, alpha);
+    wnga_scatter_acc(a, v, _subs_array, nv, alpha);
     
     free(_subs_array);
 }
@@ -2868,7 +2864,6 @@ void NGA_Gather(int g_a, void *v, int* subsArray[], int n)
     Integer nv = (Integer)n;
     Integer ndim = wnga_ndim(a);
     Integer *_subs_array;
-#if 0
     _subs_array = (Integer *)malloc((int)ndim* n * sizeof(Integer));
     if(_subs_array == NULL) GA_Error("Memory allocation failed.", 0);
 
@@ -2876,9 +2871,8 @@ void NGA_Gather(int g_a, void *v, int* subsArray[], int n)
     for(idx=0; idx<n; idx++)
         for(i=0; i<ndim; i++)
             _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx][i] + 1;
-#endif
     
-    wnga_gather(a, v, subsArray, 1, nv);
+    wnga_gather(a, v, _subs_array, nv);
     
     free(_subs_array);
 }
@@ -2899,7 +2893,7 @@ void NGA_Gather_flat(int g_a, void *v, int subsArray[], int n)
         for(i=0; i<ndim; i++)
             _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx*ndim+i] + 1;
     
-    wnga_gather(a, v, _subs_array, 0, nv);
+    wnga_gather(a, v, _subs_array, nv);
     
     free(_subs_array);
 }
@@ -2921,7 +2915,7 @@ void NGA_Gather64(int g_a, void *v, int64_t* subsArray[], int64_t n)
         for(i=0; i<ndim; i++)
             _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx][i] + 1;
     
-    wnga_gather(a, v, _subs_array, 0, nv);
+    wnga_gather(a, v, _subs_array, nv);
     
     free(_subs_array);
 }
@@ -2942,7 +2936,7 @@ void NGA_Gather_flat64(int g_a, void *v, int64_t subsArray[], int64_t n)
         for(i=0; i<ndim; i++)
             _subs_array[idx*ndim+(ndim-i-1)] = subsArray[idx*ndim+i] + 1;
     
-    wnga_gather(a, v, _subs_array, 0, nv);
+    wnga_gather(a, v, _subs_array, nv);
     
     free(_subs_array);
 }
@@ -3224,7 +3218,7 @@ void GA_Zgemm64(char ta, char tb, int64_t m, int64_t n, int64_t k,
                 DoubleComplex alpha, int g_a, int g_b, 
                 DoubleComplex beta, int g_c )
 {
-    GA_Zgemm64_c(ta, tb, n, m, k, alpha, g_b, g_a, beta, g_c);
+    GA_Zgemm64_c(tb, ta, n, m, k, alpha, g_b, g_a, beta, g_c);
 }
 
 void GA_Cgemm64(char ta, char tb, int64_t m, int64_t n, int64_t k,

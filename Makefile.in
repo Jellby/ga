@@ -61,13 +61,13 @@ bin_PROGRAMS = $(am__EXEEXT_1) global/trace/adjust$(EXEEXT) \
 	global/trace/collisions$(EXEEXT)
 check_PROGRAMS = ma/testc$(EXEEXT) ma/test-coalesce$(EXEEXT) \
 	ma/test-inquire$(EXEEXT) $(am__EXEEXT_2) \
-	global/testing/elempatch$(EXEEXT) \
+	global/testing/big$(EXEEXT) global/testing/elempatch$(EXEEXT) \
 	global/testing/getmem$(EXEEXT) global/testing/mtest$(EXEEXT) \
 	global/testing/mulmatpatchc$(EXEEXT) \
 	global/testing/ntestc$(EXEEXT) global/testing/ntestfc$(EXEEXT) \
 	global/testing/packc$(EXEEXT) \
 	global/testing/patch_enumc$(EXEEXT) \
-	global/testing/perf2$(EXEEXT) global/testing/print$(EXEEXT) \
+	global/testing/print$(EXEEXT) \
 	global/testing/scan_addc$(EXEEXT) \
 	global/testing/scan_copyc$(EXEEXT) \
 	global/testing/testc$(EXEEXT) \
@@ -81,8 +81,7 @@ check_PROGRAMS = ma/testc$(EXEEXT) ma/test-coalesce$(EXEEXT) \
 	pario/dra/bign$(EXEEXT) pario/dra/dbg_read$(EXEEXT) \
 	pario/dra/dbg_write$(EXEEXT) pario/dra/dra2arviz$(EXEEXT) \
 	pario/dra/ntestc$(EXEEXT) pario/dra/perfn$(EXEEXT) \
-	pario/dra/rate$(EXEEXT) $(am__EXEEXT_10) $(am__EXEEXT_11) \
-	gparrays/testing/testc$(EXEEXT)
+	pario/dra/rate$(EXEEXT) $(am__EXEEXT_10)
 @ENABLE_F77_TRUE@am__append_1 = $(FLD_NOMAIN)
 
 ##############################################################################
@@ -115,8 +114,7 @@ check_PROGRAMS = ma/testc$(EXEEXT) ma/test-coalesce$(EXEEXT) \
 # The following to support tracing, profiling, etc.
 #
 @ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_TRUE@am__append_6 = libwapi.la
-@ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_FALSE@am__append_7 = tools/ga-wapi.c \
-@ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_FALSE@	tools/gp-wapi.c
+@ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_FALSE@am__append_7 = tools/ga-wapi.c
 @ENABLE_F77_TRUE@am__append_8 = global/src/complex.F \
 @ENABLE_F77_TRUE@	global/src/ga_diag_seq.F global/src/rsg.f
 @CRAY_XT_NETWORKS_TRUE@@ENABLE_F77_TRUE@am__append_9 = global/src/ga_dgemmf.F
@@ -128,8 +126,8 @@ check_PROGRAMS = ma/testc$(EXEEXT) ma/test-coalesce$(EXEEXT) \
 @ENABLE_F77_TRUE@am__append_14 = global/testing/bin \
 @ENABLE_F77_TRUE@	global/testing/blktest global/testing/d2test \
 @ENABLE_F77_TRUE@	global/testing/g2test global/testing/g3test \
-@ENABLE_F77_TRUE@	global/testing/ga_lu global/testing/ga_shift \
-@ENABLE_F77_TRUE@	global/testing/ghosts global/testing/jacobi \
+@ENABLE_F77_TRUE@	global/testing/ga_lu global/testing/ghosts \
+@ENABLE_F77_TRUE@	global/testing/jacobi \
 @ENABLE_F77_TRUE@	global/testing/mir_perf2 \
 @ENABLE_F77_TRUE@	global/testing/mmatrix \
 @ENABLE_F77_TRUE@	global/testing/mulmatpatch \
@@ -167,7 +165,6 @@ check_PROGRAMS = ma/testc$(EXEEXT) ma/test-coalesce$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/g2test$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/g3test$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/ga_lu$(EXEEXT) \
-@ENABLE_F77_TRUE@	global/testing/ga_shift$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/ghosts$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/jacobi$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/mir_perf2$(EXEEXT) \
@@ -180,7 +177,6 @@ check_PROGRAMS = ma/testc$(EXEEXT) ma/test-coalesce$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/perfmod$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/perform$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/perf$(EXEEXT) \
-@ENABLE_F77_TRUE@	global/testing/perf2$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/pg2test$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/pgtest$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/scan$(EXEEXT) \
@@ -254,12 +250,11 @@ check_PROGRAMS = ma/testc$(EXEEXT) ma/test-coalesce$(EXEEXT) \
 @CXX_BINDINGS_TRUE@am__append_34 = ga++/testing/elempatch \
 @CXX_BINDINGS_TRUE@	ga++/testing/mtest ga++/testing/ntestc \
 @CXX_BINDINGS_TRUE@	ga++/testing/testc ga++/testing/testmult
-@ENABLE_F77_TRUE@am__append_35 = gparrays/testing/test
-@ARMCI_NETWORK_PORTALS_TRUE@am__append_36 = -I$(top_srcdir)/armci/src-portals
-@ARMCI_NETWORK_GEMINI_TRUE@@ARMCI_NETWORK_PORTALS_FALSE@am__append_37 = -I$(top_srcdir)/armci/src-gemini
-@ARMCI_NETWORK_GEMINI_FALSE@@ARMCI_NETWORK_PORTALS_FALSE@am__append_38 = -I$(top_srcdir)/armci/src/include
-TESTS = $(am__EXEEXT_13) $(am__EXEEXT_14)
-XFAIL_TESTS = $(am__EXEEXT_15) $(am__EXEEXT_16)
+@ARMCI_NETWORK_PORTALS_TRUE@am__append_35 = -I$(top_srcdir)/armci/src-portals
+@ARMCI_NETWORK_GEMINI_TRUE@@ARMCI_NETWORK_PORTALS_FALSE@am__append_36 = -I$(top_srcdir)/armci/src-gemini
+@ARMCI_NETWORK_GEMINI_FALSE@@ARMCI_NETWORK_PORTALS_FALSE@am__append_37 = -I$(top_srcdir)/armci/src/include
+TESTS = $(am__EXEEXT_12) $(am__EXEEXT_13)
+XFAIL_TESTS = $(am__EXEEXT_14) $(am__EXEEXT_15)
 subdir = .
 DIST_COMMON = README $(am__configure_deps) $(am__include_HEADERS_DIST) \
 	$(srcdir)/Makefile.am $(srcdir)/Makefile.in \
@@ -420,10 +415,7 @@ am__libga_la_SOURCES_DIST = compat/random.c ma/error.c ma/f2c.c \
 	pario/eaf/eaf_f2c.c pario/eaf/eafP.h pario/elio/elio.c \
 	pario/elio/eliop.h pario/elio/pablo.h pario/elio/stat.c \
 	pario/sf/sf_capi.c pario/sf/sff2c.h pario/sf/sf_fortran.c \
-	pario/sf/shared.files.c gparrays/src/gpbase.c \
-	gparrays/src/gpbase.h gparrays/src/gpcapi.c \
-	gparrays/src/gpfapi.c gparrays/src/gponesided.c \
-	gparrays/src/gp-papi.h
+	pario/sf/shared.files.c
 @ENABLE_F77_TRUE@am__objects_1 = ma/maf.lo \
 @ENABLE_F77_TRUE@	LinAlg/lapack+blas/dgetf2.lo \
 @ENABLE_F77_TRUE@	LinAlg/lapack+blas/dgetrf.lo \
@@ -469,17 +461,13 @@ am_libga_la_OBJECTS = compat/random.lo ma/error.lo ma/f2c.lo ma/ma.lo \
 	pario/dra/env.lo pario/dra/fortran.lo pario/dra/patch.util.lo \
 	pario/eaf/eaf.lo pario/eaf/eaf_f2c.lo pario/elio/elio.lo \
 	pario/elio/stat.lo pario/sf/sf_capi.lo pario/sf/sf_fortran.lo \
-	pario/sf/shared.files.lo gparrays/src/gpbase.lo \
-	gparrays/src/gpcapi.lo gparrays/src/gpfapi.lo \
-	gparrays/src/gponesided.lo
-@ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_FALSE@am__objects_7 = tools/ga-wapi.lo \
-@ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_FALSE@	tools/gp-wapi.lo
+	pario/sf/shared.files.lo
+@ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_FALSE@am__objects_7 = tools/ga-wapi.lo
 nodist_libga_la_OBJECTS = $(am__objects_7)
 libga_la_OBJECTS = $(am_libga_la_OBJECTS) $(nodist_libga_la_OBJECTS)
 libwapi_la_LIBADD =
-am__libwapi_la_SOURCES_DIST = tools/ga-wapi.c tools/gp-wapi.c
-@ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_TRUE@am_libwapi_la_OBJECTS = tools/ga-wapi.lo \
-@ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_TRUE@	tools/gp-wapi.lo
+am__libwapi_la_SOURCES_DIST = tools/ga-wapi.c
+@ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_TRUE@am_libwapi_la_OBJECTS = tools/ga-wapi.lo
 libwapi_la_OBJECTS = $(am_libwapi_la_OBJECTS)
 @ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_TRUE@am_libwapi_la_rpath = -rpath \
 @ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_TRUE@	$(libdir)
@@ -492,7 +480,6 @@ libwapi_la_OBJECTS = $(am_libwapi_la_OBJECTS)
 @ENABLE_F77_TRUE@	global/testing/g2test$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/g3test$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/ga_lu$(EXEEXT) \
-@ENABLE_F77_TRUE@	global/testing/ga_shift$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/ghosts$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/jacobi$(EXEEXT) \
 @ENABLE_F77_TRUE@	global/testing/mir_perf2$(EXEEXT) \
@@ -555,7 +542,6 @@ libwapi_la_OBJECTS = $(am_libwapi_la_OBJECTS)
 @CXX_BINDINGS_TRUE@	ga++/testing/ntestc$(EXEEXT) \
 @CXX_BINDINGS_TRUE@	ga++/testing/testc$(EXEEXT) \
 @CXX_BINDINGS_TRUE@	ga++/testing/testmult$(EXEEXT)
-@ENABLE_F77_TRUE@am__EXEEXT_11 = gparrays/testing/test$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS)
 LIBOBJDIR = compat/
 am__ga___testing_elempatch_SOURCES_DIST = ga++/testing/elempatch.cc
@@ -732,13 +718,25 @@ global_examples_scf_scf_LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(F77LD) \
 	$(AM_FFLAGS) $(FFLAGS) $(global_examples_scf_scf_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am__global_testing_bin_SOURCES_DIST = global/testing/bin.F \
+am__global_testing_big_SOURCES_DIST = global/testing/big.c \
 	global/testing/testutil.fh global/testing/testutil.h \
 	global/testing/util.c global/testing/ffflush.F \
 	global/testing/testblas.F
 @ENABLE_F77_TRUE@am__objects_8 = global/testing/ffflush.$(OBJEXT) \
 @ENABLE_F77_TRUE@	global/testing/testblas.$(OBJEXT)
 am__objects_9 = global/testing/util.$(OBJEXT) $(am__objects_8)
+am_global_testing_big_OBJECTS = global/testing/big.$(OBJEXT) \
+	$(am__objects_9)
+global_testing_big_OBJECTS = $(am_global_testing_big_OBJECTS)
+global_testing_big_LDADD = $(LDADD)
+global_testing_big_DEPENDENCIES = $(LTLIBOBJS) libga.la \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am__global_testing_bin_SOURCES_DIST = global/testing/bin.F \
+	global/testing/testutil.fh global/testing/testutil.h \
+	global/testing/util.c global/testing/ffflush.F \
+	global/testing/testblas.F
 am_global_testing_bin_OBJECTS = global/testing/bin.$(OBJEXT) \
 	$(am__objects_9)
 global_testing_bin_OBJECTS = $(am_global_testing_bin_OBJECTS)
@@ -869,23 +867,6 @@ global_testing_ga_lu_DEPENDENCIES = $(LTLIBOBJS) libga.la \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1)
-am__global_testing_ga_shift_SOURCES_DIST = global/testing/ga_shift.F \
-	global/testing/testutil.fh global/testing/testutil.h \
-	global/testing/util.c global/testing/ffflush.F \
-	global/testing/testblas.F
-am_global_testing_ga_shift_OBJECTS =  \
-	global/testing/ga_shift.$(OBJEXT) $(am__objects_9)
-global_testing_ga_shift_OBJECTS =  \
-	$(am_global_testing_ga_shift_OBJECTS)
-global_testing_ga_shift_LDADD = $(LDADD)
-global_testing_ga_shift_DEPENDENCIES = $(LTLIBOBJS) libga.la \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-global_testing_ga_shift_LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(F77LD) \
-	$(AM_FFLAGS) $(FFLAGS) $(global_testing_ga_shift_LDFLAGS) \
-	$(LDFLAGS) -o $@
 am__global_testing_getmem_SOURCES_DIST = global/testing/getmem.c \
 	global/testing/testutil.fh global/testing/testutil.h \
 	global/testing/util.c global/testing/ffflush.F \
@@ -1238,18 +1219,6 @@ global_testing_perf_LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(F77LD) \
 	$(AM_FFLAGS) $(FFLAGS) $(global_testing_perf_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am__global_testing_perf2_SOURCES_DIST = global/testing/perf2.c \
-	global/testing/testutil.fh global/testing/testutil.h \
-	global/testing/util.c global/testing/ffflush.F \
-	global/testing/testblas.F
-am_global_testing_perf2_OBJECTS = global/testing/perf2.$(OBJEXT) \
-	$(am__objects_9)
-global_testing_perf2_OBJECTS = $(am_global_testing_perf2_OBJECTS)
-global_testing_perf2_LDADD = $(LDADD)
-global_testing_perf2_DEPENDENCIES = $(LTLIBOBJS) libga.la \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
 am__global_testing_perfmod_SOURCES_DIST = global/testing/perfmod.F \
 	global/testing/testutil.fh global/testing/testutil.h \
 	global/testing/util.c global/testing/ffflush.F \
@@ -1693,24 +1662,6 @@ global_trace_collisions_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(global_trace_collisions_LDFLAGS) \
 	$(LDFLAGS) -o $@
-am_gparrays_testing_test_OBJECTS = gparrays/testing/test.$(OBJEXT)
-gparrays_testing_test_OBJECTS = $(am_gparrays_testing_test_OBJECTS)
-gparrays_testing_test_LDADD = $(LDADD)
-gparrays_testing_test_DEPENDENCIES = $(LTLIBOBJS) libga.la \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-gparrays_testing_test_LINK = $(LIBTOOL) $(AM_V_lt) --tag=F77 \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(F77LD) \
-	$(AM_FFLAGS) $(FFLAGS) $(gparrays_testing_test_LDFLAGS) \
-	$(LDFLAGS) -o $@
-am_gparrays_testing_testc_OBJECTS = gparrays/testing/testc.$(OBJEXT)
-gparrays_testing_testc_OBJECTS = $(am_gparrays_testing_testc_OBJECTS)
-gparrays_testing_testc_LDADD = $(LDADD)
-gparrays_testing_testc_DEPENDENCIES = $(LTLIBOBJS) libga.la \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
 am_ma_test_coalesce_OBJECTS = ma/test-coalesce.$(OBJEXT)
 ma_test_coalesce_OBJECTS = $(am_ma_test_coalesce_OBJECTS)
 ma_test_coalesce_LDADD = $(LDADD)
@@ -1990,6 +1941,8 @@ SOURCES = $(libga___la_SOURCES) $(libga_la_SOURCES) \
 	$(nodist_EXTRA_global_examples_lennard_jones_lennard_SOURCES) \
 	$(global_examples_md_cluster_grp_sim_SOURCES) \
 	$(global_examples_scf_scf_SOURCES) \
+	$(global_testing_big_SOURCES) \
+	$(nodist_EXTRA_global_testing_big_SOURCES) \
 	$(global_testing_bin_SOURCES) \
 	$(global_testing_blktest_SOURCES) \
 	$(global_testing_d2test_SOURCES) \
@@ -2002,7 +1955,6 @@ SOURCES = $(libga___la_SOURCES) $(libga_la_SOURCES) \
 	$(nodist_EXTRA_global_testing_ga_mpi_SOURCES) \
 	$(global_testing_ga_lu_SOURCES) \
 	$(nodist_EXTRA_global_testing_ga_lu_SOURCES) \
-	$(global_testing_ga_shift_SOURCES) \
 	$(global_testing_getmem_SOURCES) \
 	$(nodist_EXTRA_global_testing_getmem_SOURCES) \
 	$(global_testing_ghosts_SOURCES) \
@@ -2036,8 +1988,7 @@ SOURCES = $(libga___la_SOURCES) $(libga_la_SOURCES) \
 	$(global_testing_patch_enumc_SOURCES) \
 	$(nodist_EXTRA_global_testing_patch_enumc_SOURCES) \
 	$(global_testing_patch_enumf_SOURCES) \
-	$(global_testing_perf_SOURCES) $(global_testing_perf2_SOURCES) \
-	$(nodist_EXTRA_global_testing_perf2_SOURCES) \
+	$(global_testing_perf_SOURCES) \
 	$(global_testing_perfmod_SOURCES) \
 	$(global_testing_perform_SOURCES) \
 	$(global_testing_pg2test_SOURCES) \
@@ -2075,11 +2026,7 @@ SOURCES = $(libga___la_SOURCES) $(libga_la_SOURCES) \
 	$(global_testing_unpackc_SOURCES) \
 	$(nodist_EXTRA_global_testing_unpackc_SOURCES) \
 	$(global_trace_adjust_SOURCES) \
-	$(global_trace_collisions_SOURCES) \
-	$(gparrays_testing_test_SOURCES) \
-	$(gparrays_testing_testc_SOURCES) \
-	$(nodist_EXTRA_gparrays_testing_testc_SOURCES) \
-	$(ma_test_coalesce_SOURCES) \
+	$(global_trace_collisions_SOURCES) $(ma_test_coalesce_SOURCES) \
 	$(nodist_EXTRA_ma_test_coalesce_SOURCES) \
 	$(ma_test_inquire_SOURCES) \
 	$(nodist_EXTRA_ma_test_inquire_SOURCES) $(ma_testc_SOURCES) \
@@ -2116,6 +2063,7 @@ DIST_SOURCES = $(am__libga___la_SOURCES_DIST) \
 	$(global_examples_lennard_jones_lennard_SOURCES) \
 	$(global_examples_md_cluster_grp_sim_SOURCES) \
 	$(global_examples_scf_scf_SOURCES) \
+	$(am__global_testing_big_SOURCES_DIST) \
 	$(am__global_testing_bin_SOURCES_DIST) \
 	$(am__global_testing_blktest_SOURCES_DIST) \
 	$(am__global_testing_d2test_SOURCES_DIST) \
@@ -2125,7 +2073,6 @@ DIST_SOURCES = $(am__libga___la_SOURCES_DIST) \
 	$(am__global_testing_g3test_SOURCES_DIST) \
 	$(am__global_testing_ga_mpi_SOURCES_DIST) \
 	$(am__global_testing_ga_lu_SOURCES_DIST) \
-	$(am__global_testing_ga_shift_SOURCES_DIST) \
 	$(am__global_testing_getmem_SOURCES_DIST) \
 	$(am__global_testing_ghosts_SOURCES_DIST) \
 	$(am__global_testing_ipc_clean_SOURCES_DIST) \
@@ -2145,7 +2092,6 @@ DIST_SOURCES = $(am__libga___la_SOURCES_DIST) \
 	$(am__global_testing_patch_enumc_SOURCES_DIST) \
 	$(am__global_testing_patch_enumf_SOURCES_DIST) \
 	$(am__global_testing_perf_SOURCES_DIST) \
-	$(am__global_testing_perf2_SOURCES_DIST) \
 	$(am__global_testing_perfmod_SOURCES_DIST) \
 	$(am__global_testing_perform_SOURCES_DIST) \
 	$(am__global_testing_pg2test_SOURCES_DIST) \
@@ -2175,9 +2121,7 @@ DIST_SOURCES = $(am__libga___la_SOURCES_DIST) \
 	$(am__global_testing_types_test_SOURCES_DIST) \
 	$(am__global_testing_unpackc_SOURCES_DIST) \
 	$(global_trace_adjust_SOURCES) \
-	$(global_trace_collisions_SOURCES) \
-	$(gparrays_testing_test_SOURCES) \
-	$(gparrays_testing_testc_SOURCES) $(ma_test_coalesce_SOURCES) \
+	$(global_trace_collisions_SOURCES) $(ma_test_coalesce_SOURCES) \
 	$(ma_test_inquire_SOURCES) $(ma_testc_SOURCES) \
 	$(ma_testf_SOURCES) $(pario_dra_big_SOURCES) \
 	$(pario_dra_bign_SOURCES) $(pario_dra_dbg_read_SOURCES) \
@@ -2205,8 +2149,7 @@ am__include_HEADERS_DIST = ma/error.h ma/macdecls.h ma/macommon.h \
 	pario/elio/chemio.h pario/elio/elio.h pario/sf/coms.h \
 	pario/sf/sf.fh pario/sf/sf.h ga++/src/ga++.h \
 	ga++/src/GAServices.h ga++/src/GlobalArray.h \
-	ga++/src/init_term.h ga++/src/PGroup.h ga++/src/services.h \
-	gparrays/src/gp-papi.h
+	ga++/src/init_term.h ga++/src/PGroup.h ga++/src/services.h
 HEADERS = $(include_HEADERS) $(nodist_include_HEADERS)
 RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
   distclean-recursive maintainer-clean-recursive
@@ -2269,13 +2212,13 @@ else dir="$(srcdir)/"; fi;				\
 tst=$$dir$$f; log='$@'; __SAVED_TERM=$$TERM;		\
 $(TESTS_ENVIRONMENT)
 RECHECK_LOGS = $(TEST_LOGS)
-am__EXEEXT_12 =
-am__EXEEXT_13 = $(MA_SERIAL_TESTS) $(am__EXEEXT_12) $(am__EXEEXT_12)
-am__EXEEXT_14 = $(am__EXEEXT_12) $(GLOBAL_PARALLEL_TESTS) \
+am__EXEEXT_11 =
+am__EXEEXT_12 = $(MA_SERIAL_TESTS) $(am__EXEEXT_11) $(am__EXEEXT_11)
+am__EXEEXT_13 = $(am__EXEEXT_11) $(GLOBAL_PARALLEL_TESTS) \
 	$(CXX_PARALLEL_TESTS)
-am__EXEEXT_15 = $(MA_SERIAL_TESTS_XFAIL) $(am__EXEEXT_12) \
-	$(am__EXEEXT_12)
-am__EXEEXT_16 = $(am__EXEEXT_12) $(am__EXEEXT_12) $(am__EXEEXT_12)
+am__EXEEXT_14 = $(MA_SERIAL_TESTS_XFAIL) $(am__EXEEXT_11) \
+	$(am__EXEEXT_11)
+am__EXEEXT_15 = $(am__EXEEXT_11) $(am__EXEEXT_11) $(am__EXEEXT_11)
 TEST_SUITE_LOG = test-suite.log
 TEST_SUITE_HTML = $(TEST_SUITE_LOG:.log=.html)
 TEST_EXTENSIONS = @EXEEXT@ .test
@@ -2524,9 +2467,8 @@ include_HEADERS = ma/error.h ma/macdecls.h ma/macommon.h ma/maf2c.fh \
 	global/src/global.fh global/src/ga-papi.h $(am__append_13) \
 	pario/dra/dra.fh pario/dra/dra.h pario/eaf/eaf.fh \
 	pario/eaf/eaf.h pario/elio/chemio.h pario/elio/elio.h \
-	pario/sf/coms.h pario/sf/sf.fh pario/sf/sf.h $(am__append_32) \
-	gparrays/src/gp-papi.h
-nodist_include_HEADERS = global/src/ga-wapi.h gparrays/src/gp-wapi.h
+	pario/sf/coms.h pario/sf/sf.fh pario/sf/sf.h $(am__append_32)
+nodist_include_HEADERS = global/src/ga-wapi.h
 bin_SCRIPTS = tools/ga-config
 check_LTLIBRARIES = 
 lib_LTLIBRARIES = libga.la $(am__append_6) $(am__append_31)
@@ -2575,16 +2517,13 @@ libga_la_SOURCES = compat/random.c ma/error.c ma/f2c.c ma/ma.c ma/ma.h \
 	pario/eaf/eaf.c pario/eaf/eaf_f2c.c pario/eaf/eafP.h \
 	pario/elio/elio.c pario/elio/eliop.h pario/elio/pablo.h \
 	pario/elio/stat.c pario/sf/sf_capi.c pario/sf/sff2c.h \
-	pario/sf/sf_fortran.c pario/sf/shared.files.c \
-	gparrays/src/gpbase.c gparrays/src/gpbase.h \
-	gparrays/src/gpcapi.c gparrays/src/gpfapi.c \
-	gparrays/src/gponesided.c gparrays/src/gp-papi.h
+	pario/sf/sf_fortran.c pario/sf/shared.files.c
 
 # This is the "noinst" libarmci so that libtool combines it with libga.
 libga_la_LIBADD = $(SCALAPACK_LIBS) $(LAPACK_LIBS) $(BLAS_LIBS) \
 	armci/libarmcii.la $(GA_MP_LIBS) $(ARMCI_NETWORK_LIBS)
 nodist_libga_la_SOURCES = config.fh $(am__append_7) \
-	global/src/ga-wapidefs.h gparrays/src/gp-wapidefs.h
+	global/src/ga-wapidefs.h
 
 ##############################################################################
 # global
@@ -2598,13 +2537,8 @@ nodist_libga_la_SOURCES = config.fh $(am__append_7) \
 # tascel
 # The tascel directory is not automatically configured nor added to SUBDIRS.
 # However, it is still distributed with GA.
-
-##############################################################################
-# gfutex
-# The gfutex directory is not automatically configured nor added to SUBDIRS.
-# However, it is still distributed with GA.
 EXTRA_DIST = README LinAlg/lapack+blas/README global/README \
-	tools/gpwapigen.py tools/wapigen.py tools/wapigen_counts.py \
+	tools/wapigen.py tools/wapigen_counts.py \
 	tools/wapigen_trace.py $(am__append_23) \
 	global/examples/boltzmann/README \
 	global/examples/lennard-jones/README \
@@ -2615,7 +2549,7 @@ EXTRA_DIST = README LinAlg/lapack+blas/README global/README \
 	global/doc/README global/doc/Supercomputing94.pdf \
 	global/doc/user.pdf pario/dra/dbg_read.c pario/dra/dbg_write.c \
 	pario/dra/dra2arviz.c pario/dra/global.unsup.c \
-	pario/dra/README ga++/README tascel gfutex
+	pario/dra/README ga++/README tascel
 
 ##############################################################################
 # config
@@ -2626,12 +2560,10 @@ EXTRA_DIST = README LinAlg/lapack+blas/README global/README \
 # and works with all Fortran compilers.
 #
 BUILT_SOURCES = config.fh global/src/ga-wapi.h \
-	global/src/ga-wapidefs.h gparrays/src/gp-wapi.h \
-	gparrays/src/gp-wapidefs.h
+	global/src/ga-wapidefs.h
 MOSTLYCLEANFILES = 
 CLEANFILES = $(bin_SCRIPTS) config.fh global/src/ga-wapi.h \
-	global/src/ga-wapidefs.h $(am__append_24) \
-	gparrays/src/gp-wapi.h gparrays/src/gp-wapidefs.h
+	global/src/ga-wapidefs.h $(am__append_24)
 DISTCLEANFILES = 
 MAINTAINERCLEANFILES = 
 AM_FFLAGS = $(GA_FOPT) $(GA_F_WARN) $(FFLAG_INT)
@@ -2648,9 +2580,8 @@ AM_CPPFLAGS = $(SCALAPACK_CPPFLAGS) $(LAPACK_CPPFLAGS) \
 	-I$(top_build_prefix)global/src -I$(top_srcdir)/global/src \
 	-I$(top_srcdir)/global/testing -I$(top_srcdir)/pario/dra \
 	-I$(top_srcdir)/pario/eaf -I$(top_srcdir)/pario/elio \
-	-I$(top_srcdir)/pario/sf $(am__append_33) \
-	-I$(top_build_prefix)gparrays/src -I$(top_srcdir)/gparrays/src \
-	$(am__append_36) $(am__append_37) $(am__append_38) \
+	-I$(top_srcdir)/pario/sf $(am__append_33) $(am__append_35) \
+	$(am__append_36) $(am__append_37) \
 	-I$(top_build_prefix)armci/gaf2c -I$(top_srcdir)/armci/gaf2c \
 	-I$(top_srcdir)/armci/tcgmsg
 AM_LDFLAGS = $(SCALAPACK_LDFLAGS) $(LAPACK_LDFLAGS) $(BLAS_LDFLAGS) \
@@ -2687,8 +2618,7 @@ ma_testf_LDFLAGS = $(FLDFLAGS)
 nodist_EXTRA_ma_testc_SOURCES = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_ma_test_coalesce_SOURCES = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_ma_test_inquire_SOURCES = $(MAYBE_DUMMY_F_LINK)
-@ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_TRUE@libwapi_la_SOURCES = tools/ga-wapi.c \
-@ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_TRUE@	tools/gp-wapi.c
+@ENABLE_PROFILING_TRUE@@HAVE_SYS_WEAK_ALIAS_PRAGMA_TRUE@libwapi_la_SOURCES = tools/ga-wapi.c
 
 ##############################################################################
 # global/src
@@ -2696,6 +2626,8 @@ nodist_EXTRA_ma_test_inquire_SOURCES = $(MAYBE_DUMMY_F_LINK)
 PAPI_H = $(top_srcdir)/global/src/ga-papi.h
 GLOBAL_SERIAL_TESTS = 
 GLOBAL_SERIAL_TESTS_XFAIL = 
+
+#GLOBAL_PARALLEL_TESTS += global/testing/big$(EXEEXT) # needs lots of memory
 GLOBAL_PARALLEL_TESTS = global/testing/elempatch$(EXEEXT) \
 	global/testing/getmem$(EXEEXT) global/testing/mtest$(EXEEXT) \
 	global/testing/mulmatpatchc$(EXEEXT) \
@@ -2746,6 +2678,7 @@ GLOBAL_TESTS_XFAIL = $(GLOBAL_SERIAL_TESTS_XFAIL) $(GLOBAL_PARALLEL_TESTS_XFAIL)
 @HAVE_M4_TRUE@	global/testing/nga-util.m4
 gtsrc = global/testing/testutil.fh global/testing/testutil.h \
 	global/testing/util.c $(am__append_27)
+global_testing_big_SOURCES = global/testing/big.c $(gtsrc)
 global_testing_bin_SOURCES = global/testing/bin.F $(gtsrc)
 global_testing_blktest_SOURCES = global/testing/blktest.F $(gtsrc)
 global_testing_d2test_SOURCES = global/testing/d2test.F $(gtsrc)
@@ -2755,7 +2688,6 @@ global_testing_g2test_SOURCES = global/testing/g2test.F $(gtsrc)
 global_testing_g3test_SOURCES = global/testing/g3test.F $(gtsrc)
 global_testing_ga_lu_SOURCES = global/testing/ga_lu.c $(gtsrc)
 global_testing_ga_mpi_SOURCES = global/testing/ga-mpi.c $(gtsrc)
-global_testing_ga_shift_SOURCES = global/testing/ga_shift.F $(gtsrc)
 global_testing_getmem_SOURCES = global/testing/getmem.c $(gtsrc)
 global_testing_ghosts_SOURCES = global/testing/ghosts.F $(gtsrc)
 global_testing_ipc_clean_SOURCES = global/testing/ipc.clean.c $(gtsrc)
@@ -2775,7 +2707,6 @@ global_testing_patch_SOURCES = global/testing/patch.F $(gtsrc)
 global_testing_patch_enumc_SOURCES = global/testing/patch_enumc.c $(gtsrc)
 global_testing_patch_enumf_SOURCES = global/testing/patch_enumf.F $(gtsrc)
 global_testing_perf_SOURCES = global/testing/perf.F $(gtsrc)
-global_testing_perf2_SOURCES = global/testing/perf2.c $(gtsrc)
 global_testing_perfmod_SOURCES = global/testing/perfmod.F $(gtsrc)
 global_testing_perform_SOURCES = global/testing/perform.F $(gtsrc)
 global_testing_pg2test_SOURCES = global/testing/pg2test.F $(gtsrc)
@@ -2816,7 +2747,6 @@ global_testing_d2test_LDFLAGS = $(FLDFLAGS)
 global_testing_field_test_LDFLAGS = $(FLDFLAGS)
 global_testing_g2test_LDFLAGS = $(FLDFLAGS)
 global_testing_g3test_LDFLAGS = $(FLDFLAGS)
-global_testing_ga_shift_LDFLAGS = $(FLDFLAGS)
 global_testing_ghosts_LDFLAGS = $(FLDFLAGS)
 global_testing_jacobi_LDFLAGS = $(FLDFLAGS)
 global_testing_mir_perf2_LDFLAGS = $(FLDFLAGS)
@@ -2852,6 +2782,7 @@ global_testing_testmatmult_LDFLAGS = $(FLDFLAGS)
 global_testing_testsolve_LDFLAGS = $(FLDFLAGS)
 global_testing_testspd_LDFLAGS = $(FLDFLAGS)
 global_testing_types_test_LDFLAGS = $(FLDFLAGS)
+nodist_EXTRA_global_testing_big_SOURCES = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_elempatch_SOURCES = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_ga_lu_SOURCES = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_ga_mpi_SOURCES = $(MAYBE_DUMMY_F_LINK)
@@ -2864,7 +2795,6 @@ nodist_EXTRA_global_testing_ntestc_SOURCES = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_ntestfc_SOURCES = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_packc_SOURCES = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_patch_enumc_SOURCES = $(MAYBE_DUMMY_F_LINK)
-nodist_EXTRA_global_testing_perf2_SOURCES = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_print_SOURCES = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_scan_addc_SOURCES = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_scan_copyc_SOURCES = $(MAYBE_DUMMY_F_LINK)
@@ -3042,15 +2972,6 @@ pario_sf_test_LDFLAGS = $(FLDFLAGS)
 @CXX_BINDINGS_TRUE@ga___testing_ntestc_LDFLAGS = $(FLDFLAGS)
 @CXX_BINDINGS_TRUE@ga___testing_testc_LDFLAGS = $(FLDFLAGS)
 @CXX_BINDINGS_TRUE@ga___testing_testmult_LDFLAGS = $(FLDFLAGS)
-
-##############################################################################
-# gparrays
-#
-GPPAPI_H = $(top_srcdir)/gparrays/src/gp-papi.h
-gparrays_testing_test_SOURCES = gparrays/testing/test.F
-gparrays_testing_testc_SOURCES = gparrays/testing/testc.c
-nodist_EXTRA_gparrays_testing_testc_SOURCES = $(MAYBE_DUMMY_F_LINK)
-gparrays_testing_test_LDFLAGS = $(FLDFLAGS)
 
 ##############################################################################
 # armci
@@ -3414,20 +3335,6 @@ pario/sf/sf_fortran.lo: pario/sf/$(am__dirstamp) \
 	pario/sf/$(DEPDIR)/$(am__dirstamp)
 pario/sf/shared.files.lo: pario/sf/$(am__dirstamp) \
 	pario/sf/$(DEPDIR)/$(am__dirstamp)
-gparrays/src/$(am__dirstamp):
-	@$(MKDIR_P) gparrays/src
-	@: > gparrays/src/$(am__dirstamp)
-gparrays/src/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) gparrays/src/$(DEPDIR)
-	@: > gparrays/src/$(DEPDIR)/$(am__dirstamp)
-gparrays/src/gpbase.lo: gparrays/src/$(am__dirstamp) \
-	gparrays/src/$(DEPDIR)/$(am__dirstamp)
-gparrays/src/gpcapi.lo: gparrays/src/$(am__dirstamp) \
-	gparrays/src/$(DEPDIR)/$(am__dirstamp)
-gparrays/src/gpfapi.lo: gparrays/src/$(am__dirstamp) \
-	gparrays/src/$(DEPDIR)/$(am__dirstamp)
-gparrays/src/gponesided.lo: gparrays/src/$(am__dirstamp) \
-	gparrays/src/$(DEPDIR)/$(am__dirstamp)
 tools/$(am__dirstamp):
 	@$(MKDIR_P) tools
 	@: > tools/$(am__dirstamp)
@@ -3435,8 +3342,6 @@ tools/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) tools/$(DEPDIR)
 	@: > tools/$(DEPDIR)/$(am__dirstamp)
 tools/ga-wapi.lo: tools/$(am__dirstamp) \
-	tools/$(DEPDIR)/$(am__dirstamp)
-tools/gp-wapi.lo: tools/$(am__dirstamp) \
 	tools/$(DEPDIR)/$(am__dirstamp)
 libga.la: $(libga_la_OBJECTS) $(libga_la_DEPENDENCIES) 
 	$(AM_V_F77LD)$(F77LINK) -rpath $(libdir) $(libga_la_OBJECTS) $(libga_la_LIBADD) $(LIBS)
@@ -3741,13 +3646,18 @@ global/testing/$(am__dirstamp):
 global/testing/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) global/testing/$(DEPDIR)
 	@: > global/testing/$(DEPDIR)/$(am__dirstamp)
-global/testing/bin.$(OBJEXT): global/testing/$(am__dirstamp) \
+global/testing/big.$(OBJEXT): global/testing/$(am__dirstamp) \
 	global/testing/$(DEPDIR)/$(am__dirstamp)
 global/testing/util.$(OBJEXT): global/testing/$(am__dirstamp) \
 	global/testing/$(DEPDIR)/$(am__dirstamp)
 global/testing/ffflush.$(OBJEXT): global/testing/$(am__dirstamp) \
 	global/testing/$(DEPDIR)/$(am__dirstamp)
 global/testing/testblas.$(OBJEXT): global/testing/$(am__dirstamp) \
+	global/testing/$(DEPDIR)/$(am__dirstamp)
+global/testing/big$(EXEEXT): $(global_testing_big_OBJECTS) $(global_testing_big_DEPENDENCIES) global/testing/$(am__dirstamp)
+	@rm -f global/testing/big$(EXEEXT)
+	$(AM_V_F77LD)$(F77LINK) $(global_testing_big_OBJECTS) $(global_testing_big_LDADD) $(LIBS)
+global/testing/bin.$(OBJEXT): global/testing/$(am__dirstamp) \
 	global/testing/$(DEPDIR)/$(am__dirstamp)
 global/testing/bin$(EXEEXT): $(global_testing_bin_OBJECTS) $(global_testing_bin_DEPENDENCIES) global/testing/$(am__dirstamp)
 	@rm -f global/testing/bin$(EXEEXT)
@@ -3792,11 +3702,6 @@ global/testing/ga_lu.$(OBJEXT): global/testing/$(am__dirstamp) \
 global/testing/ga_lu$(EXEEXT): $(global_testing_ga_lu_OBJECTS) $(global_testing_ga_lu_DEPENDENCIES) global/testing/$(am__dirstamp)
 	@rm -f global/testing/ga_lu$(EXEEXT)
 	$(AM_V_F77LD)$(F77LINK) $(global_testing_ga_lu_OBJECTS) $(global_testing_ga_lu_LDADD) $(LIBS)
-global/testing/ga_shift.$(OBJEXT): global/testing/$(am__dirstamp) \
-	global/testing/$(DEPDIR)/$(am__dirstamp)
-global/testing/ga_shift$(EXEEXT): $(global_testing_ga_shift_OBJECTS) $(global_testing_ga_shift_DEPENDENCIES) global/testing/$(am__dirstamp)
-	@rm -f global/testing/ga_shift$(EXEEXT)
-	$(AM_V_F77LD)$(global_testing_ga_shift_LINK) $(global_testing_ga_shift_OBJECTS) $(global_testing_ga_shift_LDADD) $(LIBS)
 global/testing/getmem.$(OBJEXT): global/testing/$(am__dirstamp) \
 	global/testing/$(DEPDIR)/$(am__dirstamp)
 global/testing/getmem$(EXEEXT): $(global_testing_getmem_OBJECTS) $(global_testing_getmem_DEPENDENCIES) global/testing/$(am__dirstamp)
@@ -3922,11 +3827,6 @@ global/testing/perf.$(OBJEXT): global/testing/$(am__dirstamp) \
 global/testing/perf$(EXEEXT): $(global_testing_perf_OBJECTS) $(global_testing_perf_DEPENDENCIES) global/testing/$(am__dirstamp)
 	@rm -f global/testing/perf$(EXEEXT)
 	$(AM_V_F77LD)$(global_testing_perf_LINK) $(global_testing_perf_OBJECTS) $(global_testing_perf_LDADD) $(LIBS)
-global/testing/perf2.$(OBJEXT): global/testing/$(am__dirstamp) \
-	global/testing/$(DEPDIR)/$(am__dirstamp)
-global/testing/perf2$(EXEEXT): $(global_testing_perf2_OBJECTS) $(global_testing_perf2_DEPENDENCIES) global/testing/$(am__dirstamp)
-	@rm -f global/testing/perf2$(EXEEXT)
-	$(AM_V_F77LD)$(F77LINK) $(global_testing_perf2_OBJECTS) $(global_testing_perf2_LDADD) $(LIBS)
 global/testing/perfmod.$(OBJEXT): global/testing/$(am__dirstamp) \
 	global/testing/$(DEPDIR)/$(am__dirstamp)
 global/testing/perfmod$(EXEEXT): $(global_testing_perfmod_OBJECTS) $(global_testing_perfmod_DEPENDENCIES) global/testing/$(am__dirstamp)
@@ -4088,22 +3988,6 @@ global/trace/collisions.$(OBJEXT): global/trace/$(am__dirstamp) \
 global/trace/collisions$(EXEEXT): $(global_trace_collisions_OBJECTS) $(global_trace_collisions_DEPENDENCIES) global/trace/$(am__dirstamp)
 	@rm -f global/trace/collisions$(EXEEXT)
 	$(AM_V_CCLD)$(global_trace_collisions_LINK) $(global_trace_collisions_OBJECTS) $(global_trace_collisions_LDADD) $(LIBS)
-gparrays/testing/$(am__dirstamp):
-	@$(MKDIR_P) gparrays/testing
-	@: > gparrays/testing/$(am__dirstamp)
-gparrays/testing/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) gparrays/testing/$(DEPDIR)
-	@: > gparrays/testing/$(DEPDIR)/$(am__dirstamp)
-gparrays/testing/test.$(OBJEXT): gparrays/testing/$(am__dirstamp) \
-	gparrays/testing/$(DEPDIR)/$(am__dirstamp)
-gparrays/testing/test$(EXEEXT): $(gparrays_testing_test_OBJECTS) $(gparrays_testing_test_DEPENDENCIES) gparrays/testing/$(am__dirstamp)
-	@rm -f gparrays/testing/test$(EXEEXT)
-	$(AM_V_F77LD)$(gparrays_testing_test_LINK) $(gparrays_testing_test_OBJECTS) $(gparrays_testing_test_LDADD) $(LIBS)
-gparrays/testing/testc.$(OBJEXT): gparrays/testing/$(am__dirstamp) \
-	gparrays/testing/$(DEPDIR)/$(am__dirstamp)
-gparrays/testing/testc$(EXEEXT): $(gparrays_testing_testc_OBJECTS) $(gparrays_testing_testc_DEPENDENCIES) gparrays/testing/$(am__dirstamp)
-	@rm -f gparrays/testing/testc$(EXEEXT)
-	$(AM_V_F77LD)$(F77LINK) $(gparrays_testing_testc_OBJECTS) $(gparrays_testing_testc_LDADD) $(LIBS)
 ma/test-coalesce.$(OBJEXT): ma/$(am__dirstamp) \
 	ma/$(DEPDIR)/$(am__dirstamp)
 ma/test-coalesce$(EXEEXT): $(ma_test_coalesce_OBJECTS) $(ma_test_coalesce_DEPENDENCIES) ma/$(am__dirstamp)
@@ -4426,6 +4310,7 @@ mostlyclean-compile:
 	-rm -f global/src/select.lo
 	-rm -f global/src/sparse.$(OBJEXT)
 	-rm -f global/src/sparse.lo
+	-rm -f global/testing/big.$(OBJEXT)
 	-rm -f global/testing/bin.$(OBJEXT)
 	-rm -f global/testing/blktest.$(OBJEXT)
 	-rm -f global/testing/d2test.$(OBJEXT)
@@ -4436,7 +4321,6 @@ mostlyclean-compile:
 	-rm -f global/testing/g3test.$(OBJEXT)
 	-rm -f global/testing/ga-mpi.$(OBJEXT)
 	-rm -f global/testing/ga_lu.$(OBJEXT)
-	-rm -f global/testing/ga_shift.$(OBJEXT)
 	-rm -f global/testing/getmem.$(OBJEXT)
 	-rm -f global/testing/ghosts.$(OBJEXT)
 	-rm -f global/testing/ipc.clean.$(OBJEXT)
@@ -4462,7 +4346,6 @@ mostlyclean-compile:
 	-rm -f global/testing/patch_enumc.$(OBJEXT)
 	-rm -f global/testing/patch_enumf.$(OBJEXT)
 	-rm -f global/testing/perf.$(OBJEXT)
-	-rm -f global/testing/perf2.$(OBJEXT)
 	-rm -f global/testing/perfmod.$(OBJEXT)
 	-rm -f global/testing/perform.$(OBJEXT)
 	-rm -f global/testing/pg2test.$(OBJEXT)
@@ -4495,16 +4378,6 @@ mostlyclean-compile:
 	-rm -f global/testing/util.$(OBJEXT)
 	-rm -f global/trace/adjust.$(OBJEXT)
 	-rm -f global/trace/collisions.$(OBJEXT)
-	-rm -f gparrays/src/gpbase.$(OBJEXT)
-	-rm -f gparrays/src/gpbase.lo
-	-rm -f gparrays/src/gpcapi.$(OBJEXT)
-	-rm -f gparrays/src/gpcapi.lo
-	-rm -f gparrays/src/gpfapi.$(OBJEXT)
-	-rm -f gparrays/src/gpfapi.lo
-	-rm -f gparrays/src/gponesided.$(OBJEXT)
-	-rm -f gparrays/src/gponesided.lo
-	-rm -f gparrays/testing/test.$(OBJEXT)
-	-rm -f gparrays/testing/testc.$(OBJEXT)
 	-rm -f ma/error.$(OBJEXT)
 	-rm -f ma/error.lo
 	-rm -f ma/f2c.$(OBJEXT)
@@ -4571,8 +4444,6 @@ mostlyclean-compile:
 	-rm -f pario/sf/test.$(OBJEXT)
 	-rm -f tools/ga-wapi.$(OBJEXT)
 	-rm -f tools/ga-wapi.lo
-	-rm -f tools/gp-wapi.$(OBJEXT)
-	-rm -f tools/gp-wapi.lo
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -4634,6 +4505,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@global/src/$(DEPDIR)/sclstubs.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@global/src/$(DEPDIR)/select.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@global/src/$(DEPDIR)/sparse.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@global/testing/$(DEPDIR)/big.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@global/testing/$(DEPDIR)/elempatch.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@global/testing/$(DEPDIR)/ga-mpi.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@global/testing/$(DEPDIR)/ga_lu.Po@am__quote@
@@ -4646,7 +4518,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@global/testing/$(DEPDIR)/ntestfc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@global/testing/$(DEPDIR)/packc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@global/testing/$(DEPDIR)/patch_enumc.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@global/testing/$(DEPDIR)/perf2.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@global/testing/$(DEPDIR)/print.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@global/testing/$(DEPDIR)/scan_addc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@global/testing/$(DEPDIR)/scan_copyc.Po@am__quote@
@@ -4659,11 +4530,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@global/testing/$(DEPDIR)/util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@global/trace/$(DEPDIR)/adjust.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@global/trace/$(DEPDIR)/collisions.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gparrays/src/$(DEPDIR)/gpbase.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gparrays/src/$(DEPDIR)/gpcapi.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gparrays/src/$(DEPDIR)/gpfapi.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gparrays/src/$(DEPDIR)/gponesided.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@gparrays/testing/$(DEPDIR)/testc.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ma/$(DEPDIR)/error.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ma/$(DEPDIR)/f2c.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ma/$(DEPDIR)/ma.Plo@am__quote@
@@ -4695,7 +4561,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@pario/sf/$(DEPDIR)/sf_fortran.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@pario/sf/$(DEPDIR)/shared.files.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@tools/$(DEPDIR)/ga-wapi.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@tools/$(DEPDIR)/gp-wapi.Plo@am__quote@
 
 .F.o:
 	$(AM_V_PPF77) @AM_BACKSLASH@
@@ -5051,8 +4916,6 @@ clean-libtool:
 	-rm -rf global/src/.libs global/src/_libs
 	-rm -rf global/testing/.libs global/testing/_libs
 	-rm -rf global/trace/.libs global/trace/_libs
-	-rm -rf gparrays/src/.libs gparrays/src/_libs
-	-rm -rf gparrays/testing/.libs gparrays/testing/_libs
 	-rm -rf ma/.libs ma/_libs
 	-rm -rf pario/dra/.libs pario/dra/_libs
 	-rm -rf pario/eaf/.libs pario/eaf/_libs
@@ -5438,8 +5301,6 @@ global/testing/g3test.log: global/testing/g3test$(EXEEXT)
 	@p='global/testing/g3test$(EXEEXT)'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
 global/testing/ga_lu.log: global/testing/ga_lu$(EXEEXT)
 	@p='global/testing/ga_lu$(EXEEXT)'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
-global/testing/ga_shift.log: global/testing/ga_shift$(EXEEXT)
-	@p='global/testing/ga_shift$(EXEEXT)'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
 global/testing/ghosts.log: global/testing/ghosts$(EXEEXT)
 	@p='global/testing/ghosts$(EXEEXT)'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
 global/testing/jacobi.log: global/testing/jacobi$(EXEEXT)
@@ -5464,8 +5325,6 @@ global/testing/perform.log: global/testing/perform$(EXEEXT)
 	@p='global/testing/perform$(EXEEXT)'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
 global/testing/perf.log: global/testing/perf$(EXEEXT)
 	@p='global/testing/perf$(EXEEXT)'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
-global/testing/perf2.log: global/testing/perf2$(EXEEXT)
-	@p='global/testing/perf2$(EXEEXT)'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
 global/testing/pg2test.log: global/testing/pg2test$(EXEEXT)
 	@p='global/testing/pg2test$(EXEEXT)'; $(am__check_pre) $(LOG_COMPILE) "$$tst" $(am__check_post)
 global/testing/pgtest.log: global/testing/pgtest$(EXEEXT)
@@ -5777,10 +5636,6 @@ distclean-generic:
 	-rm -f global/testing/$(am__dirstamp)
 	-rm -f global/trace/$(DEPDIR)/$(am__dirstamp)
 	-rm -f global/trace/$(am__dirstamp)
-	-rm -f gparrays/src/$(DEPDIR)/$(am__dirstamp)
-	-rm -f gparrays/src/$(am__dirstamp)
-	-rm -f gparrays/testing/$(DEPDIR)/$(am__dirstamp)
-	-rm -f gparrays/testing/$(am__dirstamp)
 	-rm -f ma/$(DEPDIR)/$(am__dirstamp)
 	-rm -f ma/$(am__dirstamp)
 	-rm -f pario/dra/$(DEPDIR)/$(am__dirstamp)
@@ -5809,7 +5664,7 @@ clean-am: clean-binPROGRAMS clean-checkLTLIBRARIES clean-checkPROGRAMS \
 
 distclean: distclean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
-	-rm -rf LinAlg/lapack+blas/$(DEPDIR) compat/$(DEPDIR) ga++/src/$(DEPDIR) ga++/testing/$(DEPDIR) global/X/$(DEPDIR) global/examples/conjugate_gradient/$(DEPDIR) global/examples/lennard-jones/$(DEPDIR) global/src/$(DEPDIR) global/testing/$(DEPDIR) global/trace/$(DEPDIR) gparrays/src/$(DEPDIR) gparrays/testing/$(DEPDIR) ma/$(DEPDIR) pario/dra/$(DEPDIR) pario/eaf/$(DEPDIR) pario/elio/$(DEPDIR) pario/sf/$(DEPDIR) tools/$(DEPDIR)
+	-rm -rf LinAlg/lapack+blas/$(DEPDIR) compat/$(DEPDIR) ga++/src/$(DEPDIR) ga++/testing/$(DEPDIR) global/X/$(DEPDIR) global/examples/conjugate_gradient/$(DEPDIR) global/examples/lennard-jones/$(DEPDIR) global/src/$(DEPDIR) global/testing/$(DEPDIR) global/trace/$(DEPDIR) ma/$(DEPDIR) pario/dra/$(DEPDIR) pario/eaf/$(DEPDIR) pario/elio/$(DEPDIR) pario/sf/$(DEPDIR) tools/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-libtool distclean-tags
@@ -5858,7 +5713,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-recursive
 	-rm -f $(am__CONFIG_DISTCLEAN_FILES)
 	-rm -rf $(top_srcdir)/autom4te.cache
-	-rm -rf LinAlg/lapack+blas/$(DEPDIR) compat/$(DEPDIR) ga++/src/$(DEPDIR) ga++/testing/$(DEPDIR) global/X/$(DEPDIR) global/examples/conjugate_gradient/$(DEPDIR) global/examples/lennard-jones/$(DEPDIR) global/src/$(DEPDIR) global/testing/$(DEPDIR) global/trace/$(DEPDIR) gparrays/src/$(DEPDIR) gparrays/testing/$(DEPDIR) ma/$(DEPDIR) pario/dra/$(DEPDIR) pario/eaf/$(DEPDIR) pario/elio/$(DEPDIR) pario/sf/$(DEPDIR) tools/$(DEPDIR)
+	-rm -rf LinAlg/lapack+blas/$(DEPDIR) compat/$(DEPDIR) ga++/src/$(DEPDIR) ga++/testing/$(DEPDIR) global/X/$(DEPDIR) global/examples/conjugate_gradient/$(DEPDIR) global/examples/lennard-jones/$(DEPDIR) global/src/$(DEPDIR) global/testing/$(DEPDIR) global/trace/$(DEPDIR) ma/$(DEPDIR) pario/dra/$(DEPDIR) pario/eaf/$(DEPDIR) pario/elio/$(DEPDIR) pario/sf/$(DEPDIR) tools/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -5978,36 +5833,10 @@ global/src/ga-wapidefs.h: $(PAPI_H)
 @HAVE_PYTHON_TRUE@	(cd $(top_srcdir)/python && $(PYTHON) setup.py build_ext -L$(libdir) -I$(includedir)) || exit 1
 @HAVE_PYTHON_TRUE@	(cd $(top_srcdir)/python && $(PYTHON) setup.py install) || exit 1
 
-gparrays/src/gp-wapi.h: $(GPPAPI_H)
-	@-rm -f $@
-	$(SED_V) \
-	$(SED) -e "s/GPPAPI/GPWAPI/g" \
-	       -e "s/pgp_/wgp_/g" \
-	       -e "/typedef/d" \
-		   $(GPPAPI_H) > $@
-
-gparrays/src/gp-wapidefs.h: $(GPPAPI_H)
-	@-rm -f $@
-	$(SED_V) \
-	$(SED) -e "s/GPPAPI/GPWAPIDEFS/g" \
-		   -e "s/^.*p\(gp_.*\)(.*$$/#define w\1 p\1/g" \
-		   -e "/^ /d" \
-		   -e "/^\/\*/d" \
-		   -e "/^ \*/d" \
-	       -e "/typedef/d" \
-	       -e "/include/d" \
-		   $(GPPAPI_H) > $@
-
 armci/libarmcii.la:
 	($(am__cd) armci && $(MAKE) $(AM_MAKEFLAGS) all) || exit 1;
-dist-hook: tascel-dist-hook
-.PHONY: tascel-dist-hook
-tascel-dist-hook:
+dist-hook:
 	rm -rf $(distdir)/tascel/autom4te.cache
-dist-hook: gfutex-dist-hook
-.PHONY: gfutex-dist-hook
-gfutex-dist-hook:
-	rm -rf $(distdir)/gfutex/autom4te.cache
 
 ##############################################################################
 # the end

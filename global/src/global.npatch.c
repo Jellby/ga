@@ -406,7 +406,7 @@ void pnga_copy_patch(char *trans,
             }
           }
           pnga_release(g_a, los, his);
-          pnga_scatter(g_b, tmp_ptr, dst_idx_ptr, 0, nelem);
+          pnga_scatter(g_b, tmp_ptr, dst_idx_ptr, nelem);
           ga_free(dst_idx_ptr);
           ga_free(src_idx_ptr);
           ga_free(tmp_ptr);
@@ -516,7 +516,7 @@ void pnga_copy_patch(char *trans,
             }
           }
           pnga_release(g_b, los, his);
-          pnga_gather(g_a, tmp_ptr, dst_idx_ptr, 0, nelem);
+          pnga_gather(g_a, tmp_ptr, dst_idx_ptr, nelem);
           ga_free(dst_idx_ptr);
           ga_free(src_idx_ptr);
           ga_free(tmp_ptr);
@@ -2522,6 +2522,7 @@ void *alpha, *beta;
       B_created = 1;
       if(andim > bndim) cndim = bndim;
       if(andim < bndim) cndim = andim;
+      cndim = bndim;
       pnga_copy_patch(&notrans, g_a, alo, ahi, g_c, clo, chi);
       pnga_scale_patch(g_c, clo, chi, alpha);
       /*  determine subsets of my patches to access  */

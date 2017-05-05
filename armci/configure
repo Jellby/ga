@@ -678,18 +678,6 @@ ac_ct_F77
 FFLAGS
 F77
 MPIF77
-INLINE_X86COPY_WITH_FALSE
-INLINE_X86COPY_WITH_TRUE
-INLINE_X86COPY_OKAY_FALSE
-INLINE_X86COPY_OKAY_TRUE
-INLINE_X86COPY_NEEDED_FALSE
-INLINE_X86COPY_NEEDED_TRUE
-ARMCI_X86COPY_AS
-INLINE_TAS_WITH_FALSE
-INLINE_TAS_WITH_TRUE
-INLINE_TAS_OKAY_FALSE
-INLINE_TAS_OKAY_TRUE
-ARMCI_TAS_AS
 am__fastdepCCAS_FALSE
 am__fastdepCCAS_TRUE
 CCASDEPMODE
@@ -5811,7 +5799,7 @@ ga_save_ac_ext="$ac_ext"
 
 ga_cv_c_compiler_vendor=unknown
 ga_cpp_vendor_symbols=
-for vendor in intel ibm pathscale amd cray gnu sun hp dec borland comeau kai lcc metrowerks sgi microsoft watcom portland fujitsu
+for vendor in intel ibm pathscale amd gnu sun hp dec borland comeau cray kai lcc metrowerks sgi microsoft watcom portland fujitsu
 do
 case $vendor in #(
   amd) :
@@ -5821,7 +5809,7 @@ case $vendor in #(
   comeau) :
     ga_cpp_vendor_symbols="defined(__COMO__)" ;; #(
   cray) :
-    ga_cpp_vendor_symbols="defined(_CRAYC) || defined(_ADDR64)" ;; #(
+    ga_cpp_vendor_symbols="defined(_CRAYC)" ;; #(
   dec) :
     ga_cpp_vendor_symbols="defined(__DECC) || defined(__DECCXX) || defined(__DECC_VER) || defined(__DECCXX_VER)" ;; #(
   fujitsu) :
@@ -6000,9 +5988,7 @@ fi
 rm -f inside.pl
 cat >inside.pl <<"EOF"
 #!/usr/bin/perl
-use strict;
-use warnings;
-my $numargs = $#ARGV + 1;
+$numargs = $#ARGV + 1;
 if ($numargs != 2) {
     print "Usage: wrapped.txt naked.txt\n";
     exit 1;
@@ -6010,10 +5996,10 @@ if ($numargs != 2) {
 # Read each input file as a string (rather than a list).
 local $/=undef;
 open WRAPPED, "$ARGV[0]" or die "Could not open wrapped text file: $!";
-my $wrapped_lines = <WRAPPED>;
+$wrapped_lines = <WRAPPED>;
 close WRAPPED;
 open NAKED, "$ARGV[1]" or die "Could not open naked text file: $!";
-my $naked_lines = <NAKED>;
+$naked_lines = <NAKED>;
 close NAKED;
 # Replace newlines, + from wrapped and naked lines.
 $wrapped_lines =~ tr/\n+/ /;
@@ -6032,11 +6018,6 @@ unless ($wrapped_lines) {
 }
 unless ($naked_lines) {
     exit 1;
-}
-# Cray compilers append a timestamp into their version string. Remove it.
-if ($wrapped_lines =~ /\QCray\E/) {
-    $wrapped_lines = substr $wrapped_lines, 0, -28;
-    $naked_lines = substr $naked_lines, 0, -28;
 }
 # Can the naked lines be found within the wrapped lines?
 if ($wrapped_lines =~ /\Q$naked_lines\E/) {
@@ -8953,148 +8934,6 @@ fi
 if test "x$happy" = xyes; then :
   ga_armci_network=GEMINI; with_gemini=yes;
 fi
-# check for a function introduced in libonesided/1.5
-# we purposefully abuse the ac_cv_search_onesided_mem_htflush value
-if test "x$happy" = xyes; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing onesided_mem_htflush" >&5
-$as_echo_n "checking for library containing onesided_mem_htflush... " >&6; }
-if ${ac_cv_search_onesided_mem_htflush+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char onesided_mem_htflush ();
-int
-main ()
-{
-return onesided_mem_htflush ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' onesided; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_onesided_mem_htflush=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_onesided_mem_htflush+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_onesided_mem_htflush+:} false; then :
-
-else
-  ac_cv_search_onesided_mem_htflush=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_onesided_mem_htflush" >&5
-$as_echo "$ac_cv_search_onesided_mem_htflush" >&6; }
-ac_res=$ac_cv_search_onesided_mem_htflush
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-fi
-
-     if test "x$ac_cv_search_onesided_mem_htflush" != xno; then :
-  ac_cv_search_onesided_mem_htflush=1
-else
-  ac_cv_search_onesided_mem_htflush=0
-fi
-
-cat >>confdefs.h <<_ACEOF
-#define HAVE_ONESIDED_MEM_HTFLUSH $ac_cv_search_onesided_mem_htflush
-_ACEOF
-
-
-fi
-# check for a function introduced in libonesided/1.6
-# we purposefully abuse the ac_cv_search_onesided_fadd value
-if test "x$happy" = xyes; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing onesided_fadd" >&5
-$as_echo_n "checking for library containing onesided_fadd... " >&6; }
-if ${ac_cv_search_onesided_fadd+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char onesided_fadd ();
-int
-main ()
-{
-return onesided_fadd ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' onesided; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_onesided_fadd=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_onesided_fadd+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_onesided_fadd+:} false; then :
-
-else
-  ac_cv_search_onesided_fadd=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_onesided_fadd" >&5
-$as_echo "$ac_cv_search_onesided_fadd" >&6; }
-ac_res=$ac_cv_search_onesided_fadd
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-fi
-
-     if test "x$ac_cv_search_onesided_fadd" != xno; then :
-  ac_cv_search_onesided_fadd=1
-else
-  ac_cv_search_onesided_fadd=0
-fi
-
-cat >>confdefs.h <<_ACEOF
-#define HAVE_ONESIDED_FADD $ac_cv_search_onesided_fadd
-_ACEOF
-
-
-fi
 
 fi
      if test "x$ga_armci_network" = x; then :
@@ -10049,148 +9888,6 @@ if test "x$happy" = xyes; then :
 else
   as_fn_error $? "test for ARMCI_NETWORK=GEMINI failed" "$LINENO" 5
 fi
-# check for a function introduced in libonesided/1.5
-# we purposefully abuse the ac_cv_search_onesided_mem_htflush value
-if test "x$happy" = xyes; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing onesided_mem_htflush" >&5
-$as_echo_n "checking for library containing onesided_mem_htflush... " >&6; }
-if ${ac_cv_search_onesided_mem_htflush+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char onesided_mem_htflush ();
-int
-main ()
-{
-return onesided_mem_htflush ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' onesided; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_onesided_mem_htflush=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_onesided_mem_htflush+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_onesided_mem_htflush+:} false; then :
-
-else
-  ac_cv_search_onesided_mem_htflush=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_onesided_mem_htflush" >&5
-$as_echo "$ac_cv_search_onesided_mem_htflush" >&6; }
-ac_res=$ac_cv_search_onesided_mem_htflush
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-fi
-
-     if test "x$ac_cv_search_onesided_mem_htflush" != xno; then :
-  ac_cv_search_onesided_mem_htflush=1
-else
-  ac_cv_search_onesided_mem_htflush=0
-fi
-
-cat >>confdefs.h <<_ACEOF
-#define HAVE_ONESIDED_MEM_HTFLUSH $ac_cv_search_onesided_mem_htflush
-_ACEOF
-
-
-fi
-# check for a function introduced in libonesided/1.6
-# we purposefully abuse the ac_cv_search_onesided_fadd value
-if test "x$happy" = xyes; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing onesided_fadd" >&5
-$as_echo_n "checking for library containing onesided_fadd... " >&6; }
-if ${ac_cv_search_onesided_fadd+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char onesided_fadd ();
-int
-main ()
-{
-return onesided_fadd ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' onesided; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_c_try_link "$LINENO"; then :
-  ac_cv_search_onesided_fadd=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_onesided_fadd+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_onesided_fadd+:} false; then :
-
-else
-  ac_cv_search_onesided_fadd=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_onesided_fadd" >&5
-$as_echo "$ac_cv_search_onesided_fadd" >&6; }
-ac_res=$ac_cv_search_onesided_fadd
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-fi
-
-     if test "x$ac_cv_search_onesided_fadd" != xno; then :
-  ac_cv_search_onesided_fadd=1
-else
-  ac_cv_search_onesided_fadd=0
-fi
-
-cat >>confdefs.h <<_ACEOF
-#define HAVE_ONESIDED_FADD $ac_cv_search_onesided_fadd
-_ACEOF
-
-
-fi
 
 fi
               ;; #(
@@ -10463,7 +10160,13 @@ case $ga_armci_network in #(
   PORTALS) :
     ARMCI_SRC_DIR=src-portals ;; #(
   GEMINI) :
-    ARMCI_SRC_DIR=src-gemini ;; #(
+    ARMCI_SRC_DIR=src-gemini
+
+$as_echo "#define CRAY_UGNI 1" >>confdefs.h
+
+
+$as_echo "#define LIBONESIDED 1" >>confdefs.h
+ ;; #(
   *) :
     ARMCI_SRC_DIR=src ;;
 esac
@@ -12744,7 +12447,7 @@ fi
     as_fn_error $? "CXX/MPICXX case failure" "$LINENO" 5 ;;
 esac
 fi
-ga_cxx="icpc pgCC pathCC sxc++ xlC_r xlC bgxlC_r bgxlC openCC sunCC crayc++ g++ c++ gpp aCC CC cxx cc++ cl.exe FCC KCC RCC"
+ga_cxx="icpc pgCC pathCC sxc++ xlC_r xlC bgxlC_r bgxlC openCC sunCC crayCC g++ c++ gpp aCC CC cxx cc++ cl.exe FCC KCC RCC"
 ga_mpicxx="mpic++ mpicxx mpiCC sxmpic++ hcp mpxlC_r mpxlC mpixlcxx_r mpixlcxx mpg++ mpc++ mpCC cmpic++ mpiFCC CC"
 if test x$with_mpi_wrappers = xyes; then :
   CXX_TO_TEST="$ga_mpicxx_pref $ga_mpicxx"
@@ -13185,9 +12888,7 @@ fi
 rm -f inside.pl
 cat >inside.pl <<"EOF"
 #!/usr/bin/perl
-use strict;
-use warnings;
-my $numargs = $#ARGV + 1;
+$numargs = $#ARGV + 1;
 if ($numargs != 2) {
     print "Usage: wrapped.txt naked.txt\n";
     exit 1;
@@ -13195,10 +12896,10 @@ if ($numargs != 2) {
 # Read each input file as a string (rather than a list).
 local $/=undef;
 open WRAPPED, "$ARGV[0]" or die "Could not open wrapped text file: $!";
-my $wrapped_lines = <WRAPPED>;
+$wrapped_lines = <WRAPPED>;
 close WRAPPED;
 open NAKED, "$ARGV[1]" or die "Could not open naked text file: $!";
-my $naked_lines = <NAKED>;
+$naked_lines = <NAKED>;
 close NAKED;
 # Replace newlines, + from wrapped and naked lines.
 $wrapped_lines =~ tr/\n+/ /;
@@ -13217,11 +12918,6 @@ unless ($wrapped_lines) {
 }
 unless ($naked_lines) {
     exit 1;
-}
-# Cray compilers append a timestamp into their version string. Remove it.
-if ($wrapped_lines =~ /\QCray\E/) {
-    $wrapped_lines = substr $wrapped_lines, 0, -28;
-    $naked_lines = substr $naked_lines, 0, -28;
 }
 # Can the naked lines be found within the wrapped lines?
 if ($wrapped_lines =~ /\Q$naked_lines\E/) {
@@ -13244,7 +12940,7 @@ case $wrapped in #(
   *_r) :
     compilers="bgxlC_r xlC_r" ;; #(
   *) :
-    compilers="icpc pgCC pathCC sxc++ xlC bgxlC openCC sunCC crayc++ g++ c++ gpp aCC cxx cc++ cl.exe FCC KCC RCC CC" ;; #(
+    compilers="icpc pgCC pathCC sxc++ xlC bgxlC openCC sunCC crayCC g++ c++ gpp aCC cxx cc++ cl.exe FCC KCC RCC CC" ;; #(
   *) :
      ;;
 esac
@@ -13451,7 +13147,7 @@ ga_save_ac_ext="$ac_ext"
 
 ga_cv_cxx_compiler_vendor=unknown
 ga_cpp_vendor_symbols=
-for vendor in intel ibm pathscale amd cray gnu sun hp dec borland comeau kai lcc metrowerks sgi microsoft watcom portland fujitsu
+for vendor in intel ibm pathscale amd gnu sun hp dec borland comeau cray kai lcc metrowerks sgi microsoft watcom portland fujitsu
 do
 case $vendor in #(
   amd) :
@@ -13461,7 +13157,7 @@ case $vendor in #(
   comeau) :
     ga_cpp_vendor_symbols="defined(__COMO__)" ;; #(
   cray) :
-    ga_cpp_vendor_symbols="defined(_CRAYC) || defined(_ADDR64)" ;; #(
+    ga_cpp_vendor_symbols="defined(_CRAYC)" ;; #(
   dec) :
     ga_cpp_vendor_symbols="defined(__DECC) || defined(__DECCXX) || defined(__DECC_VER) || defined(__DECCXX_VER)" ;; #(
   fujitsu) :
@@ -13898,175 +13594,6 @@ fi
 
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we can compile test-and-set inline assembly" >&5
-$as_echo_n "checking whether we can compile test-and-set inline assembly... " >&6; }
-if ${armci_cv_as_tas+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ga_compile="$CC -c $CFLAGS -I$ARMCI_TOP_SRCDIR/src/include $CPPFLAGS $ARMCI_TOP_SRCDIR/src/locks/tas.c"
-     $as_echo "$ga_compile">&5
-     if $ga_compile 1>&5 2>&1; then :
-  armci_cv_as_tas=yes
-else
-  armci_cv_as_tas=no
-fi
-     rm -f tas.o
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $armci_cv_as_tas" >&5
-$as_echo "$armci_cv_as_tas" >&6; }
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we can compile test-and-set inline assembly with help" >&5
-$as_echo_n "checking whether we can compile test-and-set inline assembly with help... " >&6; }
-if ${armci_cv_as_tas_with+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -z "$ARMCI_TAS_AS"; then
-  ac_path_ARMCI_TAS_AS_found=false
-  # Loop through the user's path and test for each of PROGNAME-LIST
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_prog in bgxlc xlc gcc; do
-    for ac_exec_ext in '' $ac_executable_extensions; do
-      ac_path_ARMCI_TAS_AS="$as_dir/$ac_prog$ac_exec_ext"
-      { test -f "$ac_path_ARMCI_TAS_AS" && $as_test_x "$ac_path_ARMCI_TAS_AS"; } || continue
-ga_compile="$ac_path_ARMCI_TAS_AS -c $CFLAGS -I$ARMCI_TOP_SRCDIR/src/include $CPPFLAGS $ARMCI_TOP_SRCDIR/src/locks/tas.c"
-         $as_echo "$ga_compile">&5
-         if $ga_compile 1>&5 2>&1; then :
-  armci_cv_as_tas_with=$ac_path_ARMCI_TAS_AS
-             ac_cv_path_ARMCI_TAS_AS=$ac_path_ARMCI_TAS_AS
-             ac_path_ARMCI_TAS_AS_found=:
-fi
-         rm -f tas.o
-      $ac_path_ARMCI_TAS_AS_found && break 3
-    done
-  done
-  done
-IFS=$as_save_IFS
-  if test -z "$ac_cv_path_ARMCI_TAS_AS"; then
-    armci_cv_as_tas_with=no
-  fi
-else
-  ac_cv_path_ARMCI_TAS_AS=$ARMCI_TAS_AS
-fi
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $armci_cv_as_tas_with" >&5
-$as_echo "$armci_cv_as_tas_with" >&6; }
-ARMCI_TAS_AS=$ac_cv_path_ARMCI_TAS_AS
-
- if test "x$armci_cv_as_tas" = xyes; then
-  INLINE_TAS_OKAY_TRUE=
-  INLINE_TAS_OKAY_FALSE='#'
-else
-  INLINE_TAS_OKAY_TRUE='#'
-  INLINE_TAS_OKAY_FALSE=
-fi
-
- if test "x$armci_cv_as_tas_with" != xno; then
-  INLINE_TAS_WITH_TRUE=
-  INLINE_TAS_WITH_FALSE='#'
-else
-  INLINE_TAS_WITH_TRUE='#'
-  INLINE_TAS_WITH_FALSE=
-fi
-
-
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we can compile x86copy inline assembly" >&5
-$as_echo_n "checking whether we can compile x86copy inline assembly... " >&6; }
-if ${armci_cv_as_x86copy+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ga_compile="$CC -c $CFLAGS -I$ARMCI_TOP_SRCDIR/src/include $CPPFLAGS $ARMCI_TOP_SRCDIR/src/common/x86copy.c"
-     $as_echo "$ga_compile">&5
-     if $ga_compile 1>&5 2>&1; then :
-  armci_cv_as_x86copy=yes
-else
-  armci_cv_as_x86copy=no
-fi
-     rm -f x86copy.o
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $armci_cv_as_x86copy" >&5
-$as_echo "$armci_cv_as_x86copy" >&6; }
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether we can compile x86copy inline assembly with help" >&5
-$as_echo_n "checking whether we can compile x86copy inline assembly with help... " >&6; }
-if ${armci_cv_as_x86copy_with+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  if test -z "$ARMCI_X86COPY_AS"; then
-  ac_path_ARMCI_X86COPY_AS_found=false
-  # Loop through the user's path and test for each of PROGNAME-LIST
-  as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
-for as_dir in $PATH
-do
-  IFS=$as_save_IFS
-  test -z "$as_dir" && as_dir=.
-    for ac_prog in bgxlc xlc gcc; do
-    for ac_exec_ext in '' $ac_executable_extensions; do
-      ac_path_ARMCI_X86COPY_AS="$as_dir/$ac_prog$ac_exec_ext"
-      { test -f "$ac_path_ARMCI_X86COPY_AS" && $as_test_x "$ac_path_ARMCI_X86COPY_AS"; } || continue
-ga_compile="$ac_path_ARMCI_X86COPY_AS -c $CFLAGS -I$ARMCI_TOP_SRCDIR/src/include $CPPFLAGS $ARMCI_TOP_SRCDIR/src/common/x86copy.c"
-         $as_echo "$ga_compile">&5
-         if $ga_compile 1>&5 2>&1; then :
-  armci_cv_as_x86copy_with=$ac_path_ARMCI_X86COPY_AS
-             ac_cv_path_ARMCI_X86COPY_AS=$ac_path_ARMCI_X86COPY_AS
-             ac_path_ARMCI_X86COPY_AS_found=:
-fi
-         rm -f x86copy.o
-      $ac_path_ARMCI_X86COPY_AS_found && break 3
-    done
-  done
-  done
-IFS=$as_save_IFS
-  if test -z "$ac_cv_path_ARMCI_X86COPY_AS"; then
-    armci_cv_as_x86copy_with=no
-  fi
-else
-  ac_cv_path_ARMCI_X86COPY_AS=$ARMCI_X86COPY_AS
-fi
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $armci_cv_as_x86copy_with" >&5
-$as_echo "$armci_cv_as_x86copy_with" >&6; }
-ARMCI_X86COPY_AS=$ac_cv_path_ARMCI_X86COPY_AS
-
-case $ga_cv_target:$host_cpu in #(
-  LINUX:*86*) :
-    armci_cv_as_x86copy_need=yes
-
-$as_echo "#define COPY686 1" >>confdefs.h
- ;; #(
-  *) :
-     ;;
-esac
- if test "x$armci_cv_as_x86copy_need" = xyes; then
-  INLINE_X86COPY_NEEDED_TRUE=
-  INLINE_X86COPY_NEEDED_FALSE='#'
-else
-  INLINE_X86COPY_NEEDED_TRUE='#'
-  INLINE_X86COPY_NEEDED_FALSE=
-fi
-
- if test "x$armci_cv_as_x86copy" = xyes; then
-  INLINE_X86COPY_OKAY_TRUE=
-  INLINE_X86COPY_OKAY_FALSE='#'
-else
-  INLINE_X86COPY_OKAY_TRUE='#'
-  INLINE_X86COPY_OKAY_FALSE=
-fi
-
- if test "x$armci_cv_as_x86copy_with" != xno; then
-  INLINE_X86COPY_WITH_TRUE=
-  INLINE_X86COPY_WITH_FALSE='#'
-else
-  INLINE_X86COPY_WITH_TRUE='#'
-  INLINE_X86COPY_WITH_FALSE=
-fi
-
-
-
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether NO_I386ASM is needed" >&5
 $as_echo_n "checking whether NO_I386ASM is needed... " >&6; }
 if ${armci_cv_as_no_i386asm+:} false; then :
@@ -14494,9 +14021,7 @@ fi
 rm -f inside.pl
 cat >inside.pl <<"EOF"
 #!/usr/bin/perl
-use strict;
-use warnings;
-my $numargs = $#ARGV + 1;
+$numargs = $#ARGV + 1;
 if ($numargs != 2) {
     print "Usage: wrapped.txt naked.txt\n";
     exit 1;
@@ -14504,10 +14029,10 @@ if ($numargs != 2) {
 # Read each input file as a string (rather than a list).
 local $/=undef;
 open WRAPPED, "$ARGV[0]" or die "Could not open wrapped text file: $!";
-my $wrapped_lines = <WRAPPED>;
+$wrapped_lines = <WRAPPED>;
 close WRAPPED;
 open NAKED, "$ARGV[1]" or die "Could not open naked text file: $!";
-my $naked_lines = <NAKED>;
+$naked_lines = <NAKED>;
 close NAKED;
 # Replace newlines, + from wrapped and naked lines.
 $wrapped_lines =~ tr/\n+/ /;
@@ -14526,11 +14051,6 @@ unless ($wrapped_lines) {
 }
 unless ($naked_lines) {
     exit 1;
-}
-# Cray compilers append a timestamp into their version string. Remove it.
-if ($wrapped_lines =~ /\QCray\E/) {
-    $wrapped_lines = substr $wrapped_lines, 0, -28;
-    $naked_lines = substr $naked_lines, 0, -28;
 }
 # Can the naked lines be found within the wrapped lines?
 if ($wrapped_lines =~ /\Q$naked_lines\E/) {
@@ -14751,7 +14271,7 @@ ga_save_ac_ext="$ac_ext"
 ac_ext=F
 ga_cv_f77_compiler_vendor=unknown
 ga_cpp_vendor_symbols=
-for vendor in intel ibm pathscale amd cray gnu sun hp dec borland comeau kai lcc metrowerks sgi microsoft watcom portland fujitsu
+for vendor in intel ibm pathscale amd gnu sun hp dec borland comeau cray kai lcc metrowerks sgi microsoft watcom portland fujitsu
 do
 case $vendor in #(
   amd) :
@@ -14761,7 +14281,7 @@ case $vendor in #(
   comeau) :
     ga_cpp_vendor_symbols="defined(__COMO__)" ;; #(
   cray) :
-    ga_cpp_vendor_symbols="defined(_CRAYC) || defined(_ADDR64)" ;; #(
+    ga_cpp_vendor_symbols="defined(_CRAYC)" ;; #(
   dec) :
     ga_cpp_vendor_symbols="defined(__DECC) || defined(__DECCXX) || defined(__DECC_VER) || defined(__DECCXX_VER)" ;; #(
   fujitsu) :
@@ -16389,7 +15909,7 @@ ac_compile='$F77 -c $FFLAGS conftest.$ac_ext >&5'
 ac_link='$F77 -o conftest$ac_exeext $FFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_f77_compiler_gnu
 
-for testflag in none -mismatch_all
+for testflag in none "-mismatch_all -dusty"
 do
     ga_save_FFLAGS="$FFLAGS"
     if test "x$testflag" != xnone; then :
@@ -34314,18 +33834,6 @@ $as_echo "#define QUADRICS 1" >>confdefs.h
 $as_echo "#define DOELAN4 1" >>confdefs.h
 
      ;; #(
-  GEMINI) :
-
-
-$as_echo "#define LIBONESIDED 1" >>confdefs.h
-
-
-$as_echo "#define CRAY_UGNI 1" >>confdefs.h
-
-
-$as_echo "#define GEMINI 1" >>confdefs.h
-
-     ;; #(
   GM) :
 
 
@@ -35033,26 +34541,6 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${am__fastdepCCAS_TRUE}" && test -z "${am__fastdepCCAS_FALSE}"; then
   as_fn_error $? "conditional \"am__fastdepCCAS\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${INLINE_TAS_OKAY_TRUE}" && test -z "${INLINE_TAS_OKAY_FALSE}"; then
-  as_fn_error $? "conditional \"INLINE_TAS_OKAY\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${INLINE_TAS_WITH_TRUE}" && test -z "${INLINE_TAS_WITH_FALSE}"; then
-  as_fn_error $? "conditional \"INLINE_TAS_WITH\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${INLINE_X86COPY_NEEDED_TRUE}" && test -z "${INLINE_X86COPY_NEEDED_FALSE}"; then
-  as_fn_error $? "conditional \"INLINE_X86COPY_NEEDED\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${INLINE_X86COPY_OKAY_TRUE}" && test -z "${INLINE_X86COPY_OKAY_FALSE}"; then
-  as_fn_error $? "conditional \"INLINE_X86COPY_OKAY\" was never defined.
-Usually this means the macro was only invoked conditionally." "$LINENO" 5
-fi
-if test -z "${INLINE_X86COPY_WITH_TRUE}" && test -z "${INLINE_X86COPY_WITH_FALSE}"; then
-  as_fn_error $? "conditional \"INLINE_X86COPY_WITH\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${NOFORT_TRUE}" && test -z "${NOFORT_FALSE}"; then

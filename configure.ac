@@ -4,7 +4,7 @@
 # Init autoconf
 ###############################################################################
 AC_PREREQ([2.67])
-AC_INIT([Global Arrays (GA)], [5.1],
+AC_INIT([Global Arrays (GA)], [5.1.1],
         [hpctools@pnl.gov], [ga],
         [http://www.emsl.pnl.gov/docs/global/])
 AC_CONFIG_AUX_DIR([build-aux])
@@ -127,8 +127,8 @@ AC_TYPE_OFF_T
 AC_TYPE_PID_T
 AC_TYPE_SIGNAL
 AC_TYPE_SIZE_T
-AC_SYS_LARGEFILE
-AC_FUNC_FSEEKO
+AC_SYS_LARGEFILE 
+AC_FUNC_FSEEKO 
 GA_FUNCTION
 GA_PROGNAME
 GA_DISABLE_SYS_WEAK_ALIAS

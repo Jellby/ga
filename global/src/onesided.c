@@ -33,6 +33,9 @@
  
 /*#define PERMUTE_PIDS */
 
+#if HAVE_STDDEF_H
+#   include <stddef.h>
+#endif
 #if HAVE_STDIO_H
 #   include <stdio.h>
 #endif
@@ -51,10 +54,6 @@
 #if HAVE_ASSERT_H
 #   include <assert.h>
 #endif
-#if HAVE_STDDEF_H
-#include <stddef.h>
-#endif
-
 #include "global.h"
 #include "globalp.h"
 #include "base.h"
@@ -62,9 +61,6 @@
 #include "macdecls.h"
 #include "ga-papi.h"
 #include "ga-wapi.h"
-
-/* From ARMCI */
-#include "copy.h"
 
 #define DEBUG 0
 #define USE_MALLOC 1
@@ -532,39 +528,11 @@ static void ngai_nbgets(char *loc_base_ptr, char *prem,int *stride_rem, char *pb
 static void ngai_gets(char *loc_base_ptr, char *prem,int *stride_rem, char *pbuf, int *stride_loc,
 		      int *count, int nstrides, int proc, int field_off, 
 		      int field_size, int type_size) {
-#if 1
   armci_hdl_t nbhandle;
   ARMCI_INIT_HANDLE(&nbhandle);
   ngai_nbgets(loc_base_ptr, prem, stride_rem, pbuf, stride_loc, count, nstrides, proc, 
 	      field_off, field_size, type_size, &nbhandle);
   ARMCI_Wait(&nbhandle);
-#else
-  if(field_size<0 || field_size == type_size) {
-    ARMCI_GetS(prem,stride_rem,pbuf,stride_loc,count,nstrides,proc);
-  } else {
-    int i;
-    count -= 1;
-    stride_loc -= 1;
-    stride_rem -= 1;
-
-    pbuf = loc_base_ptr + (pbuf - loc_base_ptr)/type_size*field_size;
-    prem += field_off;
-
-    count[1] /= type_size; 
-    nstrides += 1;
-
-    for(i=1; i<nstrides; i++) {
-      stride_loc[i] /= type_size;
-      stride_loc[i] *= field_size;
-    }
-    ARMCI_GetS(prem,stride_rem,pbuf,stride_loc,count,nstrides,proc);
-    count[1] *= type_size; /*restore*/
-    for(i=1; i<nstrides; i++) {
-      stride_loc[i] /= field_size;
-      stride_loc[i] *= type_size;
-    }
-  }
-#endif
 }
 
 /**
@@ -1098,194 +1066,6 @@ void pnga_nbput(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld, I
   ngai_put_common(g_a,lo,hi,buf,ld,0,-1,nbhandle); 
 }
 
-/**
- * (Non-blocking) Put an N-dimensional patch of data into a Global Array and notify the other
-                  side with information on another Global Array
- */
-
-#define HANDLES_OUTSTANDING 100
-/* Maximum number of outstanding put/notify handles */
-
-typedef struct {
-  Integer *orighdl;
-  Integer firsthdl;
-  Integer elementhdl;
-  void *elem_copy;
-} gai_putn_hdl_t;
-
-static int putn_handles_initted = 0;
-static gai_putn_hdl_t putn_handles[HANDLES_OUTSTANDING];
-
-static int putn_check_single_elem(Integer g_a, Integer *lon, Integer *hin)
-{
-  int ndims, i;
-
-  ndims = pnga_ndim(g_a);
-  for (i = 0; i < ndims; i++)
-    if (lon[i] != hin[i])
-      return 0;
-
-  return 1;
-} /* putn_check_single_elem */
-
-static int putn_find_empty_slot(void)
-{
-  int i;
-
-  for (i = 0; i < HANDLES_OUTSTANDING; i++)
-    if (!putn_handles[i].orighdl)
-      return i;
-
-  return -1;
-} /* putn_find_empty_slot */
-
-static int putn_intersect_coords(Integer g_a, Integer *lo, Integer *hi, Integer *ecoords)
-{
-  int ndims, i;
-
-  ndims = pnga_ndim(g_a);
-
-  for (i = 0; i < ndims; i++)
-    if ((ecoords[i] < lo[i]) || (ecoords[i] > hi[i]))
-      return 0;
-
-  return 1;
-} /* putn_intersect_coords */
-
-static int putn_verify_element_in_buf(Integer g_a, Integer *lo, Integer *hi, void *buf,
-				      Integer *ld, Integer *ecoords, void *bufn,
-				      Integer elemSize)
-{
-  int i, ndims;
-#ifdef HAVE_STDDEF_H
-  ptrdiff_t off = (char *)bufn - (char *)buf;
-#else
-  Integer off = (char *)bufn - (char *)buf;
-#endif
-  Integer eoff = 0;
-
-  off /= elemSize; /* Offset in terms of elements */
-
-  ndims = pnga_ndim(g_a);
-  eoff = ecoords[0] - lo[0];
-
-  /* Check in Fortran ordering */
-  for (i = 1; i < ndims; i++)
-    eoff += (ecoords[i] - lo[i]) * ld[i - 1];
-
-  return (eoff == (Integer)off); /* Must be the same for a correct notify buffer */
-} /* putn_verify_element_in_buf */
-
-#if HAVE_SYS_WEAK_ALIAS_PRAGMA
-#   pragma weak wnga_nbput_notify = pnga_nbput_notify
-#endif
-
-void pnga_nbput_notify(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld, Integer g_b, Integer *ecoords, void *bufn, Integer *nbhandle)
-{
-  Integer ldn[MAXDIM] = { 1 };
-  int pos, intersect;
-
-  /* Make sure everything has been initialized */
-  if (!putn_handles_initted) {
-    memset(putn_handles, 0, sizeof(putn_handles));
-    putn_handles_initted = 1;
-  }
-
-  pos = putn_find_empty_slot();
-  if (pos == -1) /* no empty handles available */
-    pnga_error("Too many outstanding put/notify operations!", 0);
-
-  putn_handles[pos].orighdl = nbhandle; /* Store original handle for nbwait_notify */
-
-  if (g_a == g_b)
-    intersect = putn_intersect_coords(g_a, lo, hi, ecoords);
-  else
-    intersect = 0;
-
-  if (!intersect) { /* Simpler case */
-    ngai_put_common(g_a, lo, hi, buf, ld, 0, -1, &putn_handles[pos].firsthdl);
-    ngai_put_common(g_b, ecoords, ecoords, bufn, ldn, 0, -1, &putn_handles[pos].elementhdl);
-
-    putn_handles[pos].elem_copy = NULL;
-  }
-  else {
-    int ret, i;
-    Integer handle = GA_OFFSET + g_a, size;
-    void *elem_copy;
-    char *elem;
-
-    size = GA[handle].elemsize;
-    ret = putn_verify_element_in_buf(g_a, lo, hi, buf, ld, ecoords, bufn, size);
-
-    if (!ret)
-      pnga_error("Intersecting buffers, but notify element is not in buffer!", 0);
-
-    elem_copy = malloc(size);
-    memcpy(elem_copy, bufn, size);
-
-    elem = bufn;
-    for (i = 0; i < size; i++)
-      elem[i] += 1; /* Increment each byte by one, safe? */
-
-    putn_handles[pos].elem_copy = elem_copy;
-
-    ngai_put_common(g_a, lo, hi, buf, ld, 0, -1, &putn_handles[pos].firsthdl);
-    ngai_put_common(g_a, ecoords, ecoords, elem_copy, ldn, 0, -1,
-		    &putn_handles[pos].elementhdl);
-  }
-} /* pnga_nbput_notify */
-
-/**
- *  Wait for a non-blocking put/notify to complete
- */
-#if HAVE_SYS_WEAK_ALIAS_PRAGMA
-#   pragma weak wnga_nbwait_notify = pnga_nbwait_notify
-#endif
-
-void pnga_nbwait_notify(Integer *nbhandle)
-{
-  int i;
-
-  for (i = 0; i < HANDLES_OUTSTANDING; i++)
-    if (putn_handles[i].orighdl == nbhandle)
-      break;
-
-  if (i >= HANDLES_OUTSTANDING)
-    return; /* Incorrect handle used or maybe wait was called multiple times? */
-
-  nga_wait_internal(&putn_handles[i].firsthdl);
-  nga_wait_internal(&putn_handles[i].elementhdl);
-
-  if (putn_handles[i].elem_copy) {
-    free(putn_handles[i].elem_copy);
-    putn_handles[i].elem_copy = NULL;
-  }
-
-  putn_handles[i].orighdl = NULL;
-} /* pnga_nbwait_notify */
-
-/**
- *  Check for notify flag set on the receiver side, must be done in C
- */
-#if HAVE_SYS_WEAK_ALIAS_PRAGMA
-#   pragma weak wnga_check_notify  = pnga_check_notify
-#endif
-logical pnga_check_notify(Integer g_a, void *bufn, void *expected)
-{
-  Integer handle = GA_OFFSET + g_a, size;
-  int ret;
-
-  size = GA[handle].elemsize;
-
-#ifdef MEM_FENCE
-  MEM_FENCE;
-#else
-  asm volatile("" ::: "memory");
-#endif
-  ret = memcmp(bufn, expected, size);
-
-  return (logical)(ret == 0);
-} /* wnga_check_notify */
 
 /**
  * Put an N-dimensional patch of data into a Global Array
@@ -3574,7 +3354,7 @@ Integer subscrpt[2];
 
 /*\ GATHER OPERATION elements from the global array into v
 \*/
-void gai_gatscat(int op, Integer g_a, void* v, Integer subscript[],
+void gai_gatscat(int op, Integer g_a, void* v, Integer subscript[], 
                  Integer nv, double *locbytes, double* totbytes, void *alpha)
 {
     Integer k, handle=g_a+GA_OFFSET;
@@ -4089,219 +3869,6 @@ void gai_gatscat(int op, Integer g_a, void* v, Integer subscript[],
     GA_POP_NAME;
 }
 
-#define gam_c2f_index(index_c, index_f, ndim)        \
-{                                                    \
-  Integer _i;                                        \
-  for (_i = 0; _i < (ndim); _i++) {                  \
-    index_f[_i] = (Integer)(index_c[(ndim)-1-_i]+1); \
-  }                                                  \
-}
-
-/*\ GATHER OPERATION elements from the global array into v
-\*/
-void gai_gatscat_new(int op, Integer g_a, void* v, void *subscript,
-                     Integer c_flag, Integer nv, double *locbytes,
-                     double* totbytes, void *alpha)
-{
-    Integer handle=g_a+GA_OFFSET;
-    int  ndim, i, j, k, type, item_size;
-    Integer idx, p_handle, num_rstrctd;
-    Integer *proc;
-    Integer nprocs, me, iproc, tproc, index[MAXDIM];
-    Integer lo[MAXDIM], hi[MAXDIM], ld[MAXDIM-1];
-    Integer jtot, last, offset;
-    Integer *subscript_ptr;
-
-    Integer *header, *list, *nelems;
-    char *buf;
-    void **ptr_rem, **ptr_loc; 
-    int rc, maxlen, use_blocks, use_sl_blocks;
-    int *nblock;
-    armci_giov_t desc;
-
-    GA_PUSH_NAME("gai_gatscat");
-
-    me = pnga_nodeid();
-    num_rstrctd = GA[handle].num_rstrctd;
-    use_blocks = GA[handle].block_flag;
-    use_sl_blocks = GA[handle].block_sl_flag;
-    nblock = GA[handle].nblock;
-
-    /* determine how many processors are associated with array */
-    p_handle = GA[handle].p_handle;
-    if (p_handle < 0) {
-      nprocs = GAnproc;
-      if (num_rstrctd > 0) nprocs = num_rstrctd;
-    } else {
-      nprocs = PGRP_LIST[p_handle].map_nproc;
-    }
-
-    header =(Integer *)ga_malloc(nprocs, MT_F_INT, "ga_gat_header");
-    list =(Integer *)ga_malloc(nv, MT_F_INT, "ga_gat_list");
-    nelems =(Integer *)ga_malloc(nprocs, MT_F_INT, "ga_gat_nelems");
-
-    ndim = GA[handle].ndim;
-    type = GA[handle].type;
-    item_size = GA[handle].elemsize;
-    *totbytes = item_size * nv;
-
-    /* Initialize linked list data structures */
-    for (i=0; i<nprocs; i++) {
-      nelems[i] = 0;
-      header[i] = -1;
-    }
-    for (i=0; i<nv; i++) {
-      list[i] = 0;
-    }
-
-    /* Set up linked list that partitions elements defined in subscripts array
-     * into groups corresponding to the elements home processor
-     */
-    maxlen = 1;
-    for (i=0; i<nv; i++) {
-      if (c_flag) {
-        gam_c2f_index(((int**)subscript)[k], index, ndim);
-        subscript_ptr = index;
-      } else {
-        subscript_ptr = ((Integer*)subscript)+i*ndim;
-      }
-      if(!pnga_locate(g_a, subscript_ptr, &idx)) {
-        gai_print_subscript("invalid subscript",ndim, subscript+i*ndim,"\n");
-        pnga_error("failed -element:",i);
-      }
-      if (num_rstrctd > 0) idx = GA[handle].rank_rstrctd[idx];
-      /* map from block to processor, if necessary */
-      if (use_blocks) {
-        if (use_sl_blocks == 0) {
-          idx = idx%nprocs;
-        } else {
-          gam_find_block_indices(handle,idx,index);
-          for (j=0; j<ndim; j++) {
-            index[j] = index[j]%nblock[j];
-          }
-          gam_find_proc_from_sl_indices(handle,idx,index);
-        }
-      }
-      nelems[idx]++;
-      if (maxlen<nelems[idx]) maxlen=nelems[idx];
-      j = header[idx];
-      header[idx] = i;
-      list[i] = j;
-    }
-    *locbytes = item_size * nelems[me];
-
-    /* allocate buffers for individual vector calls */
-    buf = (char*)gai_malloc(2*maxlen*sizeof(void*));
-    ptr_loc = (void**)buf;
-    ptr_rem = (void**)(buf+maxlen*sizeof(void*));
-
-    for (iproc=0; iproc<nprocs; iproc++) {
-      if (nelems[iproc] > 0) {
-        /* loop through linked list to find all data elements associated with
-         * the remote processor iproc
-         */
-        idx = header[iproc];
-        j = 0;
-        while (idx > -1) {
-          if (c_flag) {
-            gam_c2f_index(((int**)subscript)[k], index, ndim);
-            subscript_ptr = index;
-          } else {
-            subscript_ptr = ((Integer*)subscript)+idx*ndim;
-          }
-          if (!use_blocks) {
-          /* gam_Loc_ptr modifies the value of the processor variable for
-           * restricted arrays or processor groups, so make a temporary copy
-           */
-            tproc = iproc;
-            gam_Loc_ptr(tproc, handle,  (subscript_ptr),
-                ptr_rem+j);
-          } else {
-            /* TODO: Figure out how to get correct pointers for block cyclic
-             * distributions */
-            /* find block index from subscript */
-            if(!pnga_locate(g_a, subscript_ptr, &tproc)) {
-              gai_print_subscript("invalid subscript for block-cyclic array",
-                                   ndim, subscript_ptr,"\n");
-              pnga_error("failed -element:",idx);
-            }
-            pnga_distribution(g_a, tproc, lo, hi);
-            pnga_access_block_ptr(g_a, tproc, ptr_rem+j, ld);
-            pnga_release_block(g_a, tproc);
-            offset = 0;
-            last = ndim -1;
-            jtot = 1;
-            for (k=0; k<last; k++) {
-              offset += ((subscript_ptr)[k]-lo[k])*jtot;
-              jtot *= ld[k];
-            }
-            offset += ((subscript_ptr)[last]-lo[last])*jtot;
-            ptr_rem[j] = (void*)(((char*)ptr_rem[j])+offset*item_size);
-          }
-          ptr_loc[j] = (void*)(((char*)v) + idx * item_size);
-          idx = list[idx];
-          j++;
-        }
-        /* correct remote proc if restricted arrays or processor groups are
-         * being used
-         */
-        if (num_rstrctd > 0) {
-          tproc = GA[handle].rstrctd_list[iproc];
-        } else {
-          if (p_handle < 0) {
-            tproc = iproc;
-          } else {
-            tproc = PGRP_LIST[p_handle].inv_map_proc_list[iproc];
-          }
-        }
-        /* perform vector operation */
-        switch(op) { 
-          case GATHER:
-            desc.bytes = (int)item_size;
-            desc.src_ptr_array = ptr_rem;
-            desc.dst_ptr_array = ptr_loc;
-            desc.ptr_array_len = (int)nelems[iproc];
-            rc=ARMCI_GetV(&desc, 1, (int)tproc);
-            if(rc) pnga_error("gather failed in armci",rc);
-            break;
-          case SCATTER:
-            desc.bytes = (int)item_size;
-            desc.src_ptr_array = ptr_loc;
-            desc.dst_ptr_array = ptr_rem;
-            desc.ptr_array_len = (int)nelems[iproc];
-            rc=ARMCI_PutV(&desc, 1, (int)tproc);
-            if(rc) pnga_error("scatter failed in armci",rc);
-            break;
-          case SCATTER_ACC:
-            desc.bytes = (int)item_size;
-            desc.src_ptr_array = ptr_loc;
-            desc.dst_ptr_array = ptr_rem;
-            desc.ptr_array_len = (int)nelems[iproc];
-            if(alpha != NULL) {
-              int optype=-1;
-              if(type==C_DBL) optype= ARMCI_ACC_DBL;
-              else if(type==C_DCPL)optype= ARMCI_ACC_DCP;
-              else if(type==C_SCPL)optype= ARMCI_ACC_CPL;
-              else if(type==C_INT)optype= ARMCI_ACC_INT;
-              else if(type==C_LONG)optype= ARMCI_ACC_LNG;
-              else if(type==C_FLOAT)optype= ARMCI_ACC_FLT; 
-              else pnga_error("type not supported",type);
-              rc= ARMCI_AccV(optype, alpha, &desc, 1, (int)tproc);
-            }
-            if(rc) pnga_error("scatter_acc failed in armci",rc);
-            break;
-          default: pnga_error("operation not supported",op);
-        }
-      }
-    }
-    gai_free(buf);
-    ga_free(nelems);
-    ga_free(list);
-    ga_free(header);
-
-    GA_POP_NAME;
-}
-
 /**
  *  Gather random elements from a global array into local buffer v
 \*/
@@ -4309,7 +3876,7 @@ void gai_gatscat_new(int op, Integer g_a, void* v, void *subscript,
 #   pragma weak wnga_gather = pnga_gather
 #endif
 
-void pnga_gather(Integer g_a, void* v, void *subscript, Integer c_flag, Integer nv)
+void pnga_gather(Integer g_a, void* v, Integer subscript[], Integer nv)
 {
 
   if (nv < 1) return;
@@ -4317,7 +3884,7 @@ void pnga_gather(Integer g_a, void* v, void *subscript, Integer c_flag, Integer 
   GA_PUSH_NAME("nga_gather");
   GAstat.numgat++;
 
-  gai_gatscat_new(GATHER,g_a,v,subscript,c_flag,nv,&GAbytes.gattot,&GAbytes.gatloc, NULL);
+  gai_gatscat(GATHER,g_a,v,subscript,nv,&GAbytes.gattot,&GAbytes.gatloc, NULL);
 
   GA_POP_NAME;
 }
@@ -4330,7 +3897,7 @@ void pnga_gather(Integer g_a, void* v, void *subscript, Integer c_flag, Integer 
 #   pragma weak wnga_scatter = pnga_scatter
 #endif
 
-void pnga_scatter(Integer g_a, void* v, void *subscript, Integer c_flag, Integer nv)
+void pnga_scatter(Integer g_a, void* v, Integer subscript[], Integer nv)
 {
 
   if (nv < 1) return;
@@ -4338,7 +3905,7 @@ void pnga_scatter(Integer g_a, void* v, void *subscript, Integer c_flag, Integer
   GA_PUSH_NAME("nga_scatter");
   GAstat.numsca++;
 
-  gai_gatscat_new(SCATTER,g_a,v,subscript,c_flag,nv,&GAbytes.scatot,&GAbytes.scaloc, NULL);
+  gai_gatscat(SCATTER,g_a,v,subscript,nv,&GAbytes.scatot,&GAbytes.scaloc, NULL);
 
   GA_POP_NAME;
 }
@@ -4351,8 +3918,8 @@ void pnga_scatter(Integer g_a, void* v, void *subscript, Integer c_flag, Integer
 #   pragma weak wnga_scatter_acc = pnga_scatter_acc
 #endif
 
-void pnga_scatter_acc(Integer g_a, void* v, void *subscript, Integer c_flag,
-                      Integer nv, void *alpha)
+void pnga_scatter_acc(Integer g_a, void* v, Integer subscript[],
+                           Integer nv, void *alpha)
 {
 
   if (nv < 1) return;
@@ -4360,7 +3927,7 @@ void pnga_scatter_acc(Integer g_a, void* v, void *subscript, Integer c_flag,
   GA_PUSH_NAME("nga_scatter_acc");
   GAstat.numsca++;
 
-  gai_gatscat_new(SCATTER_ACC, g_a, v, subscript, c_flag, nv, &GAbytes.scatot,
+  gai_gatscat(SCATTER_ACC, g_a, v, subscript, nv, &GAbytes.scatot,
               &GAbytes.scaloc, alpha);
 
   GA_POP_NAME;

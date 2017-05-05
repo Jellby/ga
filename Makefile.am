@@ -263,14 +263,11 @@ if HAVE_SYS_WEAK_ALIAS_PRAGMA
 lib_LTLIBRARIES += libwapi.la
 libwapi_la_SOURCES =
 libwapi_la_SOURCES += tools/ga-wapi.c
-libwapi_la_SOURCES += tools/gp-wapi.c
 else
 nodist_libga_la_SOURCES += tools/ga-wapi.c
-nodist_libga_la_SOURCES += tools/gp-wapi.c
 endif
 endif
 
-EXTRA_DIST += tools/gpwapigen.py
 EXTRA_DIST += tools/wapigen.py
 EXTRA_DIST += tools/wapigen_counts.py
 EXTRA_DIST += tools/wapigen_trace.py
@@ -382,6 +379,7 @@ AM_CPPFLAGS += -I$(top_srcdir)/global/src
 #
 AM_CPPFLAGS += -I$(top_srcdir)/global/testing
 
+check_PROGRAMS += global/testing/big
 check_PROGRAMS += global/testing/elempatch
 check_PROGRAMS += global/testing/getmem
 check_PROGRAMS += global/testing/mtest
@@ -390,7 +388,6 @@ check_PROGRAMS += global/testing/ntestc
 check_PROGRAMS += global/testing/ntestfc
 check_PROGRAMS += global/testing/packc
 check_PROGRAMS += global/testing/patch_enumc
-check_PROGRAMS += global/testing/perf2
 check_PROGRAMS += global/testing/print
 check_PROGRAMS += global/testing/scan_addc
 check_PROGRAMS += global/testing/scan_copyc
@@ -406,7 +403,6 @@ check_PROGRAMS += global/testing/d2test
 check_PROGRAMS += global/testing/g2test
 check_PROGRAMS += global/testing/g3test
 check_PROGRAMS += global/testing/ga_lu
-check_PROGRAMS += global/testing/ga_shift
 check_PROGRAMS += global/testing/ghosts
 check_PROGRAMS += global/testing/jacobi
 check_PROGRAMS += global/testing/mir_perf2
@@ -460,6 +456,7 @@ GLOBAL_PARALLEL_TESTS_XFAIL =
 GLOBAL_TESTS = $(GLOBAL_SERIAL_TESTS) $(GLOBAL_PARALLEL_TESTS)
 GLOBAL_TESTS_XFAIL = $(GLOBAL_SERIAL_TESTS_XFAIL) $(GLOBAL_PARALLEL_TESTS_XFAIL)
 
+#GLOBAL_PARALLEL_TESTS += global/testing/big$(EXEEXT) # needs lots of memory
 GLOBAL_PARALLEL_TESTS += global/testing/elempatch$(EXEEXT)
 GLOBAL_PARALLEL_TESTS += global/testing/getmem$(EXEEXT)
 GLOBAL_PARALLEL_TESTS += global/testing/mtest$(EXEEXT)
@@ -483,7 +480,6 @@ GLOBAL_PARALLEL_TESTS += global/testing/blktest$(EXEEXT)
 GLOBAL_PARALLEL_TESTS += global/testing/g2test$(EXEEXT)
 GLOBAL_PARALLEL_TESTS += global/testing/g3test$(EXEEXT)
 GLOBAL_PARALLEL_TESTS += global/testing/ga_lu$(EXEEXT)
-GLOBAL_PARALLEL_TESTS += global/testing/ga_shift$(EXEEXT)
 GLOBAL_PARALLEL_TESTS += global/testing/ghosts$(EXEEXT)
 GLOBAL_PARALLEL_TESTS += global/testing/jacobi$(EXEEXT)
 GLOBAL_PARALLEL_TESTS += global/testing/mir_perf2$(EXEEXT)
@@ -496,7 +492,6 @@ GLOBAL_PARALLEL_TESTS += global/testing/patch_enumf$(EXEEXT)
 GLOBAL_PARALLEL_TESTS += global/testing/perfmod$(EXEEXT)
 GLOBAL_PARALLEL_TESTS += global/testing/perform$(EXEEXT)
 GLOBAL_PARALLEL_TESTS += global/testing/perf$(EXEEXT)
-GLOBAL_PARALLEL_TESTS += global/testing/perf2$(EXEEXT)
 #GLOBAL_PARALLEL_TESTS += global/testing/pg2testmatmult$(EXEEXT) # needs 8 procs exactly
 GLOBAL_PARALLEL_TESTS += global/testing/pg2test$(EXEEXT)
 #GLOBAL_PARALLEL_TESTS += global/testing/pgtestmatmult$(EXEEXT) # needs 8 procs exactly
@@ -607,6 +602,7 @@ gtsrc += global/testing/ffflush.F
 gtsrc += global/testing/testblas.F
 endif
 
+global_testing_big_SOURCES                 = global/testing/big.c $(gtsrc)
 global_testing_bin_SOURCES                 = global/testing/bin.F $(gtsrc)
 global_testing_blktest_SOURCES             = global/testing/blktest.F $(gtsrc)
 global_testing_d2test_SOURCES              = global/testing/d2test.F $(gtsrc)
@@ -616,7 +612,6 @@ global_testing_g2test_SOURCES              = global/testing/g2test.F $(gtsrc)
 global_testing_g3test_SOURCES              = global/testing/g3test.F $(gtsrc)
 global_testing_ga_lu_SOURCES               = global/testing/ga_lu.c $(gtsrc)
 global_testing_ga_mpi_SOURCES              = global/testing/ga-mpi.c $(gtsrc)
-global_testing_ga_shift_SOURCES            = global/testing/ga_shift.F $(gtsrc)
 global_testing_getmem_SOURCES              = global/testing/getmem.c $(gtsrc)
 global_testing_ghosts_SOURCES              = global/testing/ghosts.F $(gtsrc)
 global_testing_ipc_clean_SOURCES           = global/testing/ipc.clean.c $(gtsrc)
@@ -636,7 +631,6 @@ global_testing_patch_SOURCES               = global/testing/patch.F $(gtsrc)
 global_testing_patch_enumc_SOURCES         = global/testing/patch_enumc.c $(gtsrc)
 global_testing_patch_enumf_SOURCES         = global/testing/patch_enumf.F $(gtsrc)
 global_testing_perf_SOURCES                = global/testing/perf.F $(gtsrc)
-global_testing_perf2_SOURCES               = global/testing/perf2.c $(gtsrc)
 global_testing_perfmod_SOURCES             = global/testing/perfmod.F $(gtsrc)
 global_testing_perform_SOURCES             = global/testing/perform.F $(gtsrc)
 global_testing_pg2test_SOURCES             = global/testing/pg2test.F $(gtsrc)
@@ -678,7 +672,6 @@ global_testing_d2test_LDFLAGS             = $(FLDFLAGS)
 global_testing_field_test_LDFLAGS         = $(FLDFLAGS)
 global_testing_g2test_LDFLAGS             = $(FLDFLAGS)
 global_testing_g3test_LDFLAGS             = $(FLDFLAGS)
-global_testing_ga_shift_LDFLAGS           = $(FLDFLAGS)
 global_testing_ghosts_LDFLAGS             = $(FLDFLAGS)
 global_testing_jacobi_LDFLAGS             = $(FLDFLAGS)
 global_testing_mir_perf2_LDFLAGS          = $(FLDFLAGS)
@@ -715,6 +708,7 @@ global_testing_testsolve_LDFLAGS          = $(FLDFLAGS)
 global_testing_testspd_LDFLAGS            = $(FLDFLAGS)
 global_testing_types_test_LDFLAGS         = $(FLDFLAGS)
 
+nodist_EXTRA_global_testing_big_SOURCES                 = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_elempatch_SOURCES           = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_ga_lu_SOURCES               = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_ga_mpi_SOURCES              = $(MAYBE_DUMMY_F_LINK)
@@ -727,7 +721,6 @@ nodist_EXTRA_global_testing_ntestc_SOURCES              = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_ntestfc_SOURCES             = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_packc_SOURCES               = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_patch_enumc_SOURCES         = $(MAYBE_DUMMY_F_LINK)
-nodist_EXTRA_global_testing_perf2_SOURCES               = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_print_SOURCES               = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_scan_addc_SOURCES           = $(MAYBE_DUMMY_F_LINK)
 nodist_EXTRA_global_testing_scan_copyc_SOURCES          = $(MAYBE_DUMMY_F_LINK)
@@ -1094,64 +1087,6 @@ python: install
 endif
 
 ##############################################################################
-# gparrays
-#
-GPPAPI_H      = $(top_srcdir)/gparrays/src/gp-papi.h
-
-gparrays/src/gp-wapi.h: $(GPPAPI_H)
-	@-rm -f $@
-	$(SED_V) \
-	$(SED) -e "s/GPPAPI/GPWAPI/g" \
-	       -e "s/pgp_/wgp_/g" \
-	       -e "/typedef/d" \
-		   $(GPPAPI_H) > $@
-
-gparrays/src/gp-wapidefs.h: $(GPPAPI_H)
-	@-rm -f $@
-	$(SED_V) \
-	$(SED) -e "s/GPPAPI/GPWAPIDEFS/g" \
-		   -e "s/^.*p\(gp_.*\)(.*$$/#define w\1 p\1/g" \
-		   -e "/^ /d" \
-		   -e "/^\/\*/d" \
-		   -e "/^ \*/d" \
-	       -e "/typedef/d" \
-	       -e "/include/d" \
-		   $(GPPAPI_H) > $@
-
-BUILT_SOURCES += gparrays/src/gp-wapi.h
-BUILT_SOURCES += gparrays/src/gp-wapidefs.h
-
-CLEANFILES += gparrays/src/gp-wapi.h
-CLEANFILES += gparrays/src/gp-wapidefs.h
-
-libga_la_SOURCES += gparrays/src/gpbase.c
-libga_la_SOURCES += gparrays/src/gpbase.h
-libga_la_SOURCES += gparrays/src/gpcapi.c
-libga_la_SOURCES += gparrays/src/gpfapi.c
-libga_la_SOURCES += gparrays/src/gponesided.c
-libga_la_SOURCES += gparrays/src/gp-papi.h
-nodist_libga_la_SOURCES += gparrays/src/gp-wapidefs.h
-
-include_HEADERS += gparrays/src/gp-papi.h
-nodist_include_HEADERS += gparrays/src/gp-wapi.h
-
-if ENABLE_F77
-check_PROGRAMS += gparrays/testing/test
-endif
-
-check_PROGRAMS += gparrays/testing/testc
-
-gparrays_testing_test_SOURCES  = gparrays/testing/test.F
-gparrays_testing_testc_SOURCES = gparrays/testing/testc.c
-
-nodist_EXTRA_gparrays_testing_testc_SOURCES = $(MAYBE_DUMMY_F_LINK)
-
-gparrays_testing_test_LDFLAGS  = $(FLDFLAGS)
-
-AM_CPPFLAGS += -I$(top_build_prefix)gparrays/src
-AM_CPPFLAGS += -I$(top_srcdir)/gparrays/src
-
-##############################################################################
 # armci
 SUBDIRS = armci .
 
@@ -1184,20 +1119,8 @@ libga_la_LIBADD += $(ARMCI_NETWORK_LIBS)
 # The tascel directory is not automatically configured nor added to SUBDIRS.
 # However, it is still distributed with GA.
 EXTRA_DIST += tascel
-dist-hook: tascel-dist-hook
-.PHONY: tascel-dist-hook
-tascel-dist-hook:
+dist-hook:
 	rm -rf $(distdir)/tascel/autom4te.cache
-
-##############################################################################
-# gfutex
-# The gfutex directory is not automatically configured nor added to SUBDIRS.
-# However, it is still distributed with GA.
-EXTRA_DIST += gfutex
-dist-hook: gfutex-dist-hook
-.PHONY: gfutex-dist-hook
-gfutex-dist-hook:
-	rm -rf $(distdir)/gfutex/autom4te.cache
 
 ##############################################################################
 # the end

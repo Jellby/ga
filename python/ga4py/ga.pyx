@@ -13,22 +13,11 @@ from libc.stdlib cimport malloc,free
 from gah cimport *
 import numpy as np
 cimport numpy as np
-from python_ref cimport Py_INCREF
 import __builtin__
 
 DEF EXCLUSIVE = 0
 
 np.import_array()
-
-cdef extern from "numpy/arrayobject.h":
-    object PyArray_NewFromDescr(object subtype,
-                                np.dtype descr,
-                                int nd,
-                                np.npy_intp * dims,
-                                np.npy_intp * strides,
-                                void * data,
-                                int flags,
-                                object obj)
 
 cdef bint _initialized = False
 
@@ -432,11 +421,9 @@ def access(int g_a, lo=None, hi=None, int proc=-1):
     cdef np.ndarray[np.int64_t, ndim=1] lo_nd, hi_nd
     cdef np.ndarray[np.int64_t, ndim=1] ld_nd, lo_dst, hi_dst, dims_nd
     cdef int i, gtype=inquire_type(g_a)
-    cdef int dimlen=GA_Ndim(g_a)
-    cdef np.dtype dtype = _to_dtype[gtype]
+    cdef int dimlen=GA_Ndim(g_a), typenum=_to_dtype[gtype].num
     cdef void *ptr
     cdef np.npy_intp *dims = NULL
-    cdef np.npy_intp *strides = NULL
     if proc < 0:
         proc = GA_Nodeid()
     # first things first, if no data is owned, return None
@@ -444,7 +431,7 @@ def access(int g_a, lo=None, hi=None, int proc=-1):
     if lo_dst[0] < 0 or hi_dst[0] < 0:
         return None
     # always access the entire local data
-    ld_nd = np.ones(dimlen, dtype=np.int64)
+    ld_nd = np.zeros(dimlen-1, dtype=np.int64)
     # put hi_dst back to GA inclusive indexing convention
     hi_dst -= 1
     NGA_Access64(g_a, <int64_t*>lo_dst.data, <int64_t*>hi_dst.data, &ptr,
@@ -452,23 +439,12 @@ def access(int g_a, lo=None, hi=None, int proc=-1):
     # put hi_dst back to Python exclusive indexing convention
     hi_dst += 1
     dims_nd = hi_dst-lo_dst
-    # fix the strides, for example if ghost cells are in use
-    # or if memory is allocated in a non-contiguous way
-    if dimlen >= 3:
-        for i in range(-3, -dimlen-1, -1):
-            ld_nd[i] *= ld_nd[i+1]
-    ld_nd *= _to_dtype[gtype].itemsize
     # must convert int64_t ndarray shape to npy_intp array
     dims = <np.npy_intp*>malloc(dimlen*sizeof(np.npy_intp))
-    strides = <np.npy_intp*>malloc(dimlen*sizeof(np.npy_intp))
     for i in range(dimlen):
         dims[i] = dims_nd[i]
-        strides[i] = ld_nd[i]
-    Py_INCREF(dtype)
-    array = PyArray_NewFromDescr(np.ndarray,
-            dtype, dimlen, dims, strides, ptr, np.NPY_DEFAULT, None)
+    array = np.PyArray_SimpleNewFromData(dimlen, dims, typenum, ptr)
     free(dims)
-    free(strides)
     if lo is not None or hi is not None:
         if lo is not None:
             lo_nd = _inta64(lo)
@@ -563,8 +539,10 @@ def access_block_grid(int g_a, subscript):
     raise NotImplementedError
 
 def access_block_segment(int g_a, int proc):
-    """This function can be used to gain access to the all the locally held
-    data on a particular processor that is associated with a block-cyclic
+    """Do not use.
+
+    This function can be used to gain access to the all the locally held data
+    on a particular processor that is associated with a block-cyclic
     distributed array.
 
     The data  inside this segment has a lot of additional structure so this
@@ -598,7 +576,7 @@ def access_block_segment(int g_a, int proc):
     free(dims)
     return array
 
-def access_ghost_element(int g_a, subscript):
+def access_ghost_element(int g_a, subscript, ld):
     """Returns a scalar ndarray representing the requested ghost element.
 
     This function can be used to return a pointer to any data element in the
@@ -618,7 +596,7 @@ def access_ghost_element(int g_a, subscript):
     :returns: ndarray scalar representing local block
 
     """
-    raise NotImplementedError, "use access_ghosts(g_a) instead"
+    raise NotImplementedError
 
 def access_ghosts(int g_a):
     """Returns ndarray representing local patch with ghost cells.
@@ -640,26 +618,7 @@ def access_ghosts(int g_a):
     :returns: ndarray scalar representing local block with ghost cells
 
     """
-    cdef np.ndarray[np.int64_t, ndim=1] ld_nd, lo_dst, hi_dst, dims_nd
-    cdef int i, gtype=inquire_type(g_a)
-    cdef int dimlen=GA_Ndim(g_a), typenum=_to_dtype[gtype].num
-    cdef void *ptr
-    cdef np.npy_intp *dims = NULL
-    # first things first, if no data is owned, return None
-    lo_dst,hi_dst = distribution(g_a)
-    if lo_dst[0] < 0 or hi_dst[0] < 0:
-        return None
-    # always access the entire local data
-    dims_nd = np.zeros(dimlen, dtype=np.int64)
-    ld_nd = np.zeros(dimlen-1, dtype=np.int64)
-    NGA_Access_ghosts64(g_a, <int64_t*>dims_nd.data, &ptr, <int64_t*>ld_nd.data)
-    # must convert int64_t ndarray shape to npy_intp array
-    dims = <np.npy_intp*>malloc(dimlen*sizeof(np.npy_intp))
-    for i in range(dimlen):
-        dims[i] = dims_nd[i]
-    array = np.PyArray_SimpleNewFromData(dimlen, dims, typenum, ptr)
-    free(dims)
-    return array
+    raise NotImplementedError
 
 def add(int g_a, int g_b, int g_c, alpha=None, beta=None, alo=None, ahi=None,
         blo=None, bhi=None, clo=None, chi=None):
@@ -3872,10 +3831,8 @@ def select_elem(int g_a, char *op):
     elif gtype == C_LDBL:
         return ldalpha,index
     elif gtype == C_SCPL:
-        # TODO explicitly convert GA complex to Python complex type
         return fcalpha,index
     elif gtype == C_DCPL:
-        # TODO explicitly convert GA complex to Python complex type
         return dcalpha,index
     else:
         raise TypeError, "type of g_a not recognized"
@@ -4070,40 +4027,6 @@ def set_pgroup(int g_a, int pgroup):
 
     """
     GA_Set_pgroup(g_a, pgroup)
-
-def set_restricted(int g_a, list):
-    """Restrict data in the global array g_a to only the processors listed in
-    the array list.
-    
-    len(list) must be less than or equal to the number of available processors.
-    If this call is used in conjunction with set_irreg_distr, then the
-    decomposition in the set_irreg_distr call must be done assuming that the
-    number of processors is nproc. The data that ordinarily would be mapped to
-    process 0 is mapped to the process in list[0], the data that would be
-    mapped to process 1 will be mapped to list[1], etc. This can be used to
-    remap the data distribution to different processors, even if nproc equals
-    the number of available processors.
-
-    This is a collective operation.
-
-    """
-    cdef np.ndarray[np.int32_t, ndim=1] list_nd
-    list_nd = _inta32(list)
-    GA_Set_restricted(g_a, <int*>list_nd.data, len(list_nd))
-
-def set_restricted_range(int g_a, int lo_proc, int hi_proc):
-    """Restrict data in the global array to the given range of processors.
-
-    Both lo_proc and hi_proc must be less than or equal to the total number of
-    processors minus one (e.g., in the range [0,N-1], where N is the total
-    number of processors) and lo_proc must be less than or equal to hi_proc. If
-    lo_proc = 0 and hi_proc = N-1 then this call has no effect on the data
-    distribution.
-
-    This is a collective operation.
-
-    """
-    GA_Set_restricted_range(g_a, lo_proc, hi_proc)
 
 def shift_diagoal(int g_a, value=None):
     """Adds this constant to the diagonal elements of the matrix.

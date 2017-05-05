@@ -244,28 +244,6 @@ AS_IF([test "x$happy" = xyes],
 AS_IF([test "x$happy" = xyes],
     [ga_armci_network=GEMINI; with_gemini=yes; $1],
     [$2])
-# check for a function introduced in libonesided/1.5
-# we purposefully abuse the ac_cv_search_onesided_mem_htflush value
-AS_IF([test "x$happy" = xyes],
-    [AC_SEARCH_LIBS([onesided_mem_htflush], [onesided])
-     AS_IF([test "x$ac_cv_search_onesided_mem_htflush" != xno],
-        [ac_cv_search_onesided_mem_htflush=1],
-        [ac_cv_search_onesided_mem_htflush=0])
-     AC_DEFINE_UNQUOTED([HAVE_ONESIDED_MEM_HTFLUSH],
-        [$ac_cv_search_onesided_mem_htflush],
-        [set to 1 if libonesided has onesided_mem_htflush (added in v1.5)])
-    ])
-# check for a function introduced in libonesided/1.6
-# we purposefully abuse the ac_cv_search_onesided_fadd value
-AS_IF([test "x$happy" = xyes],
-    [AC_SEARCH_LIBS([onesided_fadd], [onesided])
-     AS_IF([test "x$ac_cv_search_onesided_fadd" != xno],
-        [ac_cv_search_onesided_fadd=1],
-        [ac_cv_search_onesided_fadd=0])
-     AC_DEFINE_UNQUOTED([HAVE_ONESIDED_FADD],
-        [$ac_cv_search_onesided_fadd],
-        [set to 1 if libonesided has onesided_fadd (added in v1.6)])
-    ])
 ])dnl
 
 # GA_ARMCI_NETWORK
@@ -398,7 +376,9 @@ AM_CONDITIONAL([DCMF_VER_0_3], [test x = x]) # always true
 # permanent hack
 AS_CASE([$ga_armci_network],
 [PORTALS],  [ARMCI_SRC_DIR=src-portals],
-[GEMINI],   [ARMCI_SRC_DIR=src-gemini],
+[GEMINI],   [ARMCI_SRC_DIR=src-gemini
+             AC_DEFINE([CRAY_UGNI], [1], [for Gemini])
+             AC_DEFINE([LIBONESIDED], [1], [for Gemini])],
             [ARMCI_SRC_DIR=src])
 AC_SUBST([ARMCI_SRC_DIR])
 

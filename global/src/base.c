@@ -356,6 +356,8 @@ int bytes;
     if(GAinitialized) return;
 
     if (!ARMCI_Initialized()) {
+        /* assure that GA will not alocate more shared memory than specified */
+        if(GA_memory_limited) ARMCI_Set_shm_limit(GA_total_memory);
         if (_ga_initialize_c) {
             if (_ga_initialize_args) {
                 ARMCI_Init_args(_ga_argc, _ga_argv);
@@ -454,9 +456,6 @@ int bytes;
        PGRP_LIST[0].inv_map_proc_list[i] = i+j;
     }
 
-    /* assure that GA will not alocate more shared memory than specified */
-    if(ARMCI_Uses_shm())
-       if(GA_memory_limited) ARMCI_Set_shm_limit(GA_total_memory);
 
     /* Allocate memory for update flags and signal*/
     bytes = 2*MAXDIM*sizeof(int);
@@ -2092,7 +2091,7 @@ logical pnga_create_ghosts_irreg_config(
   Integer g_A;
 
   _ga_sync_begin = 1; _ga_sync_end=1; /*remove any previous sync masking*/
-  pnga_sync();
+  pnga_pgroup_sync(p_handle);
   GA_PUSH_NAME("pnga_create_ghosts_irreg_config");
 
   g_A = pnga_create_handle();

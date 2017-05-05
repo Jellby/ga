@@ -61,12 +61,13 @@ c     --------------------------------------------------------------- c
      $    index)
 
       implicit none
+#include "mafdecls.fh"
 
       integer datatype
       integer nelem
       character*(*) name
       integer memhandle
-      integer index
+      MA_ACCESS_INDEX_TYPE index
 
 #include "maf2c.fh"
 
@@ -172,9 +173,10 @@ c     --------------------------------------------------------------- c
       logical function MA_get_index (memhandle, index)
 
       implicit none
+#include "mafdecls.fh"
 
       integer memhandle
-      integer index
+      MA_ACCESS_INDEX_TYPE index
 
 #include "maf2c.fh"
 
@@ -228,19 +230,17 @@ c     --------------------------------------------------------------- c
 c     --------------------------------------------------------------- c
 c     --------------------------------------------------------------- c
 
-      logical function MA_init (datatype, nominal_stack,
-     $    nominal_heap)
+      logical function MA_init (datatype, stack, heap)
 
       implicit none
 
       integer datatype
-      integer nominal_stack
-      integer nominal_heap
+      integer stack
+      integer heap
 
 #include "maf2c.fh"
 
-      if (f2c_init(datatype, nominal_stack, nominal_heap) .eq.
-     $    MA_TRUE) then
+      if (f2c_init(datatype, stack, heap) .eq. MA_TRUE) then
           MA_init = .true.
       else
           MA_init = .false.
@@ -451,12 +451,13 @@ c     --------------------------------------------------------------- c
      $    index)
 
       implicit none
+#include "mafdecls.fh"
 
       integer datatype
       integer nelem
       character*(*) name
       integer memhandle
-      integer index
+      MA_ACCESS_INDEX_TYPE index
 
 #include "maf2c.fh"
 

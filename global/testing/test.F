@@ -43,7 +43,7 @@ c#define USE_RESTRICTED
       integer heap, stack, fudge, ma_heap, me, nproc, map(4096), block
       integer g_s, ndim, dim1, i
       logical status
-      parameter (heap=200*200*4, fudge=100, stack=200*200)
+      parameter (heap=400*400*4, fudge=200, stack=400*400)
 c     
 c***  Intitialize a message passing library
 c
@@ -874,8 +874,6 @@ c          if(v(loop)  .ne. w(loop))then
        endif
        call ga_sync()
       enddo
-c
-      call ga_sync()
 c
       if (me.eq.0) then
          write(6,*)

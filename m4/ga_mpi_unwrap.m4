@@ -14,9 +14,7 @@ AC_PATH_PROG([PERL], [perl])
 rm -f inside.pl
 [cat >inside.pl <<"EOF"
 #!/usr/bin/perl
-use strict;
-use warnings;
-my $numargs = @S|@#ARGV + 1;
+$numargs = @S|@#ARGV + 1;
 if ($numargs != 2) {
     print "Usage: wrapped.txt naked.txt\n";
     exit 1;
@@ -24,10 +22,10 @@ if ($numargs != 2) {
 # Read each input file as a string (rather than a list).
 local $/=undef;
 open WRAPPED, "$ARGV[0]" or die "Could not open wrapped text file: $!";
-my $wrapped_lines = <WRAPPED>;
+$wrapped_lines = <WRAPPED>;
 close WRAPPED;
 open NAKED, "$ARGV[1]" or die "Could not open naked text file: $!";
-my $naked_lines = <NAKED>;
+$naked_lines = <NAKED>;
 close NAKED;
 # Replace newlines, + from wrapped and naked lines.
 $wrapped_lines =~ tr/\n+/ /;
@@ -46,11 +44,6 @@ unless ($wrapped_lines) {
 }
 unless ($naked_lines) {
     exit 1;
-}
-# Cray compilers append a timestamp into their version string. Remove it.
-if ($wrapped_lines =~ /\QCray\E/) {
-    $wrapped_lines = substr $wrapped_lines, 0, -28;
-    $naked_lines = substr $naked_lines, 0, -28;
 }
 # Can the naked lines be found within the wrapped lines?
 if ($wrapped_lines =~ /\Q$naked_lines\E/) {
@@ -76,7 +69,7 @@ AC_LANG_CASE(
 ],
 [C++], [AS_CASE([$wrapped],
     [*_r],  [compilers="bgxlC_r xlC_r"],
-    [*],    [compilers="icpc pgCC pathCC sxc++ xlC bgxlC openCC sunCC crayc++ g++ c++ gpp aCC cxx cc++ cl.exe FCC KCC RCC CC"])
+    [*],    [compilers="icpc pgCC pathCC sxc++ xlC bgxlC openCC sunCC crayCC g++ c++ gpp aCC cxx cc++ cl.exe FCC KCC RCC CC"])
 ],
 [Fortran 77], [AS_CASE([$wrapped],
     [*_r],  [compilers="bgxlf95_r xlf95_r bgxlf90_r xlf90_r bgxlf_r xlf_r"],

@@ -143,8 +143,7 @@ extern void pnga_access_block_segment_ptr(Integer g_a, Integer proc,
 extern void pnga_fence();
 extern void pnga_gather2d(Integer g_a, void *v, Integer *i, Integer *j,
                           Integer nv);
-extern void pnga_gather(Integer g_a, void* v, void *subscript,
-                        Integer c_flag, Integer nv);
+extern void pnga_gather(Integer g_a, void* v, Integer subscript[], Integer nv);
 extern void pnga_get(Integer g_a, Integer *lo, Integer *hi,
                      void *buf, Integer *ld);
 extern void pnga_init_fence();
@@ -154,9 +153,6 @@ extern void pnga_nbget(Integer g_a, Integer *lo, Integer *hi, void *buf,
                        Integer *ld, Integer *nbhandle);
 extern void pnga_nbput(Integer g_a, Integer *lo, Integer *hi, void *buf,
                        Integer *ld, Integer *nbhandle);
-extern void pnga_nbput_notify(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld, Integer g_b, Integer *ecoords, void *bufn, Integer *nbhandle);
-extern void pnga_nbwait_notify(Integer *nbhandle);
-extern logical pnga_check_notify(Integer g_a, void *bufn, void *expected);
 extern Integer pnga_nbtest(Integer *nbhandle);
 extern void pnga_nbwait(Integer *nbhandle);
 extern void pnga_put(Integer g_a, Integer *lo, Integer *hi, void *buf,
@@ -172,12 +168,11 @@ extern void pnga_release_update_block(Integer g_a, Integer iblock);
 extern void pnga_release_update_block_grid(Integer g_a, Integer *index);
 extern void pnga_release_update_block_segment(Integer g_a, Integer iproc);
 extern void pnga_scatter2d(Integer g_a, void *v, Integer *i, Integer *j, Integer nv);
-extern void pnga_scatter(Integer g_a, void *v, void *subscript,
-                         Integer c_flag, Integer nv);
+extern void pnga_scatter(Integer g_a, void *v, Integer *subscript, Integer nv);
 extern void pnga_scatter_acc2d(Integer g_a, void *v, Integer *i, Integer *j,
                                Integer nv, void *alpha);
-extern void pnga_scatter_acc(Integer g_a, void* v, void *subscript,
-                             Integer c_flag, Integer nv, void *alpha);
+extern void pnga_scatter_acc(Integer g_a, void* v, Integer subscript[],
+                             Integer nv, void *alpha);
 extern void pnga_strided_acc(Integer g_a, Integer *lo, Integer *hi, Integer *skip,
                              void *buf, Integer *ld, void *alpha);
 extern void pnga_strided_get(Integer g_a, Integer *lo, Integer *hi, Integer *skip,

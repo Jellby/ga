@@ -30,15 +30,6 @@ static cos_mdesc_t _send_mdesc, _recv_mdesc;
 static cos_mdesc_t *send_mdesc = NULL;
 static cos_mdesc_t *recv_mdesc = NULL;
 
-int armci_onesided_direct_get_enabled = 1;
-int armci_onesided_direct_put_enabled = 1;
-
-cos_desc_t __global_1sided_direct_comm_desc;
-cos_desc_t __global_1sided_direct_get_comm_desc;
-
-// linked-list to hold mdh arrays for all ARMCI_Malloc calls
-remote_mdh_node_t *remote_mdh_base_node = NULL;
-
 char **client_buf_ptrs;
 
 int 
@@ -49,24 +40,10 @@ armci_onesided_init()
 
         cos_params.options        = ONESIDED_DS_PER_NUMA;
         cos_params.nDataServers   = 1;
-        cos_params.maxDescriptors = ARMCI_MAX_DESCRIPTORS*10;
+        cos_params.maxDescriptors = ARMCI_MAX_DESCRIPTORS;
         cos_params.maxRequestSize = ARMCI_MAX_REQUEST_SIZE;
         cos_params.dsHandlerFunc  = armci_onesided_ds_handler;
 
-        bzero(&__global_1sided_direct_comm_desc,sizeof(cos_desc_t));
-
-     // check to make sure things are properly sized
-        if(armci_me == 0) {
-        // ARMCI_ONESIDED_SIZEOF_IREQ is defined in armci.h
-           if(sizeof(armci_ireq_t) != ARMCI_ONESIDED_SIZEOF_IREQ) {
-              printf("ARMCI_ONESIDED_SIZEOF_IREQ is not sized correctly.\n");
-              printf("ARMCI_ONESIDED_SIZEOF_IREQ = %d\nsizeof(armci_ireq_t) = %d\n",
-                      ARMCI_ONESIDED_SIZEOF_IREQ,sizeof(armci_ireq_t));
-              abort();
-           }
-        }
-
-     // initialize libonesided
         COS_Init( &cos_params );
 
      // initialize armci memory
@@ -118,7 +95,6 @@ armci_onesided_send(void *buffer, request_header_t *msginfo, int remote_node, co
         cpCopyLocalDataMDesc(req, &msginfo->tag.response_mdesc);
         if(length > ARMCI_MAX_REQUEST_SIZE) length = sizeof(request_header_t); 
         cpReqSend(msginfo, length, req);
-     // cpReqWait(req); // required until a new fence operation is created
 }
 
 
@@ -179,24 +155,6 @@ armci_onesided_rmw(void *buffer, request_header_t *msginfo, int remote_node, cos
 
 extern _buf_ackresp_t *_buf_ackresp_first,*_buf_ackresp_cur;
 
-
-#if defined CRAY_REGISTER_ARMCI_MALLOC && HAVE_ONESIDED_FADD
-void
-armci_onesided_fadd(void *ploc, void *prem, int extra, int proc)
-{
-        onesided_hnd_t cp_hnd;
-        cos_desc_t comm_desc;
-        cos_mdesc_t local_mdh, remote_mdh, *mdh = NULL;
-
-        cpGetOnesidedHandle(&cp_hnd);
-        armci_onesided_search_remote_mdh_list(prem, proc, &remote_mdh);
-        onesided_mem_register(cp_hnd, ploc, sizeof(long), NULL, &local_mdh);
-        onesided_desc_init(cp_hnd, &local_mdh, &remote_mdh, 0, &comm_desc);
-        onesided_fadd(extra, &comm_desc);
-        onesided_wait(&comm_desc);
-}
-#endif
-
 int
 armci_send_req_msg(int proc, void *buf, int bytes, int tag)
 {
@@ -207,13 +165,6 @@ armci_send_req_msg(int proc, void *buf, int bytes, int tag)
 
       # ifdef ARMCI_LIMIT_REMOTE_REQUESTS_BY_NODE
         _armci_buf_ensure_one_outstanding_op_per_node(buf,cluster);
-      # endif
-
-      # ifdef SPECIAL_PUT_OPERATION_BROKEN_WHEN_INITIATED_FROM_USER_BUFFER
-     // ensure any outstanding onesided direct operations have finished
-        int state = __global_1sided_direct_comm_desc.state;
-        onesided_wait(&__global_1sided_direct_comm_desc);
-        if(state) cpMemDeregister(&__global_1sided_direct_comm_desc.local_mdesc);
       # endif
 
         BUF_INFO_T *bufinfo=_armci_buf_to_bufinfo(msginfo);
@@ -234,9 +185,6 @@ armci_send_req_msg(int proc, void *buf, int bytes, int tag)
 
         else if(msginfo->operation == ACK) {
            armci_onesided_oper(buffer, msginfo, cluster, req);
-#if HAVE_ONESIDED_MEM_HTFLUSH
-           onesided_mem_htflush(cluster);
-#endif
         }
 
         else if(msginfo->operation == ARMCI_SWAP || msginfo->operation == ARMCI_SWAP_LONG ||
@@ -299,10 +247,6 @@ armci_WriteToDirect(int proc, request_header_t *msginfo, void *buf)
         cos_mdesc_t *resp_mdesc = &msginfo->tag.response_mdesc;
         dsDescInit(resp_mdesc, &resp_desc);
         resp_desc.event_type = EVENT_LOCAL | EVENT_REMOTE;
-        if(send_mdesc == NULL) {
-           send_mdesc = &_send_mdesc;
-           dsMemRegister(MessageSndBuffer, sizeof(double)*MSG_BUFLEN_DBL, send_mdesc);
-        }
         memcpy(&resp_desc.local_mdesc, send_mdesc, sizeof(cos_mdesc_t));
         resp_desc.local_mdesc.addr   = (uint64_t) buf;
         resp_desc.local_mdesc.length = (uint64_t) msginfo->datalen;
@@ -485,158 +429,3 @@ x_net_offset(char *buf, int proc)
       # endif
         return 0;
 }
-
-
-// currently our list of remote mdhs appears that it can get several entries with various
-// lengths.  we should scan the mdh list first to see if an entry exists in the list
-// if so, that could be an indication that the remote list entry function is not working
-// properly, or that a different type of armci_free call is being used to by pass the
-// removal of the mdh entry.  either way, we need to examine these occurences.
-void
-armci_onesided_append_remote_mdh_list(void* tgt_ptr, int proc, cos_mdesc_t *ret_mdh)
-{
-
-}
-
-void
-armci_onesided_search_remote_mdh_list(void* tgt_ptr, int proc, cos_mdesc_t *ret_mdh) 
-{
-        int node = armci_clus_id(proc);
-        uint64_t length;
-        uint64_t rem_addr;
-        uint64_t tgt_addr = (uint64_t) tgt_ptr;
-        remote_mdh_node_t *ll = remote_mdh_base_node;
-        const cos_mdesc_t *mdh = NULL;
-
-     // search the link-list for remote address and return the 
-        while(ll) {
-        // if we are in this routine, we are doing a direct onesided operations on a chuck of local
-        // memory that was registered by the master process on this node.  typically, an armci operation
-        // would work directly off the virtual address of that data as attached by the current process; 
-        // however, because we are going to do a UGNI operation targetted at the MDH registered by the
-        // armci_master rank on this node, we have to translate the virtual address on this rank to the
-        // virtual address on armci_master.  this means we have to find the mdh by searching the ptrs
-        // array and not the mdhs[*].addr values
-           if(SAMECLUSNODE(proc) && armci_me != armci_master) {
-              rem_addr = (uint64_t) ll->ptrs[proc];
-           } else {
-              rem_addr = (uint64_t) ll->mdhs[proc].addr;
-           }
-           length   = ll->mdhs[proc].length;
-           if(tgt_addr >= rem_addr && tgt_addr < (rem_addr+length) /* check length of msg */) {
-             mdh = &ll->mdhs[proc];
-             break;
-           }
-           ll = ll->next;
-        }
-
-     // if remote mdh not found
-        if(mdh == NULL) {
-           printf("[cp %d]: warning - could not locate remote mdh for a direct put.\n",armci_me);
-           printf("[cp %d]: searching for tgt_ptr=%p on node=%d / proc=%d\n",armci_me,tgt_ptr,node,proc);
-           ll = remote_mdh_base_node;
-           while(ll) {
-              rem_addr = (uint64_t) ll->ptrs[proc];
-              length   = ll->mdhs[proc].length;
-              printf("[cp %d]: ll->ptrs[proc]=%p; ll->mdhs[node].length=%ld\n",armci_me,ll->ptrs[proc], length);
-              ll = ll->next;
-           }
-           abort();
-        }
-
-     // setup return mdh
-     // on the remote side the node master is the only rank that registers the "shared" memmory.  however,
-     // shmat doesn't guarantee that all ranks on the node share the same starting virtual address.  that
-     // is why we have to calculate the offset from the starting address on the node master based on the
-     // actual virutal addresses on the remote rank.
-        memcpy(ret_mdh, mdh, sizeof(cos_mdesc_t));
-     // ret_mdh->addr += (tgt_addr-rem_addr);
-     // if(ret_mdh->addr != tgt_addr) {
-     //    printf("%d: ret_mdh->addr=%ld; tgt_addr=%ld\n",armci_me,ret_mdh->addr, tgt_addr);
-     //    fflush(stdout);
-     // }
-
-     // if we are targeting a rank on the node for a direct operation, we need to translate the address
-     // if not, then we can use the tgt_addr as passed in
-        if(SAMECLUSNODE(proc) && armci_me != armci_master) {
-           ret_mdh->addr += (tgt_addr-rem_addr);
-        } else {
-           ret_mdh->addr = tgt_addr;
-        }
-}
-
-void
-armci_onesided_remove_from_remote_mdh_list(void *tgt_ptr)
-{
-        cos_comm_t info;
-        cos_mdesc_t *mdh = NULL;
-        onesided_hnd_t cp_hnd;
-        int node = armci_clus_id(armci_me);
-        long total_bytes;
-        remote_mdh_node_t *rm_ll, *ll = remote_mdh_base_node;
-
-        NTK_MPI_GetComm(MPI_COMM_WORLD, &info);
-
-     // get the onesided v2.0 api handle for the compute process
-        cpGetOnesidedHandle(&cp_hnd);
-
-     // find mdh
-        while(ll) {
-           if(tgt_ptr == ll->ptrs[armci_me]) {
-              mdh = &ll->mdhs[armci_me];
-              break;
-           }
-           ll = ll->next;
-        }
-
-     // ensure we have a valid mdh
-        if(mdh == NULL) abort();
-
-     // sum the total bytes allocated on the node
-        MPI_Allreduce(&mdh->length, &total_bytes, 1, MPI_LONG, MPI_SUM, info.numa_comm);
-
-     // node master only  
-        if(info.numa_me == 0 && total_bytes) {
-
-        // deregister memory
-           onesided_mem_deregister(cp_hnd, mdh);
-        // cpMemDeregister(mdh);
-        }
-
-     // free mdhs
-        free(ll->mdhs);
-        ll->mdhs = NULL;
-
-     // update linked-list
-        rm_ll = ll;
-        if(rm_ll == remote_mdh_base_node) remote_mdh_base_node = rm_ll->next;
-        else {
-          ll = remote_mdh_base_node;
-          while(ll->next != rm_ll) ll = ll->next;
-          assert(ll->next == rm_ll);
-          ll->next = rm_ll->next;
-        }
-        free(rm_ll);
-}
-
-
-void ARMCI_INIT_HANDLE(void *hdl)
-{
-        bzero(hdl, ARMCI_ONESIDED_SIZEOF_IREQ);
-}
-
-
-void armci_direct_on()
-{
-        armci_onesided_direct_get_enabled = 1;
-        armci_onesided_direct_put_enabled = 1;
-}
-
-void armci_direct_off()
-{
-        armci_onesided_direct_get_enabled = 0;
-        armci_onesided_direct_put_enabled = 0;
-}
-
-void armci_direct_on_() { armci_direct_on(); }
-void armci_direct_off_() { armci_direct_off(); }

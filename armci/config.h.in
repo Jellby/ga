@@ -39,9 +39,6 @@
 /* TODO */
 #undef CLUSTER
 
-/* Defined when TARGET=LINUX and cpu is x86 */
-#undef COPY686
-
 /* TODO */
 #undef CRAY_SHMEM
 
@@ -133,9 +130,6 @@
 
 /* Module command when using Fortran 90 compiler e.g. use f90_unix */
 #undef FXX_MODULE
-
-/* for Gemini */
-#undef GEMINI
 
 /* TODO */
 #undef GM
@@ -242,12 +236,6 @@
 
 /* Define to 1 if you have the <netinet/tcp.h> header file. */
 #undef HAVE_NETINET_TCP_H
-
-/* set to 1 if libonesided has onesided_fadd (added in v1.6) */
-#undef HAVE_ONESIDED_FADD
-
-/* set to 1 if libonesided has onesided_mem_htflush (added in v1.5) */
-#undef HAVE_ONESIDED_MEM_HTFLUSH
 
 /* Define to 1 if you have the `pow' function. */
 #undef HAVE_POW
