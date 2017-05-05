@@ -1310,7 +1310,7 @@ void test_vector_acc()
 
 void test_fetch_add()
 {
-  int rc, bytes, i, val, times = 0;
+  int rc, bytes, i, val = -1, times = 0;
   int *arr[MAXPROC];
   int gop_val[MAXPROC];
   int gop_times[MAXPROC];

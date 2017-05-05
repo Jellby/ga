@@ -48,6 +48,10 @@
 #   include <unistd.h>
 #endif
 
+#ifndef PATH_MAX
+#   define PATH_MAX 4096
+#endif
+
 #ifdef EAF_STATS
 #   include <sys/types.h>
 #   include <sys/time.h>
@@ -64,6 +68,7 @@
 #   define EAF_MAX_FILES 1024
 #endif
 
+static int eafhack_openfiles=0;
 
 static struct {
     char *fname;      /**< Filename --- if non-null is active*/
@@ -170,6 +175,7 @@ int EAF_Open(const char *fname, int type, int *fd)
 
 	if (!MA_alloc_get(MT_CHAR, file[i].size, fname, &handle, &index))
 	  return EAF_ERR_OPEN;
+	if ((i +1) > eafhack_openfiles) eafhack_openfiles++;
     /* MA hack: we pass   type = sizeof MA alloc in megabytes */
 	MA_get_pointer(handle, &ptr);
     if (!(file[i].fname = strdup(fname)))
@@ -467,15 +473,17 @@ int EAF_Delete(const char *fname)
 
   int  j, found=0;
   /* get fd from fname */
-  for (j=0; (j< EAF_MAX_FILES) && file[j].fname; j++){
+  for (j=0; (j< eafhack_openfiles); j++){
+    if(file[j].fname){
       if(strcmp(file[j].fname,fname) == 0 && file[j].size >0) {
 	found=1;
 	break;
       }
     }
+    }
 #ifdef DEBUG
   printf("eaf_delete: fname %s found %d \n", fname, found);
-  if (found ==1) printf("eaf_delete: j %d filej.fname %s \n", j, file[j].fname);
+  if (found ==1) printf("eaf_delete: j %d filej.fname %s handle %d \n", j, file[j].fname,file[j].handle);
 #endif
     if (found > 0) {
        if(!MA_free_heap(file[j].handle)) {
@@ -506,7 +514,7 @@ int EAF_Delete(const char *fname)
  *
  * Return 0 on success, non-zero on failure.
  */
-int EAF_Stat(const char *path, long *avail_mb, char *fstype, int fslen)
+int EAF_Stat(const char *path, int *avail_mb, char *fstype, int fslen)
 {
     char dirname[PATH_MAX];
     stat_t statinfo;
@@ -516,7 +524,7 @@ int EAF_Stat(const char *path, long *avail_mb, char *fstype, int fslen)
     if ((rc = elio_stat(dirname, &statinfo))) return rc;
     if (fslen < 8) return EAF_ERR_TOO_SHORT;
 
-    *avail_mb = (long)(statinfo.avail>>10);
+    *avail_mb = (int)(statinfo.avail>>10);
     if (statinfo.fs == ELIO_UFS)
         strcpy(fstype, "UFS");
     else if (statinfo.fs == ELIO_PFS)

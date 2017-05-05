@@ -6,7 +6,7 @@
 #else
 #define INTGR4 integer*4
 #endif
-#define HAVE_ELPA 1
+cedo#define HAVE_ELPA 1
 C     $Id: scalapack.F,v 1.11 2006/10/13 16:15:17 d3g293 Exp $
 ****************************************************************************
 * GA to/from ScaLAPACK (square block scattered decomposition) interface    * 
@@ -3659,6 +3659,7 @@ c
      .        -info8)
 c     
 c     
+
           call get_elpa_row_col_comms(elpa_comm,
      V        myrow2, mycol2, 
      V        elpa_comm_rows, elpa_comm_cols)

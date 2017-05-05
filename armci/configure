@@ -8882,8 +8882,8 @@ if test "x$happy" = xyes; then :
 if test "x$ac_cv_header_mpp_shmem_h" = xyes; then :
 
 else
-  ac_fn_c_check_header_mongrel "$LINENO" "shmem.h" "ac_cv_header_shmem_h" "$ac_includes_default"
-if test "x$ac_cv_header_shmem_h" = xyes; then :
+  ac_fn_c_check_header_mongrel "$LINENO" "armci_shmem.h" "ac_cv_header_armci_shmem_h" "$ac_includes_default"
+if test "x$ac_cv_header_armci_shmem_h" = xyes; then :
 
 else
   happy=no
@@ -11150,8 +11150,8 @@ if test "x$happy" = xyes; then :
 if test "x$ac_cv_header_mpp_shmem_h" = xyes; then :
 
 else
-  ac_fn_c_check_header_mongrel "$LINENO" "shmem.h" "ac_cv_header_shmem_h" "$ac_includes_default"
-if test "x$ac_cv_header_shmem_h" = xyes; then :
+  ac_fn_c_check_header_mongrel "$LINENO" "armci_shmem.h" "ac_cv_header_armci_shmem_h" "$ac_includes_default"
+if test "x$ac_cv_header_armci_shmem_h" = xyes; then :
 
 else
   happy=no

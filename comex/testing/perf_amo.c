@@ -121,7 +121,7 @@ static void rmw_test(size_t buffer_size, int op)
 
     /* All processes perform Rmw on process 0*/
     int dst = 0;
-    double t_start, t_end;
+    double t_start = dclock(), t_end = dclock();
 
     int j;
     int iter = ITER_LARGE;

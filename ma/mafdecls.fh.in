@@ -127,6 +127,7 @@
 #ifdef HPUX
 #  define HP_SHARED_COMMON_
 #endif
+
 !     common blocks
 #ifdef INTEL_64ALIGN
 !DIR$ ATTRIBUTES ALIGN : 64 :: mbc_byte
@@ -144,6 +145,9 @@
 #endif
       common /mbc_int/  int_mb(2)
       integer           int_mb
+#ifdef INTEL_64ALIGN
+!DIR$ ATTRIBUTES ALIGN : 64 :: mbc_log
+#endif
 #ifdef HP_SHARED_COMMON
 *$HP$ shared_common /mbc_log/
 #endif

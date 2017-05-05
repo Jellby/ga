@@ -104,7 +104,7 @@ static void contig_test(size_t buffer_size, int op)
         int j;
         int iter = msg_size > MEDIUM_MESSAGE_SIZE ? ITER_LARGE : ITER_SMALL;
 
-        double t_start, t_end;
+        double t_start = dclock(), t_end = dclock();
         if (0 == me) {
             for (j= 0; j < iter + WARMUP; ++j) {
 

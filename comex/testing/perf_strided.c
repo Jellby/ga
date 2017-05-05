@@ -126,7 +126,7 @@ static void strided_test(size_t buffer_size, int op)
             count[1] = ydim;
             stride[0] = xdim;
 
-            double t_start, t_end;
+            double t_start = dclock(), t_end = dclock();
             if (0 == me) {
                 for (j= 0; j < iter + WARMUP; ++j) {
 
