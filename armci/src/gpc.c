@@ -23,7 +23,7 @@ static void *_table[GPC_SLOTS]={
 (void*)0, (void*)0, (void*)0, (void*)0, (void*)0, (void*)0, (void*)0, (void*)0,
 (void*)0, (void*)0, (void*)0, (void*)0, (void*)0, (void*)0, (void*)0, (void*)0};
 
-#if (defined(LAPI) || defined(GM) || defined(VAPI) || defined(QUADRICS)) && defined(ARMCI_ENABLE_GPC_CALLS)
+#if (defined(LAPI) || defined(GM) || defined(VAPI) || defined(QUADRICS)) && ARMCI_ENABLE_GPC_CALLS
 
 /*\ callback functions must be registered -- user gets int handle back
 \*/
@@ -111,8 +111,7 @@ int ARMCI_Gpc_exec(int h, int p, void  *hdr, int hlen,  void *data,  int dlen,
 
   if(nbh)
     nbh->proc = p;
-#if 1
-  if(SAMECLUSNODE(p) && armci_nproc==1) {
+  if(SAMECLUSNODE(p)) {
     int rhsize, rdsize;
     int (*func)();
 
@@ -129,7 +128,6 @@ int ARMCI_Gpc_exec(int h, int p, void  *hdr, int hlen,  void *data,  int dlen,
 #endif
     return 0;
   }
-#endif
 
 /*    fprintf(stderr, "%d:: armci gpc exec. invoking armci gpc\n", armci_me); */
   return armci_gpc(h, p, hdr, hlen,  data,  dlen,

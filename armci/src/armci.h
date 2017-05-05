@@ -4,9 +4,7 @@
 #define _ARMCI_H   
 
 /* for size_t */
-#if HAVE_STDLIB_H
-#   include <stdlib.h>
-#endif
+#include <stdlib.h>
 
 #if defined(__cplusplus) || defined(c_plusplus)
 extern "C" {
@@ -70,6 +68,8 @@ extern int ARMCI_PutS_flag(
                                          data transfer */
                 int proc              /* remote process(or) ID */
                 );
+
+extern int ARMCI_Acc(int optype, void *scale, void *src, void* dst, int bytes, int proc); 
 
 extern int ARMCI_AccS(                /* strided accumulate */
                 int  optype,          /* operation */
@@ -153,7 +153,7 @@ extern void ARMCI_Finalize();    /* terminate ARMCI */
 extern void ARMCI_Error(char *msg, int code);
 extern void ARMCI_Fence(int proc);
 extern void ARMCI_AllFence(void);
-extern int  ARMCI_Rmw(int op, int *ploc, int *prem, int extra, int proc);
+extern int  ARMCI_Rmw(int op, void *ploc, void *prem, int extra, int proc);
 extern void ARMCI_Cleanup(void);
 extern int ARMCI_Create_mutexes(int num);
 extern int ARMCI_Destroy_mutexes(void);
@@ -198,13 +198,20 @@ extern void ARMCI_Copy(void *src, void *dst, int n);
  * ). This is fed directly to printf.  
  */
 int dassertp_fail(const char *cond_string, const char *file, 
-		  const char *func, unsigned int line);
+		  const char *func, unsigned int line, int code);
   void derr_printf(const char *format, ...);
 #undef dassertp
 #define dassertp(_enable,_cond,_plist)  do {              \
   if((_enable) && !(_cond)) {                             \
     derr_printf _plist;					  \
-    dassertp_fail(#_cond,__FILE__,__FUNCTION__,__LINE__); \
+    dassertp_fail(#_cond,__FILE__,FUNCTION_NAME,__LINE__,1); \
+  }} while(0)
+
+#undef dassertc
+#define dassertc(_enable,_cond,_plist,_code)  do {              \
+  if((_enable) && !(_cond)) {                             \
+    derr_printf _plist;					  \
+    dassertp_fail(#_cond,__FILE__,FUNCTION_NAME,__LINE__,_code); \
   }} while(0)
 
 #undef dassert
@@ -215,11 +222,11 @@ int dassertp_fail(const char *cond_string, const char *file,
   dassertp((_enable),(_cond),("%d: error ival=%d\n",        \
 			      armci_msg_me(),(int)(_ival))) 
 
-#define armci_die(_msg,_code) dassertp(1,0,             \
-("%d:%s: %d\n", armci_msg_me(),(_msg),(_code)))
+#define armci_die(_msg,_code) dassertc(1,0,             \
+("%d:%s: %d\n", armci_msg_me(),(_msg),(_code)),_code)
 
-#define armci_die2(_msg,_code1,_code2) dassertp(1,0,    \
-("%d:%s: (%d,%d)\n",armci_me,(_msg),(_code1),(_code2)))
+#define armci_die2(_msg,_code1,_code2) dassertc(1,0,    \
+("%d:%s: (%d,%d)\n",armci_me,(_msg),(_code1),(_code2)),_code1)
 
   /*Disable for now. Some parts of GA use ARMCI_Error function pointer. Wait for them to be changed before enabling this*/
 /* #define ARMCI_Error(_msg, _code) armci_die((_msg),(_code)) */
@@ -279,25 +286,22 @@ typedef struct{
 
 #define armci_req_t armci_hdl_t
 
-typedef struct {
-    double dummy[8];
-} ARMCI_Group;
+typedef int ARMCI_Group;
  
-void ARMCI_Group_create(int n, int *pid_list, ARMCI_Group *group_out);
-void ARMCI_Group_create_child(int n, int *pid_list, ARMCI_Group *group_out, 
-			      ARMCI_Group *group_parent);
-void ARMCI_Group_free(ARMCI_Group *group);
-int  ARMCI_Group_rank(ARMCI_Group *group, int *rank);
-void ARMCI_Group_size(ARMCI_Group *group, int *size);
-void ARMCI_Group_set_default(ARMCI_Group *group);
-void ARMCI_Group_get_default(ARMCI_Group *group_out);
-void ARMCI_Group_get_world(ARMCI_Group *group_out);
-   
+extern void ARMCI_Group_create(int n, int *pid_list, ARMCI_Group *group_out);
+extern void ARMCI_Group_create_child(int n, int *pid_list,
+        ARMCI_Group *group_out, ARMCI_Group *group_parent);
+extern void ARMCI_Group_free(ARMCI_Group *group);
+extern int  ARMCI_Group_rank(ARMCI_Group *group, int *rank);
+extern void ARMCI_Group_size(ARMCI_Group *group, int *size);
+extern void ARMCI_Group_set_default(ARMCI_Group *group);
+extern void ARMCI_Group_get_default(ARMCI_Group *group_out);
+extern void ARMCI_Group_get_world(ARMCI_Group *group_out);
 extern int ARMCI_Absolute_id(ARMCI_Group *group, int group_rank);
 extern int ARMCI_Uses_shm_grp(ARMCI_Group *group);
-
-int ARMCI_Malloc_group(void *ptr_arr[], armci_size_t bytes,ARMCI_Group *group);
-int ARMCI_Free_group(void *ptr, ARMCI_Group *group);
+extern int ARMCI_Malloc_group(void *ptr_arr[], armci_size_t bytes,
+        ARMCI_Group *group);
+extern int ARMCI_Free_group(void *ptr, ARMCI_Group *group);
 
 extern int ARMCI_NbPut(void *src, void* dst, int bytes, int proc,armci_hdl_t* nb_handle);
 
@@ -430,10 +434,10 @@ typedef struct {
         int *saveonce;
         int count;
 }armci_ckpt_ds_t;
-void ARMCI_Ckpt_create_ds(armci_ckpt_ds_t *ckptds, int count);
-int ARMCI_Ckpt_init(char *filename, ARMCI_Group *grp, int savestack, int saveheap, armci_ckpt_ds_t *ckptds);
-int ARMCI_Ckpt(int rid);
-void ARMCI_Ckpt_finalize(int rid);
+extern void ARMCI_Ckpt_create_ds(armci_ckpt_ds_t *ckptds, int count);
+extern int ARMCI_Ckpt_init(char *filename, ARMCI_Group *grp, int savestack, int saveheap, armci_ckpt_ds_t *ckptds);
+extern int ARMCI_Ckpt(int rid);
+extern void ARMCI_Ckpt_finalize(int rid);
 #define ARMCI_Restart_simulate armci_irecover
 # ifdef MPI
     ARMCI_Group * ARMCI_Get_ft_group();

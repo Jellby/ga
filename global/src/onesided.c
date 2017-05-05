@@ -1,3 +1,7 @@
+#if HAVE_CONFIG_H
+#   include "config.h"
+#endif
+
 /* $Id: onesided.c,v 1.80.2.18 2007/12/18 22:22:27 d3g293 Exp $ */
 /* 
  * module: onesided.c
@@ -27,9 +31,7 @@
  * publicly by or for the US Government, including the right to
  * distribute to other US Government contractors.
  */
-#if HAVE_CONFIG_H
-#   include "config.h"
-#endif
+
  
 /*#define PERMUTE_PIDS */
 
@@ -55,7 +57,6 @@
 #include "base.h"
 #include "armci.h"
 #include "macdecls.h"
-#include "papi.h"
 
 #define DEBUG 0
 #define USE_MALLOC 1
@@ -83,6 +84,7 @@ char *fence_array;
 static int GA_fence_set=0;
 Integer *_ga_map;       /* used in get/put/acc */
 int *ProcListPerm;
+static char err_string[ ERR_STR_LEN]; /* string for extended error reporting */
 
 extern void ga_sort_scat(Integer*,void*,Integer*,Integer*,Integer*, Integer);
 extern void ga_sort_gath_(Integer*, Integer*, Integer*, Integer*);
@@ -425,7 +427,7 @@ void nga_put_common(Integer *g_a,
                    Integer *nbhandle)
 {
   Integer  p, np, handle=GA_OFFSET + *g_a;
-  Integer  idx, elems, size, p_handle, ga_nbhandle;
+  Integer  idx, elems, size, p_handle;
   int proc, ndim, loop, cond;
   int num_loops=2; /* 1st loop for remote procs; 2nd loop for local procs */
   Integer use_blocks;
@@ -433,6 +435,7 @@ void nga_put_common(Integer *g_a,
   Integer *rank_rstrctd;
 #if defined(__crayx1) || defined(DISABLE_NBOPT)
 #else
+  Integer ga_nbhandle;
   int counter=0;
 #endif
 
@@ -889,7 +892,7 @@ void nga_put_common(Integer *g_a,
         }
       }
     }
-#ifndef __crayx1
+#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
     if(!nbhandle) nga_wait_internal(&ga_nbhandle);  
 #endif
   }
@@ -903,28 +906,89 @@ void nga_put_common(Integer *g_a,
 #endif
 }
 
-
-/**
- * (NON-BLOCKING) PUT AN N-DIMENSIONAL PATCH OF DATA INTO A GLOBAL ARRAY
- */
-#if HAVE_SYS_WEAK_ALIAS_PRAGMA
-#   pragma weak wnga_nbput = pnga_nbput
-#endif
-void pnga_nbput(Integer *g_a, Integer *lo, Integer *hi, void *buf, Integer *ld, Integer *nbhandle)
+/*\ (NON-BLOCKING) PUT AN N-DIMENSIONAL PATCH OF DATA INTO A GLOBAL ARRAY
+\*/
+void FATR nga_nbput_(Integer *g_a, 
+                   Integer *lo,
+                   Integer *hi,
+                   void    *buf,
+                   Integer *ld,
+                   Integer *nbhandle)
 {
     nga_put_common(g_a,lo,hi,buf,ld,nbhandle); 
 }
 
 
-/**
- * PUT AN N-DIMENSIONAL PATCH OF DATA INTO A GLOBAL ARRAY
- */
-#if HAVE_SYS_WEAK_ALIAS_PRAGMA
-#   pragma weak wnga_put = pnga_put
-#endif
-void pnga_put(Integer *g_a, Integer *lo, Integer *hi, void *buf, Integer *ld)
+/*\ PUT AN N-DIMENSIONAL PATCH OF DATA INTO A GLOBAL ARRAY
+\*/
+void FATR nga_put_(Integer *g_a, 
+                   Integer *lo,
+                   Integer *hi,
+                   void    *buf,
+                   Integer *ld)
 {
     nga_put_common(g_a,lo,hi,buf,ld,NULL); 
+}
+
+
+void FATR  ga_put_(g_a, ilo, ihi, jlo, jhi, buf, ld)
+   Integer  *g_a,  *ilo, *ihi, *jlo, *jhi,  *ld;
+   void  *buf;
+{
+Integer lo[2], hi[2];
+#ifdef USE_VAMPIR
+   vampir_begin(GA_PUT,__FILE__,__LINE__);
+#endif
+#ifdef ENABLE_TRACE
+   trace_stime_();
+#endif
+   lo[0]=*ilo;
+   lo[1]=*jlo;
+   hi[0]=*ihi;
+   hi[1]=*jhi;
+   nga_put_common(g_a, lo, hi, buf, ld,NULL);
+#ifdef ENABLE_TRACE
+   trace_etime_();
+   op_code = GA_OP_PUT; 
+   trace_genrec_(g_a, ilo, ihi, jlo, jhi, &op_code);
+#endif
+#ifdef USE_VAMPIR
+   vampir_end(GA_PUT,__FILE__,__LINE__);
+#endif
+}
+
+#ifdef __crayx1 
+#  pragma _CRI inline ga_put_
+#  pragma _CRI inline nga_put_common
+#endif
+
+void FATR  ga_nbput_(g_a, ilo, ihi, jlo, jhi, buf, ld, nbhdl)
+   Integer  *g_a,  *ilo, *ihi, *jlo, *jhi,  *ld, *nbhdl;
+   void  *buf;
+{
+Integer lo[2], hi[2];
+
+#ifdef USE_VAMPIR
+   vampir_begin(GA_PUT,__FILE__,__LINE__);
+#endif
+#ifdef ENABLE_TRACE
+   trace_stime_();
+#endif
+
+   lo[0]=*ilo;
+   lo[1]=*jlo;
+   hi[0]=*ihi;
+   hi[1]=*jhi;
+   nga_put_common(g_a, lo, hi, buf, ld,nbhdl);
+
+#ifdef ENABLE_TRACE
+   trace_etime_();
+   op_code = GA_OP_PUT; 
+   trace_genrec_(g_a, ilo, ihi, jlo, jhi, &op_code);
+#endif
+#ifdef USE_VAMPIR
+   vampir_end(GA_PUT,__FILE__,__LINE__);
+#endif
 }
 
 
@@ -944,7 +1008,7 @@ void nga_get_common(Integer *g_a,
                       ld[]:  Array of physical ndim-1 dimensions of local buffer */
 
   Integer  p, np, handle=GA_OFFSET + *g_a;
-  Integer  idx, elems, size, p_handle, ga_nbhandle;
+  Integer  idx, elems, size, p_handle;
   int proc, ndim, loop, cond;
   int num_loops=2; /* 1st loop for remote procs; 2nd loop for local procs */
   Integer use_blocks;
@@ -952,6 +1016,7 @@ void nga_get_common(Integer *g_a,
   Integer *rank_rstrctd;
 #if defined(__crayx1) || defined(DISABLE_NBOPT)
 #else
+  Integer ga_nbhandle;
   int counter=0;
 #endif
 
@@ -1415,7 +1480,7 @@ void nga_get_common(Integer *g_a,
       }
 
     }
-#ifndef __crayx1
+#if !defined(__crayx1) && !defined(DISABLE_NBOPT)
     if(!nbhandle) nga_wait_internal(&ga_nbhandle);  
 #endif
   }
@@ -2873,12 +2938,14 @@ int use_blocks;
 }
 
 
+extern void ga_sort_permutation(Integer *, Integer *, Integer *);
+
+
 /*\ based on subscripts compute pointers
 \*/
 void gai_sort_proc(Integer* g_a, Integer* sbar, Integer *nv, Integer list[], Integer proc[])
 {
 int k, ndim;
-extern void ga_sort_permutation();
 
    if (*nv < 1) return;
 
@@ -3252,7 +3319,6 @@ void FATR  ga_sort_permut_(g_a, index, i, j, nv)
 #if 0
 register Integer k;
 Integer *int_ptr;
-extern void ga_sort_permutation();
 
   if (*nv < 1) return;
 
@@ -4747,7 +4813,8 @@ void FATR  ga_gather_(Integer *g_a, void *v, Integer *i, Integer *j,
 \*/
 Integer FATR nga_read_inc_(Integer* g_a, Integer* subscript, Integer* inc)
 {
-Integer *ptr, ldp[MAXDIM], proc, handle=GA_OFFSET+*g_a, p_handle, ndim;
+char *ptr;
+Integer ldp[MAXDIM], proc, handle=GA_OFFSET+*g_a, p_handle, ndim;
 int optype,ivalue;
 long lvalue;
 void *pval;
@@ -4792,7 +4859,7 @@ void *pval;
         jtot *= ldp[j];
       }
       offset += (subscript[last]-lo[last])*jtot;
-      ptr += offset;
+      ptr += offset*GA[handle].elemsize;
     }
 
     if(GA[handle].type==C_INT){
@@ -4915,12 +4982,12 @@ int gai_ComputeCountWithSkip(Integer ndim, Integer *lo, Integer *hi,
 {
   Integer idx;
   int i, istride = 0;
+  count[0]=1;
+  istride++;
   for (i=0; i<(int)ndim; i++) {
     idx = hi[i] - lo[i];
     if (idx < 0) return 0;
     if (skip[i] > 1) {
-      count[istride] = 1;
-      istride++;
       count[istride] = (int)(idx/skip[i]+1);
       istride++;
     } else {
@@ -4940,6 +5007,17 @@ void gai_SetStrideWithSkip(Integer ndim, Integer size, Integer *ld,
                           Integer *ldrem, int *stride_rem,
                           int *stride_loc, Integer *skip)
 {
+#if 1
+  int i;
+  stride_rem[0] = stride_loc[0] = (int)size;
+  for (i=0; i<ndim; i++) {
+    stride_rem[i+1] = stride_rem[i];
+    stride_rem[i] *= skip[i];
+    stride_rem[i+1] *= (int)ldrem[i];
+    stride_loc[i+1] = stride_loc[i];
+    stride_loc[i+1] *= (int)ld[i];
+  }
+#else
   int i, nstride;
   int ts_loc[MAXDIM], ts_rem[MAXDIM];
   stride_rem[0] = stride_loc[0] = (int)size;
@@ -4970,6 +5048,27 @@ void gai_SetStrideWithSkip(Integer ndim, Integer size, Integer *ld,
       ts_loc[i] *= ld[i];
       ts_rem[i] *= ldrem[i];
     }
+  }
+#endif
+}
+
+void gai_ComputePatchIndexWithSkip(Integer ndim, Integer *lo, Integer *plo,
+    Integer *skip, Integer *ld, Integer
+    *idx_buf)
+{
+  Integer i, delta, inc, factor;
+  delta = plo[0] - lo[0];
+  inc = delta%skip[0];
+  delta -= inc;
+  delta /=  skip[0];
+  *idx_buf = delta;
+  for (i=0; i<ndim-1; i++) {
+    factor = ld[i];
+    delta = plo[i+1]-lo[i+1];
+    inc = delta%skip[i+1];
+    delta -= inc;
+    delta /=  skip[i+1];
+    *idx_buf += factor*delta;
   }
 }
 
@@ -5050,7 +5149,7 @@ void FATR nga_strided_put_(Integer *g_a,
 
       /* get pointer in local buffer to point indexed by plo given that
          the corner of the buffer corresponds to the point indexed by lo */
-      gam_ComputePatchIndex(ndim, lo, plo, ld, &idx_buf);
+      gai_ComputePatchIndexWithSkip(ndim, lo, plo, skip, ld, &idx_buf);
       pbuf = size*idx_buf + (char*)buf;
 
       /* Compute number of elements in each stride region and compute the
@@ -5143,7 +5242,7 @@ void FATR nga_strided_put_(Integer *g_a,
             }
             prem =  GA[handle].ptr[pinv]+l_offset*GA[handle].elemsize;
 
-            gam_ComputePatchIndex(ndim, lo, plo, ld, &idx_buf);
+            gai_ComputePatchIndexWithSkip(ndim, lo, plo, skip, ld, &idx_buf);
             pbuf = size*idx_buf + (char*)buf;
 
             /* Compute number of elements in each stride region and compute the
@@ -5290,7 +5389,7 @@ void FATR nga_strided_put_(Integer *g_a,
             }
             prem =  GA[handle].ptr[pinv]+l_offset*GA[handle].elemsize;
 
-            gam_ComputePatchIndex(ndim, lo, plo, ld, &idx_buf);
+            gai_ComputePatchIndexWithSkip(ndim, lo, plo, skip, ld, &idx_buf);
             pbuf = size*idx_buf + (char*)buf;        
 
             /* Compute number of elements in each stride region and compute the
@@ -5415,7 +5514,7 @@ void FATR nga_strided_get_(Integer *g_a,
 
       /* get pointer in local buffer to point indexed by plo given that
          the corner of the buffer corresponds to the point indexed by lo */
-      gam_ComputePatchIndex(ndim, lo, plo, ld, &idx_buf);
+      gai_ComputePatchIndexWithSkip(ndim, lo, plo, skip, ld, &idx_buf);
       pbuf = size*idx_buf + (char*)buf;
 
       /* Compute number of elements in each stride region and compute the
@@ -5508,7 +5607,7 @@ void FATR nga_strided_get_(Integer *g_a,
             }
             prem =  GA[handle].ptr[pinv]+l_offset*GA[handle].elemsize;
 
-            gam_ComputePatchIndex(ndim, lo, plo, ld, &idx_buf);
+            gai_ComputePatchIndexWithSkip(ndim, lo, plo, skip, ld, &idx_buf);
             pbuf = size*idx_buf + (char*)buf;
 
             /* Compute number of elements in each stride region and compute the
@@ -5655,7 +5754,7 @@ void FATR nga_strided_get_(Integer *g_a,
             }
             prem =  GA[handle].ptr[pinv]+l_offset*GA[handle].elemsize;
 
-            gam_ComputePatchIndex(ndim, lo, plo, ld, &idx_buf);
+            gai_ComputePatchIndexWithSkip(ndim, lo, plo, skip, ld, &idx_buf);
             pbuf = size*idx_buf + (char*)buf;        
 
             /* Compute number of elements in each stride region and compute the
@@ -5793,7 +5892,7 @@ void FATR nga_strided_acc_(Integer *g_a,
 
       /* get pointer in local buffer to point indexed by plo given that
          the corner of the buffer corresponds to the point indexed by lo */
-      gam_ComputePatchIndex(ndim, lo, plo, ld, &idx_buf);
+      gai_ComputePatchIndexWithSkip(ndim, lo, plo, skip, ld, &idx_buf);
       pbuf = size*idx_buf + (char*)buf;
 
       /* Compute number of elements in each stride region and compute the
@@ -5887,7 +5986,7 @@ void FATR nga_strided_acc_(Integer *g_a,
             }
             prem =  GA[handle].ptr[pinv]+l_offset*GA[handle].elemsize;
 
-            gam_ComputePatchIndex(ndim, lo, plo, ld, &idx_buf);
+            gai_ComputePatchIndexWithSkip(ndim, lo, plo, skip, ld, &idx_buf);
             pbuf = size*idx_buf + (char*)buf;
 
             /* Compute number of elements in each stride region and compute the
@@ -6035,7 +6134,7 @@ void FATR nga_strided_acc_(Integer *g_a,
             }
             prem =  GA[handle].ptr[pinv]+l_offset*GA[handle].elemsize;
 
-            gam_ComputePatchIndex(ndim, lo, plo, ld, &idx_buf);
+            gai_ComputePatchIndexWithSkip(ndim, lo, plo, skip, ld, &idx_buf);
             pbuf = size*idx_buf + (char*)buf;        
 
             /* Compute number of elements in each stride region and compute the

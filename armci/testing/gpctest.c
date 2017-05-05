@@ -158,7 +158,7 @@ int main(int argc, char* argv[])
       sleep(1);
     }
     
-    ARMCI_Init();
+    ARMCI_Init_args(&argc, &argv);
 
 
         if(me==0){

@@ -38,12 +38,12 @@
 #   define MP_BARRIER()         MPI_Barrier(MPI_COMM_WORLD)
 #   define MP_FINALIZE()        MPI_Finalize()
 #   ifdef DCMF
-    static inline int MP_INIT(int argc, char **argv) {
+    static inline int MP_INIT_THREAD(int *argc, char ***argv) {
         int status;
         int desired = MPI_THREAD_MULTIPLE;
         int provided;
         printf("using MPI_Init_thread\n");
-        status = MPI_Init_thread(&argc, &argv, desired, &provided);
+        status = MPI_Init_thread(argc, argv, desired, &provided);
         if ( provided != MPI_THREAD_MULTIPLE ) {
             printf("provided != MPI_THREAD_MULTIPLE\n");
         } else if ( provided == MPI_THREAD_SERIALIZED ) {
@@ -55,15 +55,23 @@
         }
         return status;
     }
+#       define MP_INIT(argc,argv)   MP_INIT_THREAD(&(argc),&(argv))
 #   else
 #       define MP_INIT(argc,argv)   MPI_Init(&(argc),&(argv))
 #   endif
 #   define MP_MYID(pid)         MPI_Comm_rank(MPI_COMM_WORLD, (pid))
 #   define MP_PROCS(pproc)      MPI_Comm_size(MPI_COMM_WORLD, (pproc))
 #   define MP_TIMER             MPI_Wtime
-    static inline void MP_ASSERT(int code) {
-        if (MPI_SUCCESS != code) {
-            MPI_Abort(MPI_COMM_WORLD, code);
-        }
-    }
+#   define MP_ASSERT(code) do { \
+        if (MPI_SUCCESS != (code)) { \
+            MPI_Abort(MPI_COMM_WORLD, (code)); \
+        } \
+    } while (0)
+#endif
+#ifdef MPI_SPAWN
+#   define GA_INIT(argc,argv) GA_Initialize_args(&(argc),&(argv))
+#   define ARMCI_INIT(argc,argv) ARMCI_Init_args(&(argc),&(argv))
+#else
+#   define GA_INIT(argc,argv) GA_Initialize()
+#   define ARMCI_INIT(argc,argv) ARMCI_Init()
 #endif

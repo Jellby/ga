@@ -93,6 +93,11 @@ void make_tcgmsg_comm()
         TCGMSG_Comm = MPI_COMM_WORLD; 
 }
 
+#ifdef __bgp__
+#  ifndef DCMF
+#    warning DCMF not defined on BGP.  Your configuration may be incorrect.
+#  endif
+#endif
 
 /**
  * Alternative initialization for C programs
@@ -115,21 +120,10 @@ void tcgi_alt_pbegin(int *argc, char **argv[])
     if(!init){ 
         /* nope */
 #if defined(DCMF) 
-        int desired = MPI_THREAD_MULTIPLE; 
         int provided; 
-        MPI_Init_thread(argc, argv, desired, &provided); 
-        MPI_Comm_rank(MPI_COMM_WORLD,&myid);  
-        if ( myid == 0 ){ 
-            if ( provided == MPI_THREAD_MULTIPLE ){ 
-                printf("Using MPI_THREAD_MULTIPLE\n"); 
-            } else if ( provided == MPI_THREAD_FUNNELED ){ 
-                printf("Using MPI_THREAD_FUNNELED\n"); 
-            } else if ( provided == MPI_THREAD_SERIALIZED ){ 
-                printf("Using MPI_THREAD_SERIALIZED\n"); 
-            } else if ( provided == MPI_THREAD_SINGLE ){ 
-                printf("Using MPI_THREAD_SINGLE\n"); 
-            } 
-        } 
+        MPI_Init_thread(argc, argv, MPI_THREAD_MULTIPLE, &provided); 
+        if (provided!=MPI_THREAD_MULTIPLE)
+            Error("MPI_THREAD_MULTIPLE is required when DCMF is used.",-1);
 #else 
         MPI_Init(argc, argv);
 #endif

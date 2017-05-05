@@ -4,7 +4,7 @@
 #
 # Known C compilers
 #  cc       generic compiler name
-#  ccc      fujitsu ?? old cray ??
+#  ccc      Fujitsu ?? old Cray ??
 #  cl
 #  ecc      Intel on IA64 ??
 #  gcc      GNU
@@ -16,47 +16,56 @@
 #  pgcc     Portland Group
 #  pathcc   PathScale
 #  sxcc     NEC SX
+#  fcc      Fujitsu
+#  opencc   AMD's x86 open64
+#  suncc    Sun's Studio
+#  craycc   Cray
 #
 # Known MPI C compilers:
-#  cmpic++
-#  hcp
-#  mpcc
-#  mpic++
 #  mpicc
-#  mpicxx
-#  mpxlc
-#  mpxlc_r
-#  mpixlc
 #  mpixlc_r
+#  mpixlc
+#  hcc
+#  mpxlc_r
+#  mpxlc
 #  sxmpicc  NEC SX
+#  mpifcc   Fujitsu
+#  mpgcc
+#  mpcc
+#  cmpicc
+#  cc
 #
 AC_DEFUN([GA_PROG_MPICC],
 [AC_ARG_VAR([MPICC], [MPI C compiler])
 AS_CASE([$ga_cv_target_base],
 [BGP],  [ga_mpicc_pref=mpixlc_r; ga_cc_pref=bgxlc_r],
+[NEC],  [ga_mpicc_pref=sxmpicc; ga_cc_pref=sxcc],
 [])
 # In the case of using MPI wrappers, set CC=MPICC since CC will override
 # absolutely everything in our list of compilers.
 # Save CC, just in case.
 AS_IF([test x$with_mpi_wrappers = xyes],
-    [ga_save_CC="$CC"
-     CC="$MPICC"
-     AS_IF([test "x$MPICC" != x],
-        [AS_IF([test "x$ga_save_CC" != x],
-            [AC_MSG_WARN([MPI compilers desired, MPICC is set and CC is set])
-             AC_MSG_WARN([Choosing MPICC over CC])])],
-        [AS_IF([test "x$ga_save_CC" != x],
-            [AC_MSG_WARN([MPI compilers desired but CC is set, ignoring])
-             AC_MSG_WARN([Perhaps you meant to set MPICC instead?])])])])
-ga_cc="bgxlc_r bgxlc xlc pgcc pathcc icc sxcc gcc cc ecc cl ccc"
-ga_mpicc="mpicc mpixlc_r mpixlc hcc mpxlc_r mpxlc sxmpicc mpgcc mpcc cmpicc cc"
+    [AS_IF([test "x$CC" != "x$MPICC"], [ga_orig_CC="$CC"])
+     AS_CASE([x$CC:x$MPICC],
+        [x:x],  [],
+        [x:x*], [CC="$MPICC"],
+        [x*:x],
+[AC_MSG_WARN([MPI compilers desired but CC is set while MPICC is unset.])
+ AC_MSG_WARN([CC will be ignored during compiler selection, but will be])
+ AC_MSG_WARN([tested first during MPI compiler unwrapping. Perhaps you])
+ AC_MSG_WARN([meant to set MPICC instead of or in addition to CC?])
+ CC=],
+        [x*:x*], 
+[AS_IF([test "x$CC" != "x$MPICC"],
+[AC_MSG_WARN([MPI compilers desired, MPICC and CC are set, and MPICC!=CC.])
+ AC_MSG_WARN([Choosing MPICC over CC.])
+ AC_MSG_WARN([CC will be tested first during MPI compiler unwrapping.])])
+ CC="$MPICC"],
+[AC_MSG_ERROR([CC/MPICC case failure])])])
+ga_cc="bgxlc_r bgxlc xlc_r xlc pgcc pathcc icc sxcc fcc opencc suncc craycc gcc cc ecc cl ccc"
+ga_mpicc="mpicc mpixlc_r mpixlc hcc mpxlc_r mpxlc sxmpicc mpifcc mpgcc mpcc cmpicc cc"
 AS_IF([test x$with_mpi_wrappers = xyes],
     [CC_TO_TEST="$ga_mpicc_pref $ga_mpicc"],
     [CC_TO_TEST="$ga_cc_pref $ga_cc"])
 AC_PROG_CC([$CC_TO_TEST])
-# AC_PROG_CC only sets "CC" (which is what we want),
-# but override MPICC for the UNWRAP macro.
-AS_IF([test x$with_mpi_wrappers = xyes],
-    [MPICC="$CC"
-     GA_MPICC_UNWRAP])
 ])dnl

@@ -142,7 +142,7 @@ void test_one_group(ARMCI_Group *group, int *pid_list) {
   if(grp_me==dst_proc) {
     for(j=0; j<ELEMS; j++) {
       if(ARMCI_ABS(ddst_put[grp_me][j]-j*1.001*(src_proc+1)) > 0.1) {
-	printf("\t%d: ddst_put[%d][%d] = %lf and expected value is %lf\n",
+	printf("\t%d: ddst_put[%d][%d] = %f and expected value is %f\n",
 	       me, grp_me, j, ddst_put[grp_me][j], j*1.001*(src_proc+1));
 	ARMCI_Error("groups: armci put failed...1", 0);
       }
@@ -198,6 +198,7 @@ void random_permute(int *arr, int n) {
     vtmp[j]=0;
     arr[i]=j;
   }
+  free(vtmp);
 }
 
 int int_compare(const void *v1, const void *v2) {
@@ -271,8 +272,24 @@ int main(int argc, char* argv[])
 
 /*    printf("nproc = %d, me = %d\n", nproc, me);*/
     
-    if( (nproc<MINPROC || nproc>MAXPROC) && me==0)
-       ARMCI_Error("Test works for up to %d processors\n",MAXPROC);
+    if (nproc<MINPROC) {
+        if (0==me) {
+            printf("Test needs at least %d processors (%d used)\n",
+                    MINPROC, nproc);
+        }
+        MP_BARRIER();
+        MP_FINALIZE();
+        exit(0);
+    }
+    if (nproc>MAXPROC) {
+        if (0==me) {
+            printf("Test works for up to %d processors (%d used)\n",
+                    MAXPROC, nproc);
+        }
+        MP_BARRIER();
+        MP_FINALIZE();
+        exit(0);
+    }
 
     if(me==0){
        printf("ARMCI test program (%d processes)\n",nproc); 
@@ -280,7 +297,7 @@ int main(int argc, char* argv[])
        sleep(1);
     }
     
-    ARMCI_Init();
+    ARMCI_Init_args(&argc, &argv);
 
     if(me==0){
       printf("\n Testing ARMCI Groups!\n\n");

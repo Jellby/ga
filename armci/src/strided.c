@@ -288,41 +288,53 @@ static void daxpy_2d_(void* alpha, int *rows, int *cols, void *a, int *ald,
 void armci_acc_1D(int op, void *scale, int proc, void *src, void *dst, int bytes, int lockit)
 {
   int rows;
-  void (ATR *func)(void*, void*, void*, int*);
   switch (op){
   case ARMCI_ACC_INT:
     rows = bytes/sizeof(int);
-    func = I_ACCUMULATE_1D;
     break;
   case ARMCI_ACC_LNG:
     rows = bytes/sizeof(long);
-    func = L_ACCUMULATE_1D;
     break;
   case ARMCI_ACC_DBL:
     rows = bytes/sizeof(double);
-    func = D_ACCUMULATE_1D;
     break;
   case ARMCI_ACC_DCP:
     rows = bytes/(2*sizeof(double));
-    func = Z_ACCUMULATE_1D;
     break;
   case ARMCI_ACC_CPL:
     rows = bytes/(2*sizeof(float));
-    func = C_ACCUMULATE_1D;
     break;
   case ARMCI_ACC_FLT:
     rows = bytes/sizeof(float);
-    func = F_ACCUMULATE_1D;
     break;
-  default: armci_die("ARMCI accumulate: operation not supported",op);
-    func = F_ACCUMULATE_1D; /*avoid compiler whining */
+  default:
+    armci_die("ARMCI accumulate: operation not supported",op);
   }
-
-
   if(lockit){
     ARMCI_LOCKMEM(dst, bytes + (char*)dst, proc);
   }
-  func(scale, dst, src, &rows);
+  switch (op){
+  case ARMCI_ACC_INT:
+    I_ACCUMULATE_1D(scale, dst, src, &rows);
+    break;
+  case ARMCI_ACC_LNG:
+    L_ACCUMULATE_1D(scale, dst, src, &rows);
+    break;
+  case ARMCI_ACC_DBL:
+    D_ACCUMULATE_1D(scale, dst, src, &rows);
+    break;
+  case ARMCI_ACC_DCP:
+    Z_ACCUMULATE_1D(scale, dst, src, &rows);
+    break;
+  case ARMCI_ACC_CPL:
+    C_ACCUMULATE_1D(scale, dst, src, &rows);
+    break;
+  case ARMCI_ACC_FLT:
+    F_ACCUMULATE_1D(scale, dst, src, &rows);
+    break;
+  default:
+    break;
+  }
   if(lockit)ARMCI_UNLOCKMEM(proc);
 }
 
@@ -332,7 +344,6 @@ void armci_acc_1D(int op, void *scale, int proc, void *src, void *dst, int bytes
 		    int bytes, int cols, int src_stride, int dst_stride, int lockit)
 {
   int   rows, lds, ldd, span;
-  void (ATR *func)(void*, int*, int*, void*, int*, void*, int*);
 
   /*
     if((long)src_ptr%ALIGN)armci_die("src not aligned",(long)src_ptr);
@@ -344,50 +355,62 @@ void armci_acc_1D(int op, void *scale, int proc, void *src, void *dst, int bytes
     rows = bytes/sizeof(int);
     ldd  = dst_stride/sizeof(int);
     lds  = src_stride/sizeof(int);
-    func = I_ACCUMULATE_2D;
     break;
   case ARMCI_ACC_LNG:
     rows = bytes/sizeof(long);
     ldd  = dst_stride/sizeof(long);
     lds  = src_stride/sizeof(long);
-    func = L_ACCUMULATE_2D;
     break;
   case ARMCI_ACC_DBL:
     rows = bytes/sizeof(double);
     ldd  = dst_stride/sizeof(double);
     lds  = src_stride/sizeof(double);
-    func = D_ACCUMULATE_2D;
     break;
   case ARMCI_ACC_DCP:
     rows = bytes/(2*sizeof(double));
     ldd  = dst_stride/(2*sizeof(double));
     lds  = src_stride/(2*sizeof(double));
-    func = Z_ACCUMULATE_2D;
     break;
   case ARMCI_ACC_CPL:
     rows = bytes/(2*sizeof(float));
     ldd  = dst_stride/(2*sizeof(float));
     lds  = src_stride/(2*sizeof(float));
-    func = C_ACCUMULATE_2D;
     break;
   case ARMCI_ACC_FLT:
     rows = bytes/sizeof(float);
     ldd  = dst_stride/sizeof(float);
     lds  = src_stride/sizeof(float);
-    func = F_ACCUMULATE_2D;
     break;
-  default: armci_die("ARMCI accumulate: operation not supported",op);
-    func = F_ACCUMULATE_2D; /*avoid compiler whining */
+  default:
+    armci_die("ARMCI accumulate: operation not supported",op);
   }
-
-             
   if(lockit){ 
     span = cols*dst_stride;
     ARMCI_LOCKMEM(dst_ptr, span + (char*)dst_ptr, proc);
   }
-  func(scale, &rows, &cols, dst_ptr, &ldd, src_ptr, &lds);
+  switch (op){
+  case ARMCI_ACC_INT:
+    I_ACCUMULATE_2D(scale, &rows, &cols, dst_ptr, &ldd, src_ptr, &lds);
+    break;
+  case ARMCI_ACC_LNG:
+    L_ACCUMULATE_2D(scale, &rows, &cols, dst_ptr, &ldd, src_ptr, &lds);
+    break;
+  case ARMCI_ACC_DBL:
+    D_ACCUMULATE_2D(scale, &rows, &cols, dst_ptr, &ldd, src_ptr, &lds);
+    break;
+  case ARMCI_ACC_DCP:
+    Z_ACCUMULATE_2D(scale, &rows, &cols, dst_ptr, &ldd, src_ptr, &lds);
+    break;
+  case ARMCI_ACC_CPL:
+    C_ACCUMULATE_2D(scale, &rows, &cols, dst_ptr, &ldd, src_ptr, &lds);
+    break;
+  case ARMCI_ACC_FLT:
+    F_ACCUMULATE_2D(scale, &rows, &cols, dst_ptr, &ldd, src_ptr, &lds);
+    break;
+  default:
+    break;
+  }
   if(lockit)ARMCI_UNLOCKMEM(proc);
-
 }
 
 
@@ -1121,6 +1144,16 @@ int PARMCI_Put(void *src, void* dst, int bytes, int proc) {
   return rc;
 }
 
+int PARMCI_Acc(int optype, void *scale, void *src, void* dst, int bytes, int proc) {
+  int rc=0;
+  ARMCI_PROFILE_START_STRIDED(&bytes, 0, proc, ARMCI_PROF_ACC);
+  rc = PARMCI_AccS(optype, scale,
+		   src, NULL, dst, NULL, &bytes, 0, proc);
+  ARMCI_PROFILE_STOP_STRIDED(ARMCI_PROF_ACC);
+  return rc;
+}
+
+
 int PARMCI_Put_flag(void *src, void* dst,int bytes,int *f,int v,int proc) {
   return  PARMCI_PutS_flag(src, NULL, dst, NULL, &bytes, 0, f, v, proc);
 }
@@ -1154,14 +1187,15 @@ void armci_write_strided1(void *ptr, int stride_levels, int stride_arr[],
 			  int count[], char *buf) {
   const int seg_size = count[0];
   int off=0;
-  stride_itr_t sitr=armci_stride_itr_init(ptr,stride_levels,stride_arr,count);
-  while(armci_stride_itr_has_more(sitr)) {
-    char *sptr = armci_stride_itr_seg_ptr(sitr);
+  stride_info_t sinfo;
+  armci_stride_info_init(&sinfo,ptr,stride_levels,stride_arr,count);
+  while(armci_stride_info_has_more(&sinfo)) {
+    char *sptr = armci_stride_info_seg_ptr(&sinfo);
     armci_copy(sptr,&buf[off],seg_size);
     off += seg_size;
-    armci_stride_itr_next(sitr);
+    armci_stride_info_next(&sinfo);
   }
-  armci_stride_itr_destroy(&sitr);
+  armci_stride_info_destroy(&sinfo);
 }
 
 
@@ -1183,7 +1217,7 @@ void armci_write_strided2(void *ptr, int stride_levels, int stride_arr[],
     ld   = stride_arr[0]/8;
     switch(stride_levels){
     case 1: 
-      DCOPY21(&rows, count+1, ptr, &ld, buf, &idx);
+      DCOPY21(&rows, count+1, ptr, &ld, (void*)buf, &idx);
       break;
     case 2: 
 #if 0
@@ -1194,7 +1228,7 @@ void armci_write_strided2(void *ptr, int stride_levels, int stride_arr[],
       }
 #endif
       ldd = stride_arr[1]/stride_arr[0];
-      DCOPY31(&rows, count+1, count+2, ptr, &ld, &ldd, buf,&idx);
+      DCOPY31(&rows, count+1, count+2, ptr, &ld, &ldd, (void*)buf,&idx);
 
       break;
     default: 
@@ -1210,7 +1244,7 @@ void armci_write_strided2(void *ptr, int stride_levels, int stride_arr[],
 	  if(((i+1) % unit[j]) == 0) index[j]++;
 	  if(index[j] >= count[j]) index[j] = 0;
 	}
-	DCOPY21(&rows, count+1,src, &ld, buf, &idx); 
+	DCOPY21(&rows, count+1, (void*)src, &ld,  (void*)buf, &idx); 
 	buf = (char*) ((double*)buf + idx);
       }
     } /*switch */
@@ -1222,14 +1256,15 @@ void armci_read_strided1(void *ptr, int stride_levels, int stride_arr[],
 			 int count[], char *buf) {
   const int seg_size = count[0];
   int off=0;
-  stride_itr_t sitr=armci_stride_itr_init(ptr,stride_levels,stride_arr,count);
-  while(armci_stride_itr_has_more(sitr)) {
-    char *dptr = armci_stride_itr_seg_ptr(sitr);
+  stride_info_t sinfo;
+  armci_stride_info_init(&sinfo,ptr,stride_levels,stride_arr,count);
+  while(armci_stride_info_has_more(&sinfo)) {
+    char *dptr = armci_stride_info_seg_ptr(&sinfo);
     armci_copy(&buf[off],dptr,seg_size);
     off += seg_size;
-    armci_stride_itr_next(sitr);
+    armci_stride_info_next(&sinfo);
   }
-  armci_stride_itr_destroy(&sitr);
+  armci_stride_info_destroy(&sinfo);
 }
 
 
@@ -1251,7 +1286,7 @@ void armci_read_strided2(void *ptr, int stride_levels, int stride_arr[],
     ld   = stride_arr[0]/8;
     switch(stride_levels){
     case 1: 
-      DCOPY12(&rows, count+1, ptr, &ld, buf, &idx);
+      DCOPY12(&rows, count+1, (void*)ptr, &ld, (void*)buf, &idx);
       break;
     case 2:
 #if 0
@@ -1262,7 +1297,7 @@ void armci_read_strided2(void *ptr, int stride_levels, int stride_arr[],
       }
 #endif
       ldd = stride_arr[1]/stride_arr[0];   
-      DCOPY13(&rows, count+1, count+2, ptr, &ld, &ldd, buf,&idx);
+      DCOPY13(&rows, count+1, count+2, ptr, &ld, &ldd, (void*)buf, &idx);
       break;
     default:
       index[2] = 0; unit[2] = 1; total = count[2];
@@ -1277,7 +1312,7 @@ void armci_read_strided2(void *ptr, int stride_levels, int stride_arr[],
 	  if(((i+1) % unit[j]) == 0) index[j]++;
 	  if(index[j] >= count[j]) index[j] = 0;
 	}
-	DCOPY12(&rows, count+1,src, &ld, buf, &idx);
+	DCOPY12(&rows, count+1, (void*)src, &ld, (void*)buf, &idx);
 	buf = (char*) ((double*)buf + idx);
       }
     } /*switch */
@@ -1289,7 +1324,7 @@ void armci_read_strided2(void *ptr, int stride_levels, int stride_arr[],
  * traversed to copy as much data as possible in the buffer. When all
  * the data in buf is consumed the function returns with the number of
  * bytes consumed from the buffer.
- * @param sitr Stride iterator
+ * @param sinfo Stride iterator
  * @param buf IN Pointer to data to be read into user memory
  * @param bytes IN #bytes available in buf for reading
  * @param seg_off INOUT Bytes of the current segment written in the
@@ -1297,29 +1332,29 @@ void armci_read_strided2(void *ptr, int stride_levels, int stride_arr[],
  * contains the bytes of the last segment written if it was partial. 
  * @return #bytes read from buf into user memory.
  */
-int armci_read_strided_inc(stride_itr_t sitr, const char *buf,int bytes, int *seg_off) {
+int armci_read_strided_inc(stride_info_t *sinfo, const char *buf,int bytes, int *seg_off) {
   int off=0;
-  const int seg_size = armci_stride_itr_seg_size(sitr);
+  const int seg_size = armci_stride_info_seg_size(sinfo);
 
   dassert1(1,bytes>0,bytes);
   off=0;
   if(*seg_off) {
     char *sptr = (char*) &buf[off];
-    char *dptr = ((char*)armci_stride_itr_seg_ptr(sitr))+*seg_off;
+    char *dptr = ((char*)armci_stride_info_seg_ptr(sinfo))+*seg_off;
     int size = ARMCI_MIN(seg_size-*seg_off,bytes);
-    /*     printf("%d:%s(): seg_size=%d,seg_off=%d,bytes=%d\n",armci_me,__FUNCTION__,seg_size,*seg_off,bytes); */
-    dassert(1,armci_stride_itr_has_more(sitr));
+    /*     printf("%d:%s(): seg_size=%d,seg_off=%d,bytes=%d\n",armci_me,FUNCTION_NAME,seg_size,*seg_off,bytes); */
+    dassert(1,armci_stride_info_has_more(sinfo));
     armci_copy(sptr,dptr,size);
     off += size;
     if(*seg_off+size == seg_size) {
-      armci_stride_itr_next(sitr);
+      armci_stride_info_next(sinfo);
     }
   }
   while(bytes>off) {
     int size = ARMCI_MIN(seg_size, bytes-off);
-    dassert(1,armci_stride_itr_has_more(sitr));
-    armci_copy(&buf[off],armci_stride_itr_seg_ptr(sitr),size);
-    if(size==seg_size) armci_stride_itr_next(sitr);
+    dassert(1,armci_stride_info_has_more(sinfo));
+    armci_copy(&buf[off],armci_stride_info_seg_ptr(sinfo),size);
+    if(size==seg_size) armci_stride_info_next(sinfo);
     off += size;
   }
   dassertp(1,off==bytes,("%d:off=%d bytes=%d",armci_me,off,bytes));

@@ -108,6 +108,7 @@ static int nxtask(void) {
 void LJ_Setup(int natoms, double **x_i, double **x_j, double **grad) {
   
   int i, j, k=0, n;
+  MA_AccessIndex maindex;
 
   n = natoms/gBlockSize;
    
@@ -127,7 +128,7 @@ void LJ_Setup(int natoms, double **x_i, double **x_j, double **grad) {
   i = gBlockSize * NDIM * 2; /* for gX_i and gX_j used in computeFG() */
   j = natoms * NDIM;         /* for gGrad in computeFG() */
   n = i + j + SAFELIMIT;                 /* total memory required */
-  if(MA_push_get(C_DBL, n, "GA LJ bufs", (void *)&gMemHandle, (void *)&j))
+  if(MA_push_get(C_DBL, n, "GA LJ bufs", (void *)&gMemHandle, &maindex))
     MA_get_pointer(gMemHandle, x_i);
   else GA_Error("ma_alloc_get failed",n);
   
@@ -303,7 +304,6 @@ commandLine(int argc, char **argv) {
 #if 0
   int n;
 #endif
-  extern char *optarg;   
  
   /* default options */
   gBlockSize   = BLOCK_SIZE; /* size of the sub-block (force matrix) */
@@ -393,12 +393,12 @@ void LJ_Initialize(int natoms) {
     printf(" Number of Atoms/Particles   =   %d\n",    natoms);
     printf(" Block Size                  =   %d\n",    gBlockSize);
     printf(" Number of Blocks            =   %d\n",    gNblocks);
-    printf(" Density                     =   %lf\n",   gDensity);
-    printf(" Temperature                 =   %lf\n",   gDesiredTemperature);
-    printf(" Time Step                   =   %lf\n\n", gTimeStep);
+    printf(" Density                     =   %f\n",    gDensity);
+    printf(" Temperature                 =   %f\n",    gDesiredTemperature);
+    printf(" Time Step                   =   %f\n\n",  gTimeStep);
     printf(" Box Specifications:\n");
-    printf("    Size of the Cube (Box)   =   %lf\n",   box.length);
-    printf("    System Volume            =   %lf\n\n\n", pow(L, 3.0));
+    printf("    Size of the Cube (Box)   =   %f\n",     box.length);
+    printf("    System Volume            =   %f\n\n\n", pow(L, 3.0));
   }
 #endif
   
@@ -411,9 +411,10 @@ void LJ_Initialize(int natoms) {
     double rCell[3];
     double *x;
     int lo, hi, handle;  
+    MA_AccessIndex maindex;
     
     n = NDIM * natoms + 1;
-    if(MA_push_get(C_DBL, n, "GA LJ_Init bufs", (void *)&handle, (void *)&lo))
+    if(MA_push_get(C_DBL, n, "GA LJ_Init bufs", (void *)&handle, &maindex))
       MA_get_pointer(handle, &x);
     else GA_Error("ma_alloc_get failed",n);
     
@@ -541,7 +542,7 @@ void printProperties (int natoms) {
      average / natoms, stdDev / natoms);
   
   stdDev  = (totalEnergySqdSum - totalEnergySum);
-  printf("Energy Fluctuation            = %lf\n\n", 
+  printf("Energy Fluctuation            = %f\n\n", 
      sqrt(stdDev)/kineticEnergySum);
 }
 
@@ -634,7 +635,7 @@ void writeToFile(int natoms) {
     /* in molden format */
     fprintf(gOutfile, "%d\n\n", natoms) ; /* 2 new lines needed */
     do {
-      fprintf(gOutfile, "%s %lf %lf %lf\n", "XX",
+      fprintf(gOutfile, "%s %f %f %f\n", "XX",
           p_data[i], p_data[i+1], p_data[i+2]);
       i+=NDIM;
     }while(++n < natoms);
@@ -668,7 +669,7 @@ void LJ_Solve(int natoms) {
 #endif
   
   if(gMe == 0) printf("Equilibrium Steps:\n");
-  if(gMe == 0) printf("Time = %.3lf \tEnergy = %lf\n", time, totalEnergy);
+  if(gMe == 0) printf("Time = %.3f \tEnergy = %f\n", time, totalEnergy);
   
   /* Equilibrium Steps */
   while(time < EQUILIBRIUM_TIME) {
@@ -679,7 +680,7 @@ void LJ_Solve(int natoms) {
 #endif
     time += gTimeStep;
     if(gMe == 0 && modf(time,&ip) < gTimeStep) 
-      printf("Time = %.2lf \tEnergy = %lf\n", ip, totalEnergy);
+      printf("Time = %.2f \tEnergy = %f\n", ip, totalEnergy);
     if(++s >= RESCALE_STEPS)  { rescaleVelocities(natoms); s = 0; }    
   }
   
@@ -694,7 +695,7 @@ void LJ_Solve(int natoms) {
 #endif
     time += gTimeStep;
     if(gMe == 0 && modf(time,&ip) < gTimeStep) 
-      printf("Time = %.2lf \tEnergy = %lf\n", ip, totalEnergy);
+      printf("Time = %.2f \tEnergy = %f\n", ip, totalEnergy);
   }
   
 #if WRITE_TO_FILE
@@ -704,9 +705,9 @@ void LJ_Solve(int natoms) {
 #if PRINT_LEVEL_2
   if(gMe == 0) {
     execTime = CLOCK_()-execTime;
-    printf("%d: Total Elapsed Time  = %lf\n", gMe, execTime);
-    printf("%d: Computation Time    = %lf\n", gMe, gComputeTime);
-    printf("%d: Percentage Overhead = %lf\n\n", gMe, 
+    printf("%d: Total Elapsed Time  = %f\n", gMe, execTime);
+    printf("%d: Computation Time    = %f\n", gMe, gComputeTime);
+    printf("%d: Percentage Overhead = %f\n\n", gMe, 
        100*(execTime-gComputeTime)/execTime);
   }
 #endif

@@ -44,7 +44,7 @@ static int niter;
 void read_and_create(int,char **);
 void computeminverser(double *,double *, double *);
 void computeminverse(double *,double *, int *,int *);
-void finalize_arrays();
+void finalize_arrays(int);
 extern void acg_matvecmul(double *,double *,double *,int *,int *);
 extern void acg_addvec(double *,double *,double *,double *, double *);
 extern void acg_2addvec(double *,double *, double *,double *, double *,
@@ -167,7 +167,6 @@ void initialize_arrays(int dpc)
 
 void finalize_arrays(int dpc)
 {
-    extern int ARMCI_Free(void*);
     if(me==0){
         ARMCI_Free(bvec);
         ARMCI_Free(dvec);
@@ -197,7 +196,7 @@ int main(int argc, char **argv)
     MP_INIT(argc,argv);
     MP_PROCS(&nproc);
     MP_MYID(&me);
-    ARMCI_Init(); /* initialize ARMCI */
+    ARMCI_Init_args(&argc, &argv); /* initialize ARMCI */
 
     if(me==0)printf("\n                          CONJUGATE GRADIENT EXAMPLE\n");
     if(argc<3){

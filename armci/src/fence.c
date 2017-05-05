@@ -6,6 +6,7 @@
 #include "armcip.h"
 #include "armci.h"
 #include "copy.h"
+#include "memlock.h"
 #if HAVE_STDIO_H
 #   include <stdio.h>
 #endif
@@ -103,7 +104,6 @@ void _armci_amina_allfence()
     armci_hdl_t ah[MAX_HNDL];
     armci_hdl_t *h;
     int buf, c=0,p,i;
-    extern void** memlock_table_array;
 
     if(!memlock_table_array) armci_die("armci_internal_allfence: NULL ptr",0);
     

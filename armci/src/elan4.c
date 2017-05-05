@@ -175,9 +175,6 @@ int armcill_getbidx(int size, int proc, SERV_BUF_IDX_T *bufidx)
   return 0;
 }
 
-#ifdef ARMCI_ENABLE_GPC_CALLS
-extern gpc_buf_t *gpc_req;
-#endif
 void armci_init_connections()
 {
 ELAN_QUEUE *q, *qs;
@@ -188,9 +185,6 @@ char *enval;
   
 /*_ELAN_SLOTSIZE = elan_queueMaxSlotSize(elan_base->state);*/
     slotsize=_ELAN_SLOTSIZE;
-#ifdef ARMCI_ENABLE_GPC_CALLS
-    gpc_req = (gpc_buf_t *)malloc(MAX_GPC_REQ*sizeof(gpc_buf_t)+SIXTYFOUR);
-#endif
     if ((q = elan_gallocQueue(elan_base, elan_base->allGroup)) == NULL)
             armci_die( "elan_gallocElan",0 );
 #if NEWQAPI
@@ -399,13 +393,7 @@ long usec_to_poll;
     if(DEBUG_){
         printf("%d(server): waiting for request\n",armci_me); fflush(stdout);
     }
-#ifdef ARMCI_ENABLE_GPC_CALLS
-    unblock_thread_signal(GPC_COMPLETION_SIGNAL); 
-#endif
     while(1){
-#ifdef ARMCI_ENABLE_GPC_CALLS
-        block_thread_signal(GPC_COMPLETION_SIGNAL);
-#endif
 #       if NEWQAPI
            void *buf;
            buf = elan_queueRxWait(qrx, NULL, usec_to_poll);  
@@ -418,9 +406,6 @@ long usec_to_poll;
 
         /* free the buffer if used */
         if(bidx>=0) { armci_clearbflag(bidx); bidx =-1; }
-#ifdef ARMCI_ENABLE_GPC_CALLS
-        unblock_thread_signal(GPC_COMPLETION_SIGNAL);
-#endif
     }
 
     if(DEBUG_) {printf("%d(server): done! closing\n",armci_me); fflush(stdout);}

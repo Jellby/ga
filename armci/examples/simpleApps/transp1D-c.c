@@ -23,6 +23,7 @@
 #if HAVE_ASSERT_H
 #   include <assert.h>
 #endif
+#include <stdlib.h>
 
 #include "mp3.h"
 #include "armci.h"
@@ -199,7 +200,7 @@ void TRANSPOSE1D() {
       src_offset = cmin - min;
       src_ptr = (void*)(buf + src_offset);
       dst_offset = cmin - lmin;
-      dst_ptr = b_ptr[i] + sizeof(int)*dst_offset;
+      dst_ptr = ((char*)b_ptr[i]) + sizeof(int)*dst_offset;
       
       /* Find length of data (in bytes) to be sent to processor i */
       length = sizeof(int)*(cmax-cmin+1);
@@ -230,7 +231,7 @@ int main(int argc, char **argv) {
     MP_INIT(argc, argv);
 
     /* Step2: Initialize ARMCI */
-    ARMCI_Init();
+    ARMCI_Init_args(&argc, &argv);
     
     /* Step3: Initialize Memory Allocator (MA) */
     /*bjp

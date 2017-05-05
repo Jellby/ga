@@ -88,7 +88,6 @@ int main(int argc, char **argv)
 {
     int i, j;
     int ch;
-    extern char *optarg;
     int MyNum=0;
     int proc_num;
     int edge;
@@ -228,9 +227,13 @@ int main(int argc, char **argv)
         PrintA();
     }
 
+#if HAVE_PTHREAD_SETCONCURRENCY
     pthread_setconcurrency(P);
+#endif
     
+#if HAVE_PTHREAD_GETCONCURRENCY
     printf("the concurrency level is %d \n", pthread_getconcurrency());
+#endif
     /*pthread_setscope_np(4);*/
     
     SlaveStart(MyNum);
@@ -280,6 +283,7 @@ void *SlaveStart()
    processors to avoid migration */
     
     OneSolve(n, block_size, a, MyNum, dostats);
+    return NULL;
 }
 
 
@@ -318,7 +322,7 @@ int dostats;
 
     /* Timer Stops here */
     if(MyNum == 0)
-        printf("\nRunning time = %lf milliseconds.\n\n",  elapsed_time());
+        printf("\nRunning time = %f milliseconds.\n\n",  elapsed_time());
 }
 
 

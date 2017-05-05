@@ -13,9 +13,66 @@
 #endif
 #include "armci.h"
 
+#define sgemm_ F77_FUNC(sgemm,SGEMM)
 #define dgemm_ F77_FUNC(dgemm,DGEMM)
 #define zgemm_ F77_FUNC(zgemm,ZGEMM)
 #define cgemm_ F77_FUNC(cgemm,CGEMM)
+
+#if NOFORT
+#   define BlasInt int
+#elif BLAS_SIZE == SIZEOF_F77_INTEGER
+#   define BlasInt Integer
+#elif BLAS_SIZE == SIZEOF_SHORT
+#   define BlasInt short
+#elif BLAS_SIZE == SIZEOF_INT
+#   define BlasInt int
+#elif BLAS_SIZE == SIZEOF_LONG
+#   define BlasInt long
+#elif BLAS_SIZE == SIZEOF_LONG_LONG
+#   define BlasInt long long
+#endif
+
+#if defined(F2C_HIDDEN_STRING_LENGTH_AFTER_ARGS)
+extern void sgemm_(char *TRANSA, char *TRANSB, BlasInt *M, BlasInt *N, BlasInt *K, Real *ALPHA, Real *A, BlasInt *LDA, Real *B, BlasInt *LDB, Real *BETA, Real *C, BlasInt *LDC, int alen, int blen);
+extern void dgemm_(char *TRANSA, char *TRANSB, BlasInt *M, BlasInt *N, BlasInt *K, DoublePrecision *ALPHA, DoublePrecision *A, BlasInt *LDA, DoublePrecision *B, BlasInt *LDB, DoublePrecision *BETA, DoublePrecision *C, BlasInt *LDC, int alen, int blen);
+extern void zgemm_(char *TRANSA, char *TRANSB, BlasInt *M, BlasInt *N, BlasInt *K, DoubleComplex *ALPHA, DoubleComplex *A, BlasInt *LDA, DoubleComplex *B, BlasInt *LDB, DoubleComplex *BETA, DoubleComplex *C, BlasInt *LDC, int alen, int blen);
+extern void cgemm_(char *TRANSA, char *TRANSB, BlasInt *M, BlasInt *N, BlasInt *K, SingleComplex *ALPHA, SingleComplex *A, BlasInt *LDA, SingleComplex *B, BlasInt *LDB, SingleComplex *BETA, SingleComplex *C, BlasInt *LDC, int alen, int blen);
+#else
+extern void sgemm_(char *TRANSA, int alen, char *TRANSB, int blen, BlasInt *M, BlasInt *N, BlasInt *K, Real *ALPHA, Real *A, BlasInt *LDA, Real *B, BlasInt *LDB, Real *BETA, Real *C, BlasInt *LDC);
+extern void dgemm_(char *TRANSA, int alen, char *TRANSB, int blen, BlasInt *M, BlasInt *N, BlasInt *K, DoublePrecision *ALPHA, DoublePrecision *A, BlasInt *LDA, DoublePrecision *B, BlasInt *LDB, DoublePrecision *BETA, DoublePrecision *C, BlasInt *LDC);
+extern void zgemm_(char *TRANSA, int alen, char *TRANSB, int blen, BlasInt *M, BlasInt *N, BlasInt *K, DoubleComplex *ALPHA, DoubleComplex *A, BlasInt *LDA, DoubleComplex *B, BlasInt *LDB, DoubleComplex *BETA, DoubleComplex *C, BlasInt *LDC);
+extern void cgemm_(char *TRANSA, int alen, char *TRANSB, int blen, BlasInt *M, BlasInt *N, BlasInt *K, SingleComplex *ALPHA, SingleComplex *A, BlasInt *LDA, SingleComplex *B, BlasInt *LDB, SingleComplex *BETA, SingleComplex *C, BlasInt *LDC);
+#endif
+
+#if NOFORT
+#   define BLAS_SGEMM(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc) \
+    xb_sgemm(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc)
+#   define BLAS_DGEMM(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc) \
+    xb_dgemm(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc)
+#   define BLAS_ZGEMM(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc) \
+    xb_zgemm(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc)
+#   define BLAS_CGEMM(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc) \
+    xb_cgemm(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc)
+#elif F2C_HIDDEN_STRING_LENGTH_AFTER_ARGS
+#   define BLAS_SGEMM(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc) \
+    sgemm_(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc, 1, 1)
+#   define BLAS_DGEMM(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc) \
+    dgemm_(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc, 1, 1)
+#   define BLAS_ZGEMM(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc) \
+    zgemm_(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc, 1, 1)
+#   define BLAS_CGEMM(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc) \
+    cgemm_(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc, 1, 1)
+#else
+#   define BLAS_SGEMM(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc) \
+    sgemm_(ta, 1, tb, 1, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc)
+#   define BLAS_DGEMM(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc) \
+    dgemm_(ta, 1, tb, 1, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc)
+#   define BLAS_ZGEMM(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc) \
+    zgemm_(ta, 1, tb, 1, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc)
+#   define BLAS_CGEMM(ta, tb, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc) \
+    cgemm_(ta, 1, tb, 1, i, j, k, alpha, a, lda, b, ldb, beta, c, ldc)
+#endif
+
 
 /* min acceptable amount of memory (in elements) and default chunk size */
 #  define MINMEM 64

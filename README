@@ -53,6 +53,11 @@ the same directory and see the GA support webpage:
 
     http://www.emsl.pnl.gov/docs/global/support.html
 
+Please don't hesitate to send us an email.  An archive of emails is available
+at:
+
+    http://groups.google.com/group/hpctools
+
 WHERE IS THE DOCUMENTATION?
 ===========================
 
@@ -68,7 +73,7 @@ This directory contains the Global Arrays (GA), Aggregate Remote Memory Copy
 Interface (ARMCI) run-time library, and Memory Allocator (MA), parallel I/O
 libraries (DRA,EAF,SF), TCGMSG, and TCGMSG-MPI packages bundled together. 
 
-Global Arrays is a portable Non-Uniform Memory Access (NUMA) shared- memory
+Global Arrays is a portable Non-Uniform Memory Access (NUMA) shared-memory
 programming environment for distributed and shared memory computers. It
 augments the message-passing model by providing a shared-memory like access to
 distributed dense arrays.
@@ -98,58 +103,43 @@ See file 'NEWS' for a list of major changes in the current release.
 See file 'AUTHORS' for the names of anyone who has contributed to GA.
 See file 'NOTES' for a few platform-specific symptoms and fixes.
 
-DIRECTORY STRUCTURE
-===================
-
-- build-aux      (make configuration files)
-
-- m4             (autoconf macros)
-
-- compat         (compatibility source files for missing system features)
-
-- LinAlg         (linear algebra software used by GA)
-
-  + lapack+blas
-
-- gaf2c          (Fortran-to-C compatibility library and tests)
-
-- global
-
-  + src          (source code for GA library)
-  + trace        (library and programs to generate and process tracefiles)
-  + X            (xregion visualization program for GA)
-  + doc          (paper & documentation in PostScript, HTML & plain text)
-  + testing      (GA test programs and performance results)
+DIRECTORY STRUCTURE (ALPHABETICALLY)
+====================================
 
 - armci
-
-  + src          (source code for ARMCI library)
-  + doc          (documentation for ARMCI library)
-  + config       (configuration makefile includes)
-  + lib          (compatibility source files for missing system features)
-
+    + config        (configuration makefile includes)
+    + doc           (documentation for ARMCI library)
+    + lib           (compatibility source files for missing system features)
+    + src           (source code for ARMCI library)
+- build-aux         (autotools support scripts)
+- cca               (common component architecture)
+- compat            (compatibility source files for missing system features)
+- doc               (documentation)
+- ga++              (C++ Bindings for Global Arrays)
+    + doc           (contains sample Doxyfile for Doxygen doc generator)
+    + src           (source code for GA C++ bindings)
+    + testing       (test programs)
+- gaf2c             (Fortran-to-C compatibility library and tests)
+- global
+    + doc           (paper & documentation in PostScript, HTML & plain text)
+    + src           (source code for GA library)
+    + testing       (GA test programs and performance results)
+    + trace         (library and programs to generate and process tracefiles)
+    + X             (xregion visualization program for GA)
+- LinAlg            (linear algebra software used by GA)
+    + lapack+blas
+- m4                (autoconf macros)
+- ma                (Memory Allocator) 
+    + man
 - pario
-
-  + elio         ("device" layer for other parallel I/O models)
-  + dra          (Disk Resident Array Library code)
-  + eaf          (Exclusive Access Files Library code)
-  + sf           (Shared Files Library code)
-
-- tcgmsg         (simple, legacy message-passing library)
-
-  + ipcv4.0    
-  + ipcv5.0    
-  + tcgmsg-mpi   (TCGMSG on top of MPI)
-
-- ma             (Memory Allocator) 
-
-  + man
-
-- ga++           (C++ Bindings for Global Arrays)
-
-  + src          (source code for GA C++ bindings)
-  + testing      (test programs)
-
+    + dra           (Disk Resident Array Library code)
+    + eaf           (Exclusive Access Files Library code)
+    + elio          ("device" layer for other parallel I/O models)
+    + sf            (Shared Files Library code)
+- tcgmsg            (simple, legacy message-passing library)
+    + ipcv4.0    
+    + ipcv5.0    
+    + tcgmsg-mpi    (TCGMSG on top of MPI)
 
 HOW TO BUILD THE PACKAGE?
 =========================
@@ -246,13 +236,18 @@ package.
                         omit ARG, we attempt to locate the MPI compiler
                         wrappers. If you supply anything for ARG, we will
                         parse ARG as indicated above.
---with-tcgmsg=ARG       Select TCGMSG as the messaging library; if
+--with-tcgmsg           Select TCGMSG as the messaging library; if
                         --with-mpi is also specified then TCGMSG over MPI is
                         used.
 --with-vampir=ARG       Enable VAMPIR performance tracing.
                         http://www.vampir.eu
---with-blas=ARG         Use external BLAS library. If not found, an internal
-                        one is built.
+--with-blas=ARG         Use external BLAS library; attempt to detect
+                        sizeof(INTEGER) used to compile BLAS; if not found, an
+                        internal BLAS is built
+--with-blas4=ARG        Use external BLAS library compiled with
+                        sizeof(INTEGER)==4
+--with-blas8=ARG        Use external BLAS library compiled with
+                        sizeof(INTEGER)==8
 --with-lapack=ARG       Use external LAPACK library. If not found, an internal
                         one is built.
 --with-scalapack=ARG    Use external ScaLAPACK library.
@@ -297,6 +292,28 @@ There are some influential environment variables as documented in configure
   cross-compiled systems it may be necessary to specify the less usual after
   string convention the gaf2c/testarg program crashes.
 
+Special Notes for BLAS
+----------------------
+
+BLAS, being a Fortran library, can be compiled with a default INTEGER size of
+4 or a promoted INTEGER size of 8.  Experience has shown us that most of the
+time the default size of INTEGER used is 4.  In some cases, however, you may
+have an external BLAS library which is using 8-byte INTEGERs.  In order to
+correctly interface with an external BLAS library, GA must know the size of
+INTEGER used by the BLAS library.
+
+configure has the following BLAS-related options: --with-blas, --with-blas4,
+and --with-blas8.  The latter two will force the INTEGER size to 4- or
+8-bytes, respectively.  The first option, --with-blas, defaults to 4-byte
+INTEGERS *however* in the two special cases of using ACML or MKL, it is
+possible to detect 8-byte INTEGERs automatically.  As documented in the ACML
+manual, if the path to the library has "_int64" then 8-byte INTEGERs are used.
+As documented in the MKL manual, if the library is "ilp64", then 8-byte
+INTEGERs are used.
+
+You may always override --with-blas by specifying the INTEGER size using one
+of the two more specific options.
+
 Cross-Compilation Issues
 ------------------------
 
@@ -325,10 +342,13 @@ And if that doesn't work (cross-compilation is not detected) you must then
 BlueGene/P
 ++++++++++
 
-Currently the only way to detect the BGP platform and compile correctly is to
-use::
+For ga-5-0 through ga-5-0-2, the only way to detect the BGP platform and
+compile correctly was to use::
 
     configure --host=powerpc-bgp-linux
+
+*As of ga-5-0-3 and beyond*, the BGP platform is automatically detected based
+on the existence of a well-documented, platform-specific directory.
 
 The rest of the configure options apply as usual e.g. --with-dcmf in this case.
 
@@ -377,22 +397,26 @@ Test Programs
 
 Running "make checkprogs" will build most test and example programs.  Note that
 not all tests are built -- some tests depend on certain features being
-detected or enabled during configure.  These programs are not intented to be
+detected or enabled during configure.  These programs are not intended to be
 examples of good GA coding practices because they often include private
 headers.  However, they help us debug or time our GA library.
 
 Test Suite
-++++++++++
+==========
 
 Running "make check" will build most test and example programs (See "make
 checkprogs" notes above) in addition to running the test suite.  The test
-suite runs both the serial and parallel tests.  The test suite must know how
-to launch the parallel tests via the MPIEXEC variable.  Please read your MPI
-flavor's documentation on how to launch, or if using TCGMSG you will use the
-"parallel" tool.  For example, the following is the command to launch the test
-suite when compiled with OpenMPI::
+suite runs both the serial and parallel tests.
 
-    make check MPIEXEC="mpiexec -np 4"
+The user may wish to indicate the number of processors to use for the parallel
+tests. The NPROCS environment variable is detected by the configure script and
+passed on to the Makefile. You can change the value of NPROCS at make-time.::
+
+    make check NPROCS=4
+    make check NPROCS=6
+
+Note that some GA test programs were designed with a specific number of
+processors in mind (usually 4). Therefore, the default value for NPROCS is 4.
 
 All tests have a per-test log file containing the output of the test.  So if
 the test is global/testing/test.x, the log file would be
@@ -402,29 +426,81 @@ top-level log summary test-suite.log.
 The test suite will recurse into the ARMCI directory and run the ARMCI test
 suite first.  If the ARMCI test suite fails, the GA test suite will not run
 (the assumption here is that you should fix bugs in the dependent library
-first.)  To run only the GA test suite, type "make check-ga" with the
-appropriate MPIEXEC variable.
+first.)  To run only the GA test suite, type "make check-ga". In fact, there
+are a number of smaller test suites with specific make targets. Note that the
+check-ga target does not run the PARIO tests.
 
-How to Run GA Test Programs?  
-----------------------------
+- make check # recurse into ARMCI and run tests there first
+
+- make check-ga # run all GA tests only (enumerated below)
+
+- make check-gaf2c # test fortran-to-C compatibility
+
+- make check-ma # run the MA tests
+
+- make check-global # run only the 'global/testing' tests
+
+- make check-pario # run the PARIO tests
+
+- make check-ga++ # run the GA++ C++ binding tests if C++ is enabled
+
+Test Suite - MPI Specific Instructions
+--------------------------------------
+
+The configure script guesses how MPI programs should be run. If GA was built
+with MPI (the default), the user may need to intervene.  By default, the
+environment variable MPIEXEC is detected by the configure script. If the
+variable is empty or not defined, then we look first for 'mpirun' followed by
+'mpiexec', and then append "-n %NP%". The value of %NP% is replaced at
+make-time with the value of NPROCS (see above). You may have more complicated
+values for MPIEXEC::
+
+    MPIEXEC="mpirun -n %NP%"
+    MPIEXEC="mpiexec -np %NP% --hostfile=~/hosts"
+
+You can change the value of MPIEXEC at make-time, as well. If you don't
+specify the %NP% text to be replaced with NPROCS, you can specify the number
+of processors to use directly::
+
+    make check MPIEXEC="mpiexec -np %NP%"
+    make check MPIEXEC="mpiexec -np 4"
+
+Cross-compiled Systems
+++++++++++++++++++++++
+
+If your system compiles on a front-end node and runs programs on a back-end
+node (e.g. BlueGene P), you **MUST** use the %NP% option above. The serial
+tests must still be 'launched' using the MPI executable but given a single
+process instead of using the value of NPROCS.
+
+Test Suite - TCGMSG Specific Instructions
+-----------------------------------------
+
+If you built GA to use TCGMSG only (not TCGMSG over MPI), then running the
+test suite is straightforward. See the instructions for Test Suite above. You
+can change the number of processors to test with by changing the value of
+NPROCS.
+
+How to Run GA Programs Outside of the Test Suite
+================================================
 
 Depends on the system. MPPs like Intel iPSC/860, Delta, Paragon, IBM SPx, Cray
 T3/E have their own commands for submitting parallel jobs.
 
-On workstations and clusters, GA are run like ordinary message-passing
-programs::
+On workstations and clusters, GA programs are run like ordinary
+message-passing programs::
 
-  To run GA programs with MPI, you need to built the package to be compatible
+  To run GA programs with MPI, you need to build the package to be compatible
   with MPI (see README in ./global and documentation in ./global/doc/ ) and
   run it as any other MPI program.  The GA package has been tested only with a
-  limited number of MPI implementations (MPICH, and vendor's: Intel, IBM, Sun,
-  HP, and SGI).
+  limited number of MPI implementations (MPICH, mvapich, and vendor's: Intel,
+  IBM, Sun, HP, and SGI).
 
-  TCGMSG `parallel' command (built automaticaly in ./tcgmsg/ipcv4.0/parallel
-  if needed) is used to start a job on clusters if you are using TCGMSG as
-  your message-passing library. On the workstations, GA-based programs that
-  use TCGMSG can be run with a single process without the `parallel' command
-  -- just by typing program name -- useful for debugging. 
+  TCGMSG `parallel.x' command (built automaticaly in ./tcgmsg/ipcv4.0 if
+  needed) is used to start a job on clusters if you are using TCGMSG as your
+  message-passing library. On the workstations, GA-based programs that use
+  TCGMSG can be run with a single process without the `parallel' command --
+  just by typing program name -- useful for debugging. 
 
 Other Issues 
 ============
@@ -439,13 +515,7 @@ b. The SGI_N32 version is recommended on all newer SGI boxes including
    variable can be used to choose the optimal compiler flags 
    for R8000 and R10000 processors.
 
-c. In 64 bit platforms, if you are using blas libraries that takes
-   integer as 8 bytes, then set the following environment variables:
-   setenv BLAS_I8 yes
-   setenv BLAS_LIB specify_your_blas_library
-   e.g.setenv BLAS_LIB -L/usr/lib/libblas.a
-
-d. To turn Async I/O on under Linux, set environment variable USE_LINUXAIO=y
+c. To turn Async I/O on under Linux, set environment variable USE_LINUXAIO=y
 
 Performance Tuning
 ------------------

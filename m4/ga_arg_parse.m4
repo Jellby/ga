@@ -13,14 +13,16 @@ AC_DEFUN([GA_ARG_PARSE],
         [-WL*],         [$3="$$3 $arg"],
         [-Wl*],         [$3="$$3 $arg"],
         [-I*],          [$4="$$4 $arg"],
-        [-*lib*],       [$3="$$3 $arg"],
-        [*lib*],        [AS_IF([test -d $arg],
-                            [$3="$$3 -L$arg"])],
-        [-*include*],   [$4="$$4 $arg"],
-        [*include*],    [AS_IF([test -d $arg],
-                            [$4="$$4 -I$arg"])],
-                        [AS_IF([test -d $arg/lib],
-                            [$3="$$3 -L$arg/lib"])
-                         AS_IF([test -d $arg/include],
-                            [$4="$$4 -I$arg/include"])])
+dnl     [-*lib*],       [$3="$$3 $arg"],
+        [*.a],          [$2="$$2 $arg"],
+        [*.so],         [$2="$$2 $arg"],
+        [*lib],         [AS_IF([test -d $arg], [$3="$$3 -L$arg"],
+                            [AC_MSG_WARN([$arg of $1 not parsed])])],
+dnl     [-*include*],   [$4="$$4 $arg"],
+        [*include],     [AS_IF([test -d $arg], [$4="$$4 -I$arg"],
+                            [AC_MSG_WARN([$arg of $1 not parsed])])],
+        [ok=no
+         AS_IF([test -d $arg/lib],     [$3="$$3 -L$arg/lib"; ok=yes])
+         AS_IF([test -d $arg/include], [$4="$$4 -I$arg/include"; ok=yes])
+         AS_IF([test "x$ok" = xno],    [AC_MSG_WARN([$arg of $1 not parsed])])])
 done])dnl

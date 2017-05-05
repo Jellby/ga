@@ -77,6 +77,9 @@ int elan_long_swap(long *target, long value, int vp)
 int  _a_temp;
 long _a_ltemp;
 
+/* JAD -- DCMF implements its own rmw
+   there were linking errors with missing atomic_fetch_and_add for DCMF */
+#if !ARMCIX
 void armci_generic_rmw(int op, void *ploc, void *prem, int extra, int proc)
 {
 #if defined(CLUSTER) && !defined(SGIALTIX)
@@ -89,9 +92,18 @@ void armci_generic_rmw(int op, void *ploc, void *prem, int extra, int proc)
 
     switch (op) {
       case ARMCI_FETCH_AND_ADD:
-                armci_get(prem,ploc,sizeof(int),proc);
-                _a_temp = *(int*)ploc + extra;
-                armci_put(&_a_temp,prem,sizeof(int),proc);
+#if (defined(__GNUC__) || defined(__INTEL_COMPILER__) ||defined(__PGIC__)) && !defined(PORTALS) && !defined(NO_I386ASM)
+        if(SERVER_CONTEXT || SAMECLUSNODE(proc)){
+/* 	  *(int*)ploc = __sync_fetch_and_add((int*)prem, extra); */
+	  atomic_fetch_and_add(prem, ploc, extra, sizeof(int));
+	}
+	else 
+#endif
+	  {
+	    armci_get(prem,ploc,sizeof(int),proc);
+	    _a_temp = *(int*)ploc + extra;
+	    armci_put(&_a_temp,prem,sizeof(int),proc);
+	  }
            break;
       case ARMCI_FETCH_AND_ADD_LONG:
                 armci_get(prem,ploc,sizeof(long),proc);
@@ -100,7 +112,7 @@ void armci_generic_rmw(int op, void *ploc, void *prem, int extra, int proc)
            break;
       case ARMCI_SWAP:
 #if (defined(__i386__) || defined(__x86_64__)) && !defined(PORTALS) && !defined(NO_I386ASM)
-        if(SERVER_CONTEXT || armci_nclus==1){
+        if(SERVER_CONTEXT || SAMECLUSNODE(proc)){
 	  atomic_exchange(ploc, prem, sizeof(int));
         }
         else 
@@ -124,9 +136,10 @@ void armci_generic_rmw(int op, void *ploc, void *prem, int extra, int proc)
       PARMCI_Fence(proc); 
     NATIVE_UNLOCK(lock,proc);
 }
+#endif /* ARMCIX */
 
 
-int PARMCI_Rmw(int op, int *ploc, int *prem, int extra, int proc)
+int PARMCI_Rmw(int op, void *ploc, void *prem, int extra, int proc)
 {
 #ifdef LAPI64
     extern int LAPI_Rmw64(lapi_handle_t hndl, RMW_ops_t op, uint tgt, 
@@ -161,7 +174,7 @@ if(op==ARMCI_FETCH_AND_ADD_LONG || op==ARMCI_SWAP_LONG){
 
 #if defined(CLUSTER) && !defined(LAPI) && !defined(QUADRICS) &&!defined(CYGWIN)\
     && !defined(HITACHI) && !defined(CRAY_SHMEM) && !defined(PORTALS)
-     if(!SAMECLUSNODE(proc)){
+ if(!SAMECLUSNODE(proc))  {
        armci_rem_rmw(op, ploc, prem,  extra, proc);
        return 0;
      }

@@ -21,13 +21,13 @@
 #endif
 #if HAVE_UNISTD_H
 #   include <unistd.h>
+#elif HAVE_WINSOCK_H
+#   include <winsock.h> /* this is where gethostbyname is declared */
 #endif
+
 #include "message.h"
 #include "armcip.h"
 
-#if HAVE_WINSOCK_H
-#   include <winsock.h> /* this is where gethostbyname is declared */
-#endif
 
 /* NO_SHMEM enables to simulate cluster environment on a single workstation.
  * Must define NO_SHMMAX_SEARCH in shmem.c to prevent depleting shared memory
@@ -345,7 +345,7 @@ void armci_init_clusinfo()
   char name[MAX_HOSTNAME], *merged;
   int  len, limit, rc;
   char *tmp;
-#ifdef ARMCI_ENABLE_GPC_CALLS
+#if ARMCI_ENABLE_GPC_CALLS
   char *enval;
 #endif
 
@@ -363,7 +363,7 @@ void armci_init_clusinfo()
       fflush(stdout);
   }
   len =  strlen(name);
-#ifdef ARMCI_ENABLE_GPC_CALLS
+#if ARMCI_ENABLE_GPC_CALLS
   /*a simple way to run as many servers as compute processes*/ 
   enval = getenv("ARMCI_NSERV_EQ_NPROC");
   if(enval != NULL){

@@ -33,9 +33,10 @@
  */
 #define PRINT_STATS 1
 #ifdef PRINT_STATS
-   double stat[MAX_PROC][MAX_ARRAYS][MAX_EVENT_TYPES];
-   unsigned int acc[MAX_PROC][MAX_ARRAYS][MAX_EVENT_TYPES];
-   void printstat(), update();
+double stat[MAX_PROC][MAX_ARRAYS][MAX_EVENT_TYPES];
+unsigned int acc[MAX_PROC][MAX_ARRAYS][MAX_EVENT_TYPES];
+void printstat(int proc, unsigned int tlast);
+void update(long int proc, int *record, unsigned long t0, unsigned long t1);
 #endif
 
 int proc=0, arrays=0, event_types=0; 
@@ -46,8 +47,8 @@ int main(argc,argv)
 int argc;
 char **argv;
 {
-long int p,i,j,k,MR,events=0;
-unsigned long int  *clock_base, *times, base=0, *tbase, maxtime=0;
+long int p,i,j,MR,events=0;
+unsigned long int k, *clock_base, *times, base=0, *tbase, maxtime=0;
 int *record;
 int ga=-GA_OFFSET;
 
@@ -209,10 +210,7 @@ int flag;
 
 
 #ifdef PRINT_STATS
-void update(proc,record, t0, t1)
-long int proc;
-int *record;
-unsigned long t0,t1;
+void update(long int proc, int *record, unsigned long t0, unsigned long t1)
 {
 int ar=record[1], et=record[6];
 
@@ -236,9 +234,7 @@ int ar=record[1], et=record[6];
 
 
 
-void printstat(proc,tlast)
-int proc;
-unsigned tlast;
+void printstat(int proc, unsigned int tlast)
 {
 int p,e,a;
 double t,ta,te, tl= 1e-6 * tlast;

@@ -11,7 +11,7 @@
 /* end_generated_IBM_copyright_prolog                               */
 /********************************************************************/
 
-/* $Id$ */
+/* $Id: bgml.c 5207 2009-10-30 05:24:16Z 3n000 $ */
 
 #if HAVE_ASSERT_H
 #   include <assert.h>

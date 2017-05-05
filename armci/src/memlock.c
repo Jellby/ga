@@ -17,7 +17,7 @@
 #ifdef DATA_SERVER
 #  define CORRECT_PTR 
 #endif
-size_t armci_mem_offset=0;
+static size_t armci_mem_offset=0;
 
 /* We start by  using table: assign address of local variable set to 1
  * On shmem systems, this addres is overwritten by a shared memory location
@@ -312,7 +312,6 @@ void armci_unlockmem(int proc)
 \*/ 
 void armci_set_mem_offset(void *ptr)
 {
-   extern size_t armci_mem_offset;
    size_t off;
    static int first_time=1;
    volatile void *ref_ptr;
@@ -336,7 +335,7 @@ void armci_set_mem_offset(void *ptr)
    }else{
       if(armci_mem_offset != off){
          *armci_use_memlock_table =0;
-         printf("%d: WARNING:armci_set_mem_offset: offset changed %ld to %ld\n",
+         fprintf(stderr,"%d: WARNING:armci_set_mem_offset: offset changed %ld to %ld\n",
                  armci_me, (long)armci_mem_offset, (long)off); fflush(stdout);
       }
    }

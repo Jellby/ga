@@ -417,6 +417,20 @@ num = (INDEPFILES(d_a)) ? INFINITE_NUM_PROCS: DRA_NUM_IOPROCS;
     return( PARIO_MIN( ga_nnodes_(), num));
 }
 
+/**
+ * Translation of DRA create/opening modes to ELIO create/open
+ * mode. DRA modes map directly to ELIO modes, except that write-only
+ * DRAs are backed by read-write ELIO files.
+ */
+int dai_elio_mode(int dra_mode) {
+  int emode = dra_mode; /* dra modes map to elio mode*/
+  if(dra_mode == DRA_W) {
+    /*except W, which translate to read-write files*/
+    emode = ELIO_RW;
+  }
+  return emode;
+}
+
 
 /**
  * rank of calling process in group of processes that could perform I/O
@@ -630,7 +644,7 @@ void dai_chunking(Integer elem_size, Integer block1, Integer block2,
     /* need to correct chunk size to fit chunk1 x chunk2 request in buffer*/
     patch_size = (*chunk1)* (*chunk2)*elem_size;
 
-    if (patch_size > DRA_BUF_SIZE){
+    if (patch_size > ((Integer)DRA_BUF_SIZE)){
 
         if( *chunk1 == 1) *chunk2  = DRA_BUF_SIZE/elem_size;
         else if( *chunk2 == 1) *chunk1  = DRA_BUF_SIZE/elem_size;
@@ -806,6 +820,19 @@ void dai_zero_eof(Integer d_a)
 }
 
 
+#ifdef CLEAR_BUF
+static void dai_clear_buffer()
+{
+    /* int i, j; */
+    /*
+       for (j = 0; j < DRA_NBUF; j++) 
+       for (i=0;i<DRA_DBL_BUF_SIZE;i++)
+       ((double*)_dra_buffer_state[j].buffer)[i]=0.;
+       */
+}
+#endif
+
+
 /**
  * read aligned block of data from d_a to memory buffer
  */
@@ -814,14 +841,13 @@ void dai_get(section_t ds_a, void *buf, Integer ld, io_request_t *id)
     Integer handle = ds_a.handle + DRA_OFFSET, elem, rc;
     Off_t   offset;
     Size_t  bytes;
-    void    dai_clear_buffer();
 
     /* find location in a file where data should be read from */
     dai_file_location(ds_a, &offset);
 
-#       ifdef CLEAR_BUF
+#ifdef CLEAR_BUF
     dai_clear_buffer();
-#       endif
+#endif
 
     if((ds_a.hi[0] - ds_a.lo[0] + 1) != ld) dai_error("dai_get: bad ld",ld); 
     /* since everything is aligned, read data from disk */
@@ -863,6 +889,7 @@ void dai_assign_request_handle(Integer* request)
 Integer drai_open(char *filename, Integer *mode, Integer *d_a)
 {
     Integer handle;
+    int emode;
 
     ga_sync_();
 
@@ -874,6 +901,9 @@ Integer drai_open(char *filename, Integer *mode, Integer *d_a)
     DRA[handle].mode = (int)*mode;
     strncpy (DRA[handle].fname, filename,  DRA_MAX_FNAME);
 
+    /*translate DRA mode into ELIO mode*/
+    emode = dai_elio_mode((int)*mode);
+
     if(dai_read_param(DRA[handle].fname, *d_a))return((Integer)-1);
 
     DRA[handle].indep = dai_file_config(filename); /*check file configuration*/
@@ -883,12 +913,12 @@ Integer drai_open(char *filename, Integer *mode, Integer *d_a)
         if (INDEPFILES(*d_a) || DRA[handle].numfiles > 1) {
 
             sprintf(dummy_fname,"%s.%ld",DRA[handle].fname,(long)dai_io_nodeid(*d_a));
-            DRA[handle].fd = elio_open(dummy_fname,(int)*mode, ELIO_PRIVATE);
+            DRA[handle].fd = elio_open(dummy_fname,emode, ELIO_PRIVATE);
 
         }else{
 
             /* collective open supported only on Paragon */
-            DRA[handle].fd = elio_open(DRA[handle].fname,(int)*mode, ELIO_SHARED);
+            DRA[handle].fd = elio_open(DRA[handle].fname,emode, ELIO_SHARED);
         }
 
         if(DRA[handle].fd ==NULL)dai_error("dra_open failed (null)",
@@ -1763,16 +1793,6 @@ Integer FATR dra_terminate_()
     return(ELIO_OK);
 }
 
-void dai_clear_buffer()
-{
-    /* int i, j; */
-    /*
-       for (j = 0; j < DRA_NBUF; j++) 
-       for (i=0;i<DRA_DBL_BUF_SIZE;i++)
-       ((double*)_dra_buffer_state[j].buffer)[i]=0.;
-       */
-}
-
 
 /**
  * compute chunk parameters for layout of arrays on the disk
@@ -1823,7 +1843,8 @@ void ndai_chunking(Integer elem_size, Integer ndim, Integer block_orig[],
         if (block[i] > 0) patch_size *= (long)block[i];
         else some_neg = TRUE;
     }
-    if (patch_size*((long)elem_size) > DRA_BUF_SIZE) overfull_buf = TRUE;
+    if (patch_size*((long)elem_size) > ((long)DRA_BUF_SIZE))
+        overfull_buf = TRUE;
 
     /* map dimension sizes from highest to lowest */
     block_sortM(ndim, dims, block_map);
@@ -1835,7 +1856,7 @@ void ndai_chunking(Integer elem_size, Integer ndim, Integer block_orig[],
         for (i=ndim-1; i>=0; i--) {
             if (block[block_map[i]] < 0) {
                 tmp_patch = patch_size * ((long)dims[block_map[i]]);
-                if (tmp_patch*elem_size < DRA_BUF_SIZE) {
+                if (tmp_patch*elem_size < ((long)DRA_BUF_SIZE)) {
                     patch_size *= (long)dims[block_map[i]];
                     block[block_map[i]] = dims[block_map[i]];
                 } else {
@@ -1875,12 +1896,12 @@ void ndai_chunking(Integer elem_size, Integer ndim, Integer block_orig[],
     }
     /* Patch size may be slightly larger than buffer. If so, nudge
        size down until patch is smaller than buffer. */
-    if (((long)elem_size)*patch_size > DRA_BUF_SIZE) {
+    if (((long)elem_size)*patch_size > ((long)DRA_BUF_SIZE)) {
         /* map chunks from highest to lowest */
         block_sortM(ndim, chunk, block_map);
         for (i=0; i < ndim; i++) {
             while (chunk[block_map[i]] > 1 &&
-                    ((long)elem_size)*patch_size > DRA_BUF_SIZE) {
+                    ((long)elem_size)*patch_size > ((long)DRA_BUF_SIZE)) {
                 patch_size /= ((long)chunk[block_map[i]]);
                 chunk[block_map[i]]--;
                 patch_size *= ((long)chunk[block_map[i]]);
@@ -2142,6 +2163,7 @@ Integer ndrai_create_config(Integer *type, Integer *ndim, Integer dims[],
         Integer *numfiles, Integer *numioprocs, Integer *d_a)
 {
     Integer handle, elem_size, ctype, i;
+    int emode;
 
     /* convert Fortran to C data type */
     ctype = (Integer)ga_type_f2c((int)(*type));
@@ -2158,6 +2180,9 @@ Integer ndrai_create_config(Integer *type, Integer *ndim, Integer dims[],
     if( (handle = dai_get_handle()) == -1)
         dai_error("ndra_create: too many disk arrays ", _max_disk_array);
     *d_a = handle - DRA_OFFSET;
+
+    /*translate DRA mode into ELIO mode*/
+    emode = dai_elio_mode((int)*mode);
 
     /* Determine array configuration */
     dai_set_config(*numfiles, *numioprocs, &DRA[handle].numfiles,
@@ -2187,14 +2212,14 @@ Integer ndrai_create_config(Integer *type, Integer *ndim, Integer dims[],
         if (INDEPFILES(*d_a) || DRA[handle].numfiles > 1) {
 
             sprintf(dummy_fname,"%s.%ld",DRA[handle].fname,(long)dai_io_nodeid(*d_a));
-            DRA[handle].fd = elio_open(dummy_fname,(int)*mode, ELIO_PRIVATE);
+            DRA[handle].fd = elio_open(dummy_fname,emode, ELIO_PRIVATE);
         } else{
 
             /* collective open supported only on Paragon */
 #           ifdef PARAGON
-            DRA[handle].fd = elio_gopen(DRA[handle].fname,(int)*mode); 
+            DRA[handle].fd = elio_gopen(DRA[handle].fname,emode); 
 #           else
-            DRA[handle].fd = elio_open(DRA[handle].fname,(int)*mode, ELIO_SHARED); 
+            DRA[handle].fd = elio_open(DRA[handle].fname,emode, ELIO_SHARED); 
 #           endif
         }
 
@@ -2268,6 +2293,7 @@ Integer drai_create(Integer *type, Integer *dim1, Integer *dim2, char *name,
 
 #if 0
     Integer handle, elem_size, ctype;
+    int emode;
 
     /* convert Fortran to C data type */
     ctype = (Integer)ga_type_f2c((int)(*type));
@@ -2286,6 +2312,9 @@ Integer drai_create(Integer *type, Integer *dim1, Integer *dim2, char *name,
     if( (handle = dai_get_handle()) == -1)
         dai_error("dai_create: too many disk arrays ", _max_disk_array);
     *d_a = handle - DRA_OFFSET;
+
+    /*translate DRA mode into ELIO mode*/
+    emode = dai_elio_mode((int)*mode);
 
     /* determine disk array decomposition  */
     elem_size = dai_sizeofM(ctype);
@@ -2315,14 +2344,14 @@ Integer drai_create(Integer *type, Integer *dim1, Integer *dim2, char *name,
         if (INDEPFILES(*d_a) || DRA[handle].numfiles > 1) {
 
             sprintf(dummy_fname,"%s.%ld",DRA[handle].fname,(long)dai_io_nodeid(*d_a));
-            DRA[handle].fd = elio_open(dummy_fname,(int)*mode, ELIO_PRIVATE);
+            DRA[handle].fd = elio_open(dummy_fname,emode, ELIO_PRIVATE);
         } else {
 
             /* collective open supported only on Paragon */
 #             ifdef PARAGON
-            DRA[handle].fd = elio_gopen(DRA[handle].fname,(int)*mode); 
+            DRA[handle].fd = elio_gopen(DRA[handle].fname,emode); 
 #             else
-            DRA[handle].fd = elio_open(DRA[handle].fname,(int)*mode, ELIO_SHARED); 
+            DRA[handle].fd = elio_open(DRA[handle].fname,emode, ELIO_SHARED); 
 #             endif
         }
 
@@ -2397,7 +2426,6 @@ void ndai_get(section_t ds_a, void *buf, Integer ld[], io_request_t *id)
     Integer ndim = DRA[handle].ndim, i;
     Off_t   offset;
     Size_t  bytes;
-    void    dai_clear_buffer();
 #if WALLTIME
     double ss0,tt0,tt1;
 #endif

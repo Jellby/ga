@@ -289,7 +289,7 @@ void FATR nga_select_elem_(
     *(float*)val = info.v.fval;       
   }else if(type==C_SCPL){
     int size = sizeof(info); /* for simplicity we send entire info */
-    armci_msg_sel(&info,size,op,ARMCI_DOUBLE,participate);
+    armci_msg_sel(&info,size,op,ARMCI_FLOAT,participate);
     *(SingleComplex*)val = info.extra2;
   }else{
     int size = sizeof(info); /* for simplicity we send entire info */

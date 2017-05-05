@@ -15,17 +15,17 @@
 #   include <string.h>
 #endif
 
-#define BASE_NAME  "/dtemp/d3g293/da.try"
-#define BASE_NAME1 "/dtemp/d3g293/da1.try"
-#define BASE_NAME2 "/dtemp/d3g293/da2.try"
-#define FNAME  BASE_NAME
-#define FNAME1 BASE_NAME1
-#define FNAME2 BASE_NAME2
+#define FNAME      "/scratch/da.try"
+#define FNAME_ALT  "/tmp/da.try"
+#define FNAME1     "/scratch/da1.try"
+#define FNAME1_ALT "/tmp/da1.try"
+#define FNAME2     "/scratch/da2.try"
+#define FNAME2_ALT "/tmp/da2.try"
 
 #include "dra.h"
 #include "ga.h"
 #include "macdecls.h"
-#include "tcgmsg.h"
+#include "mp3.h"
 
 #ifndef MAXDIM
 #   define MAXDIM GA_MAX_DIM
@@ -69,9 +69,9 @@
 */
 
 #define SWITCH 0
-//#define MAXDIM 7
-//#define TRUE (logical)1
-//#define FALSE (logical)0
+/*#define MAXDIM 7*/
+/*#define TRUE (logical)1*/
+/*#define FALSE (logical)0*/
 
 #define MULTFILES 0
 
@@ -89,6 +89,20 @@
 #define IQ 127773
 #define IR 2836
 #define MASK 123459876
+
+
+void filename_check(char *result, const char *fname, const char *fname_alt)
+{
+    FILE *fd;
+    strcpy(result, fname);
+    if (! (fd = fopen(result, "w"))) {
+        strcpy(result, fname_alt);
+        if (! (fd = fopen(result, "w"))) {
+            GA_Error("Could not open file", 0);
+        }
+    }
+    fclose(fd);
+}
 
 
 float ran0(long *idum)
@@ -201,7 +215,7 @@ void test_io_dbl()
         reqdims[i] = n;
     }
     GA_Sync();
-    strcpy(filename1,FNAME1);
+    filename_check(filename1, FNAME1, FNAME1_ALT);
     if (NDRA_Create(MT_DBL, ndim, ddims, "B", filename1, DRA_RW,
                 reqdims, &d_b) != 0) {
         GA_Error("NDRA_Create failed(d_b): ",0);
@@ -217,13 +231,13 @@ void test_io_dbl()
         dhi[i] = n;
     }
     GA_Sync();
-    tt0 = tcg_time();
+    tt0 = MP_TIMER();
     if (NDRA_Write_section(FALSE, g_a, glo, ghi,
                 d_b, dlo, dhi, &req) != 0)
         GA_Error("ndra_write_section failed:",0);
 
     if (DRA_Wait(req) != 0) GA_Error("DRA_Wait failed(d_b): ",req);
-    tt1 = tcg_time() - tt0;
+    tt1 = MP_TIMER() - tt0;
     GA_Dgop(&tt1,1,"+");
     tt1 = tt1/((double)nproc);
     mbytes = 1.e-6*(double)(pow(n,ndim)*sizeof(double));
@@ -233,7 +247,7 @@ void test_io_dbl()
     }
 
     if (DRA_Close(d_b) != 0) GA_Error("DRA_Close failed(d_b): ",d_b);
-    tt1 = tcg_time() - tt0;
+    tt1 = MP_TIMER() - tt0;
     GA_Dgop(&tt1,1,"+");
     tt1 = tt1/((double)nproc);
     if (me == 0) {
@@ -258,7 +272,7 @@ void test_io_dbl()
         ddims[i] = n;
         reqdims[i] = n;
     }
-    strcpy(filename,FNAME);
+    filename_check(filename, FNAME, FNAME_ALT);
     if (NDRA_Create(MT_DBL, ndim, ddims, "A", filename, DRA_RW,
                 reqdims, &d_a) != 0)
     {
@@ -266,10 +280,10 @@ void test_io_dbl()
     }
     if (me == 0) printf("alligned blocking write\n");
     fflush(stdout);
-    tt0 = tcg_time();
+    tt0 = MP_TIMER();
     if (NDRA_Write(g_a, d_a, &req) != 0) GA_Error("NDRA_Write failed(d_a):",0);
     if (DRA_Wait(req) != 0) GA_Error("DRA_Wait failed(d_a): ",req);
-    tt1 = tcg_time() - tt0;
+    tt1 = MP_TIMER() - tt0;
     GA_Dgop(&tt1,1,"+");
     tt1 = tt1/((double)nproc);
     mbytes = 1.e-6 * (double)(pow(n,ndim)*sizeof(double));
@@ -279,7 +293,7 @@ void test_io_dbl()
     }
 
     if (DRA_Close(d_a) != 0) GA_Error("DRA_Close failed(d_a): ",d_a);
-    tt1 = tcg_time() - tt0;
+    tt1 = MP_TIMER() - tt0;
     GA_Dgop(&tt1,1,"+");
     tt1 = tt1/((double)nproc);
     if (me == 0) {
@@ -304,18 +318,18 @@ void test_io_dbl()
         ddims[i] = n;
         reqdims[i] = n;
     }
-    strcpy(filename,FNAME);
     GA_Sync();
+    filename_check(filename, FNAME, FNAME_ALT);
     if (NDRA_Create(MT_DBL, ndim, ddims, "A", filename, DRA_RW,
                 reqdims, &d_a) != 0) {
         GA_Error("NDRA_Create failed(d_a): ",0);
     }
     if (me == 0) printf("alligned blocking write\n");
     fflush(stdout);
-    tt0 = tcg_time();
+    tt0 = MP_TIMER();
     if (NDRA_Write(g_a, d_a, &req) != 0) GA_Error("NDRA_Write failed(d_a):",0);
     if (DRA_Wait(req) != 0) GA_Error("DRA_Wait failed(d_a): ",req);
-    tt1 = tcg_time() - tt0;
+    tt1 = MP_TIMER() - tt0;
     GA_Dgop(&tt1,1,"+");
     tt1 = tt1/((double)nproc);
     mbytes = 1.e-6 * (double)(pow(n,ndim)*sizeof(double));
@@ -325,7 +339,7 @@ void test_io_dbl()
     }
 
     if (DRA_Close(d_a) != 0) GA_Error("DRA_Close failed(d_a): ",d_a);
-    tt1 = tcg_time() - tt0;
+    tt1 = MP_TIMER() - tt0;
     GA_Dgop(&tt1,1,"+");
     tt1 = tt1/((double)nproc);
     if (me == 0) {
@@ -350,7 +364,7 @@ void test_io_dbl()
         ddims[i] = m;
         reqdims[i] = n;
     }
-    strcpy(filename1,FNAME1);
+    filename_check(filename1, FNAME1, FNAME1_ALT);
     if (NDRA_Create(MT_DBL, ndim, ddims, "B", filename1, DRA_RW,
                 reqdims, &d_b) != 0) {
         GA_Error("NDRA_Create failed(d_b): ",0);
@@ -365,13 +379,13 @@ void test_io_dbl()
         dlo[i] = 1;
         dhi[i] = n;
     }
-    tt0 = tcg_time();
+    tt0 = MP_TIMER();
     if (NDRA_Write_section(FALSE, g_a, glo, ghi,
                 d_b, dlo, dhi, &req) != 0)
         GA_Error("ndra_write_section failed:",0);
 
     if (DRA_Wait(req) != 0) GA_Error("DRA_Wait failed(d_b): ",req);
-    tt1 = tcg_time() - tt0;
+    tt1 = MP_TIMER() - tt0;
     GA_Dgop(&tt1,1,"+");
     tt1 = tt1/((double)nproc);
     mbytes = 1.e-6*(double)(pow(n,ndim)*sizeof(double));
@@ -381,7 +395,7 @@ void test_io_dbl()
     }
 
     if (DRA_Close(d_b) != 0) GA_Error("DRA_Close failed(d_b): ",d_b);
-    tt1 = tcg_time() - tt0;
+    tt1 = MP_TIMER() - tt0;
     GA_Dgop(&tt1,1,"+");
     tt1 = tt1/((double)nproc);
     if (me == 0) {
@@ -402,11 +416,11 @@ void test_io_dbl()
     if (DRA_Open(filename1, DRA_R, &d_b) != 0) GA_Error("DRA_Open failed",0);
     if (me == 0) printf("non alligned blocking read\n");
     if (me == 0) fflush(stdout);
-    tt0 = tcg_time();
+    tt0 = MP_TIMER();
     if (NDRA_Read_section(FALSE, g_b, glo, ghi, d_b, dlo, dhi, &req) != 0)
         GA_Error("NDRA_Read_section failed:",0);
     if (DRA_Wait(req) != 0) GA_Error("DRA_Wait failed: ",req);
-    tt1 = tcg_time() - tt0;
+    tt1 = MP_TIMER() - tt0;
     GA_Dgop(&tt1,1,"+");
     tt1 = tt1/((double)nproc);
     if (me == 0) {
@@ -429,10 +443,10 @@ void test_io_dbl()
     if (DRA_Open(filename, DRA_R, &d_a) != 0) GA_Error("DRA_Open failed",0);
     if (me == 0) printf("alligned blocking read\n");
     if (me == 0) fflush(stdout);
-    tt0 = tcg_time();
+    tt0 = MP_TIMER();
     if (NDRA_Read(g_b, d_a, &req) != 0) GA_Error("NDRA_Read failed:",0);
     if (DRA_Wait(req) != 0) GA_Error("DRA_Wait failed: ",req);
-    tt1 = tcg_time() - tt0;
+    tt1 = MP_TIMER() - tt0;
     GA_Dgop(&tt1,1,"+");
     tt1 = tt1/((double)nproc);
     if (me == 0) {
@@ -453,10 +467,10 @@ void test_io_dbl()
     if (DRA_Open(filename, DRA_R, &d_a) != 0) GA_Error("DRA_Open failed",0);
     if (me == 0) printf("alligned blocking read\n");
     if (me == 0) fflush(stdout);
-    tt0 = tcg_time();
+    tt0 = MP_TIMER();
     if (NDRA_Read(g_b, d_a, &req) != 0) GA_Error("NDRA_Read failed:",0);
     if (DRA_Wait(req) != 0) GA_Error("DRA_Wait failed: ",req);
-    tt1 = tcg_time() - tt0;
+    tt1 = MP_TIMER() - tt0;
     GA_Dgop(&tt1,1,"+");
     tt1 = tt1/((double)nproc);
     if (me == 0) {
@@ -480,11 +494,11 @@ void test_io_dbl()
     if (DRA_Open(filename1, DRA_R, &d_b) != 0) GA_Error("DRA_Open failed",0);
     if (me == 0) printf("non alligned blocking read\n");
     if (me == 0) fflush(stdout);
-    tt0 = tcg_time();
+    tt0 = MP_TIMER();
     if (NDRA_Read_section(FALSE, g_b, glo, ghi, d_b, dlo, dhi, &req) != 0)
         GA_Error("NDRA_Read_section failed:",0);
     if (DRA_Wait(req) != 0) GA_Error("DRA_Wait failed: ",req);
-    tt1 = tcg_time() - tt0;
+    tt1 = MP_TIMER() - tt0;
     GA_Dgop(&tt1,1,"+");
     tt1 = tt1/((double)nproc);
     if (me == 0) {
@@ -534,7 +548,7 @@ void test_io_dbl()
         ddims[i] = m;
         reqdims[i] = n;
     }
-    strcpy(filename2,FNAME2);
+    filename_check(filename2, FNAME2, FNAME2_ALT);
     if (me == 0) printf("Creating DRA for transpose test\n");
     if (NDRA_Create(MT_DBL, ndim, ddims, "C", filename2, DRA_RW,
                 reqdims, &d_c) != 0) {
@@ -556,14 +570,14 @@ void test_io_dbl()
         ghi[i] = n/2-1;
     }
     if (me == 0) printf("non-aligned blocking write with transpose\n");
-    tt0 = tcg_time();
+    tt0 = MP_TIMER();
     if (NDRA_Write_section(TRUE,g_c,glo,ghi,d_c,dlo,dhi,&req) != 0)
         GA_Error("NDRA_Write_section (transpose) failed: ",0);
     if (DRA_Wait(req) != 0) GA_Error("DRA_Wait failed: ",req);
     isize = 1;
     for (i=0; i<ndim; i++) isize *= (ghi[i]-glo[i]+1);
     mbytes = 1.e-6 * (double)(isize*sizeof(double));
-    tt1 = tcg_time() - tt0;
+    tt1 = MP_TIMER() - tt0;
     GA_Dgop(&tt1,1,"+");
     tt1 = tt1/((double)nproc);
     if (me == 0) {
@@ -581,11 +595,11 @@ void test_io_dbl()
 
     GA_Zero(g_c);
     if (me == 0) printf("non-aligned blocking read with transpose\n");
-    tt0 = tcg_time();
+    tt0 = MP_TIMER();
     if (NDRA_Read_section(TRUE,g_c,glo,ghi,d_c,dlo,dhi,&req) != 0)
         GA_Error("NDRA_Read_section (transpose) failed: ",0);
     if (DRA_Wait(req) != 0) GA_Error("DRA_Wait failed: ",req);
-    tt1 = tcg_time() - tt0;
+    tt1 = MP_TIMER() - tt0;
     GA_Dgop(&tt1,1,"+");
     tt1 = tt1/((double)nproc);
     if (me == 0) {
@@ -619,7 +633,7 @@ int main(int argc, char **argv)
     int stack = 12000000, heap = 8000000;
 #endif
 
-    tcg_pbegin(argc, argv); 
+    MP_INIT(argc,argv);
     GA_Initialize();
     if (!GA_Uses_ma()) {
         if (GA_Nodeid() == 0) printf("GA not using MA\n");
@@ -660,6 +674,6 @@ int main(int argc, char **argv)
         printf("MA_init failed\n");
     }
     if(me == 0) printf("all done ...\n");
-    tcg_pend();
+    MP_FINALIZE();
     return 0;
 }

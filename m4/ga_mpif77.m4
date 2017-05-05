@@ -3,8 +3,6 @@
 # If desired, replace F77 with MPIF77 while searching for a Fortran 77 compiler.
 # We look for 95/90 compilers first so that we can control the INTEGER size.
 # The search order changes depending on the TARGET.
-# This replaces AC_PROG_F77 because we must verify that the compiler works
-# and if not the search continues.
 #
 # NOTE: We prefer "FC" and "FCFLAGS" over "F77" and "FFLAGS", respectively.
 # But our Fortran source is only Fortran 77.  If FC/MPIFC is set, it is
@@ -25,6 +23,9 @@
 #  pghpf/pgf95  Portland Group F95 compiler
 #  xlf95        IBM (AIX) F95 compiler
 #  pathf95      PathScale
+#  openf95      AMD's x86 open64
+#  sunf95       Sun's Studio
+#  crayftn      Cray
 #
 # Known MPI Fortran 95 compilers:
 #  cmpifc       ?? not sure if this is even F95
@@ -44,6 +45,8 @@
 #  xlf90        IBM (AIX) F90 compiler
 #  pathf90      PathScale
 #  sxf90        NEC SX Fortran 90
+#  openf90      AMD's x86 open64
+#  sunf90       Sun's Studio
 #
 # Known MPI Fortran 90 compilers:
 #  cmpif90c     ??
@@ -72,12 +75,14 @@
 #  mpif77       generic compiler name
 #  mpxlf        IBM BlueGene/L Fortran 77
 #  mpxlf_r      IBM BlueGene/L Fortran 77, reentrant code
+#  mpifrt       Fujitsu
 #
 AC_DEFUN([GA_PROG_MPIF77],
 [AC_ARG_VAR([MPIF77], [MPI Fortran 77 compiler])
 AS_CASE([$ga_cv_target_base],
 [BGP],  [ga_mpif77_pref=mpixlf77_r;ga_f77_pref=bgxlf_r],
 [BGL],  [ga_mpif77_pref=mpxlf95;   ga_f77_pref=blrts_xlf95],
+[NEC],  [ga_mpif77_pref=sxmpif90;  ga_f77_pref=sxf90],
 [])
 # If FC is set, override F77.  Similarly for MPIFC/MPIF77 and FCFLAGS/FFLAGS.
 AS_IF([test "x$FC" != x],       [F77="$FC"])
@@ -87,29 +92,31 @@ AS_IF([test "x$FCFLAGS" != x],  [FFLAGS="$FCFLAGS"])
 # absolutely everything in our list of compilers.
 # Save F77, just in case.
 AS_IF([test x$with_mpi_wrappers = xyes],
-    [ga_save_F77="$F77"
-     F77="$MPIF77"
-     AS_IF([test "x$MPIF77" != x],
-        [AS_IF([test "x$ga_save_F77" != x],
-            [AC_MSG_WARN([MPI compilers desired, MPIF77 is set and F77 is set])
-             AC_MSG_WARN([Choosing MPIF77 over F77])])],
-        [AS_IF([test "x$ga_save_F77" != x],
-            [AC_MSG_WARN([MPI compilers desired but F77 is set, ignoring])
-             AC_MSG_WARN([Perhaps you meant to set MPIF77 instead?])])])
-])
+    [AS_IF([test "x$F77" != "x$MPIF77"], [ga_orig_F77="$F77"])
+     AS_CASE([x$F77:x$MPIF77],
+        [x:x],  [],
+        [x:x*], [F77="$MPIF77"],
+        [x*:x],
+[AC_MSG_WARN([MPI compilers desired but F77 is set while MPIF77 is unset.])
+ AC_MSG_WARN([F77 will be ignored during compiler selection, but will be])
+ AC_MSG_WARN([tested first during MPI compiler unwrapping. Perhaps you])
+ AC_MSG_WARN([meant to set MPIF77 instead of or in addition to F77?])
+ F77=],
+        [x*:x*], 
+[AS_IF([test "x$F77" != "x$MPIF77"],
+[AC_MSG_WARN([MPI compilers desired, MPIF77 and F77 are set, and MPIF77!=F77.])
+ AC_MSG_WARN([Choosing MPIF77 over F77.])
+ AC_MSG_WARN([F77 will be tested first during MPI compiler unwrapping.])])
+ F77="$MPIF77"],
+[AC_MSG_ERROR([F77/MPIF77 case failure])])])
 ga_mpif95="mpif95 mpxlf95_r mpxlf95 ftn"
 ga_mpif90="mpif90 mpxlf90_r mpxlf90 mpf90 cmpif90c sxmpif90"
-ga_mpif77="mpif77 hf77 mpxlf_r mpxlf mpf77 cmpifc"
-ga_f95="xlf95 pgf95 pathf95 ifort g95 f95 fort ifc efc gfortran lf95 ftn"
-ga_f90="xlf90 f90 pgf90 pghpf pathf90 epcf90 sxf90"
+ga_mpif77="mpif77 hf77 mpxlf_r mpxlf mpifrt mpf77 cmpifc"
+ga_f95="xlf95 pgf95 pathf95 ifort g95 f95 fort ifc efc openf95 sunf95 crayftn gfortran lf95 ftn"
+ga_f90="xlf90 f90 pgf90 pghpf pathf90 epcf90 sxf90 openf90 sunf90"
 ga_f77="xlf f77 frt pgf77 pathf77 g77 cf77 fort77 fl32 af77"
 AS_IF([test x$with_mpi_wrappers = xyes],
     [F77_TO_TEST="$ga_mpif77_pref $ga_mpif95 $ga_mpif90 $ga_mpif77"],
     [F77_TO_TEST="$ga_f77_pref $ga_f95 $ga_f90 $ga_f77"])
 AC_PROG_F77([$F77_TO_TEST])
-# AC_PROG_F77 only sets F77 (which is what we want),
-# but override MPIF77 for the UNWRAP macro.
-AS_IF([test x$with_mpi_wrappers = xyes],
-    [MPIF77="$F77"
-     GA_MPIF77_UNWRAP])
 ])dnl

@@ -65,7 +65,6 @@ int main(int argc, char *argv[])
 {
     int i, j;
     int ch;
-    extern char *optarg;
     int edge;
     int size;
     
@@ -163,7 +162,7 @@ int main(int argc, char *argv[])
     }
     
     /* initialize ARMCI */
-    ARMCI_Init();
+    ARMCI_Init_args(&argc, &argv);
     ptr = (void **)malloc(nproc * sizeof(void *));
     ARMCI_Malloc(ptr, proc_bytes);
     
@@ -216,7 +215,7 @@ int main(int argc, char *argv[])
 
     /* Timer Stops here */
     if(me == 0) 
-        printf("\nRunning time = %lf milliseconds.\n\n",  elapsed_time());
+        printf("\nRunning time = %f milliseconds.\n\n",  elapsed_time());
 
     if(doprint) {        
         if(me == 0) {

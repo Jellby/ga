@@ -35,13 +35,23 @@ char pdgetrs ();
 # combination of libraries necessary to use ScaLAPACK.
 AC_DEFUN([GA_SCALAPACK],
 [AC_REQUIRE([GA_LAPACK])
+scalapack_size=4
 AC_ARG_WITH([scalapack],
-    [AS_HELP_STRING([--with-scalapack=[[ARG]]], [use ScaLAPACK library])])
+    [AS_HELP_STRING([--with-scalapack=[[ARG]]],
+        [use ScaLAPACK library compiled with sizeof(INTEGER)==4])],
+    [scalapack_size=4])
+AC_ARG_WITH([scalapack8],
+    [AS_HELP_STRING([--with-scalapack8=[[ARG]]],
+        [use ScaLAPACK library compiled with sizeof(INTEGER)==8])],
+    [scalapack_size=8; with_scalapack="$with_scalapack8"])
 
 ga_scalapack_ok=no
 AS_IF([test "x$with_scalapack" = xno], [ga_scalapack_ok=skip])
 
-# Parse --with-scalapack argument.
+# Parse --with-scalapack argument. Clear previous values first.
+SCALAPACK_LIBS=
+SCALAPACK_LDFLAGS=
+SCALAPACK_CPPFLAGS=
 GA_ARG_PARSE([with_scalapack],
     [SCALAPACK_LIBS], [SCALAPACK_LDFLAGS], [SCALAPACK_CPPFLAGS])
 
@@ -61,7 +71,7 @@ AC_MSG_NOTICE([Attempting to locate SCALAPACK library])
 # If failed, erase SCALAPACK_LIBS but maintain SCALAPACK_LDFLAGS and
 # SCALAPACK_CPPFLAGS.
 AS_IF([test $ga_scalapack_ok = no],
-    [ga_save_LIBS="$LIBS"; LIBS="$SCALAPACK_LIBS $LAPACK_LIBS $BLAS_LIBS $LIBS"
+    [LIBS="$SCALAPACK_LIBS $LAPACK_LIBS $BLAS_LIBS $LIBS"
      AS_IF([test "x$enable_f77" = xno],
         [AC_MSG_CHECKING([for C SCALAPACK with user-supplied flags])
          AC_LANG_PUSH([C])
@@ -85,15 +95,23 @@ AS_IF([test $ga_scalapack_ok = no],
 # TODO tests for PBLAS and BLACS to enable ScaLAPACK just in case all
 # packages are separate...
 
+CPPFLAGS="$ga_save_CPPFLAGS"
+LDFLAGS="$ga_save_LDFLAGS"
+
 AC_SUBST([SCALAPACK_LIBS])
 AC_SUBST([SCALAPACK_LDFLAGS])
 AC_SUBST([SCALAPACK_CPPFLAGS])
+AS_IF([test "x$scalapack_size" = x8],
+    [AC_DEFINE([SCALAPACK_I8], [1], [ScaLAPACK is using 8-byte integers])])
 
 # Finally, execute ACTION-IF-FOUND/ACTION-IF-NOT-FOUND:
 AS_IF([test $ga_scalapack_ok = yes],
-    [AC_DEFINE([HAVE_SCALAPACK], [1], [Define if you have ScaLAPACK library.])
+    [have_scalapack=1
      $1],
     [AC_MSG_WARN([ScaLAPACK library not found, interfaces won't be defined])
+     have_scalapack=0
      $2])
+AC_DEFINE_UNQUOTED([HAVE_SCALAPACK], [$have_scalapack],
+    [Define to 1 if you have ScaLAPACK library.])
 AM_CONDITIONAL([HAVE_SCALAPACK], [test $ga_scalapack_ok = yes])
 ])dnl GA_SCALAPACK

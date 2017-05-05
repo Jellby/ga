@@ -98,7 +98,7 @@ void armci_generic_rmw(int op, void *ploc, void *prem, int extra, int proc)
            break;
       case ARMCI_SWAP:
 #if (defined(__i386__) || defined(__x86_64__))
-        if(SERVER_CONTEXT || armci_nclus==1){
+        if(SERVER_CONTEXT || SAMECLUSNODE(proc)){
 	  atomic_exchange(ploc, prem, sizeof(int));
         }
         else 

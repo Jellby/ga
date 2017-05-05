@@ -20,14 +20,6 @@
 #   include <errno.h>
 #endif
 
-#if HAVE_WINSOCK_H
-#  include <winsock.h>
-#  define bcopy(s1,s2,n) memcpy(s2,s1,n)
-#  define sleep(x) Sleep(1000*(x))
-#  define CLOSE closesocket
-#else
-#  define CLOSE close
-#endif
 #if HAVE_SYS_WAIT_H
 #  include <sys/wait.h>
 #endif
@@ -52,6 +44,12 @@
 #endif
 #if HAVE_UNISTD_H
 #  include <unistd.h>
+#  define CLOSE close
+#elif HAVE_WINSOCK_H
+#  include <winsock.h>
+#  define bcopy(s1,s2,n) memcpy(s2,s1,n)
+#  define sleep(x) Sleep(1000*(x))
+#  define CLOSE closesocket
 #endif
 
 #include "armcip.h"
@@ -76,7 +74,11 @@ typedef socklen_t soclen_t;
 typedef int soclen_t;
 #   endif
 #else
+#   ifdef NEC
+typedef int soclen_t;
+#   else
 typedef socklen_t soclen_t;
+#   endif
 #endif
 
 
@@ -292,7 +294,7 @@ int _armci_tcp_writev(int sock, struct iovec *iovptr,int writeiovlength,int curr
             int completediovs=0;
             int templength=0;
             while(templength!=rc){
-                if(iovptr->iov_len+templength>rc){
+                if(((int)iovptr->iov_len)+templength>rc){
                     iovptr->iov_base=(char *)((*iovptr).iov_base)+(rc-templength);
                     iovptr->iov_len-=(rc-templength);
                     templength+=(rc-templength);
@@ -322,7 +324,7 @@ int _armci_tcp_readv(int sock, struct iovec *iovptr,int readiovlength,int curren
             int completediovs=0;
             int templength=0;
             while(templength!=rc){
-                if(iovptr->iov_len+templength>rc){
+                if(((int)iovptr->iov_len)+templength>rc){
                     iovptr->iov_base=(char *)((*iovptr).iov_base)+(rc-templength);
                     iovptr->iov_len-=(rc-templength);
                     templength+=(rc-templength);
@@ -362,7 +364,7 @@ int armci_ReadVFromSocket(int sock,struct iovec *iov, int iovlength, int totalsi
             if(totalsize-totalreadsofar<PACKET_SIZE)byteslefttoread=totalsize-totalreadsofar;
             else byteslefttoread=PACKET_SIZE;
 	    while(currentreadsize<byteslefttoread){
-                if(iov[i].iov_len+currentreadsize>byteslefttoread){
+                if(((int)iov[i].iov_len)+currentreadsize>byteslefttoread){
                     lastiovoriglen=iov[i].iov_len;lastiovorigbase=(char *)iov[i].iov_base;
                     lastiovindex=i; 
 		    iov[i].iov_len=byteslefttoread-currentreadsize;
@@ -417,7 +419,7 @@ int armci_WriteVToSocket(int sock,struct iovec *iov, int iovlength, int totalsiz
             if(totalsize-totalwritesofar<PACKET_SIZE)byteslefttowrite=totalsize-totalwritesofar;
             else byteslefttowrite=PACKET_SIZE;
             while(currentwritesize<byteslefttowrite){
-		if(iov[i].iov_len+currentwritesize>byteslefttowrite){
+		if(((int)iov[i].iov_len)+currentwritesize>byteslefttowrite){
                     lastiovoriglen=iov[i].iov_len;lastiovorigbase=(char *)iov[i].iov_base;
                     lastiovindex=i;
                     iov[i].iov_len=byteslefttowrite-currentwritesize;
@@ -799,6 +801,9 @@ againacc:
   return msgsock;
 }
 
+#if !defined(SGI) && !defined(WIN32)
+struct hostent *gethostbyname();
+#endif
 
 int armci_CreateSocketAndConnect(char *hostname, int port)
 /*
@@ -814,9 +819,6 @@ int armci_CreateSocketAndConnect(char *hostname, int port)
   struct hostent *hp;
   int on = 1;
   int trial;
-#if !defined(SGI) && !defined(WIN32)
-  struct hostent *gethostbyname();
-#endif
 
   /* Create socket */
 

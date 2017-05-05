@@ -111,6 +111,14 @@ ARMCI_Put (void *src, void *dst, int bytes, int proc)
 }
 
 int
+ARMCI_Acc(int optype, void *scale, void *src, void* dst, int bytes, int proc) 
+{
+  int rval;
+  rval = PARMCI_Acc(optype, scale, src, dst, bytes, proc);
+  return rval;
+}
+
+int
 ARMCI_Destroy_mutexes ()
 {
   int rval;
@@ -324,7 +332,7 @@ ARMCI_NbGetV (armci_giov_t * darr, int len, int proc, armci_hdl_t * nb_handle)
 }
 
 int
-ARMCI_Rmw (int op, int *ploc, int *prem, int extra, int proc)
+ARMCI_Rmw (int op, void *ploc, void *prem, int extra, int proc)
 {
   int rval;
   rval = PARMCI_Rmw (op, ploc, prem, extra, proc);

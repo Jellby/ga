@@ -2,6 +2,10 @@
 /*
  * AUTHOR: Manojkumar Krishnan, PNNL
  */
+#if HAVE_CONFIG_H
+#   include "config.h"
+#endif
+
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -20,7 +24,6 @@ using std::endl;
 
 #include "armci.h"
 #include "message.h"
-#define ARMCI_ENABLE_GPC_CALLS
 #include "gpc.h"
 
 #include "Hash_common.h"

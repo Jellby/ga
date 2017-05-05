@@ -1,4 +1,8 @@
 /* $Id:  */
+#if HAVE_CONFIG_H
+#   include "config.h"
+#endif
+
 #include <cstdio>
 #include <cstring>
 #include <cstdlib>
@@ -14,7 +18,6 @@ using namespace std;
 
 #include "mp3.h"
 #include "armci.h"
-#define ARMCI_ENABLE_GPC_CALLS
 #include "gpc.h"
 
 #include "Hash_common.h"
@@ -22,10 +25,8 @@ using namespace std;
 int me, nproc;
 
 
-void test_distHashmap()
+void test_distHashmap(istream &infile)
 {
-  
-  ifstream infile("sample.txt");
   string str;
 
   // create a distributed hashmap
@@ -51,8 +52,6 @@ void test_distHashmap()
   // delete the distributed hashmap
   dist_hashmap->destroy();
   if(me==0) { printf("Distributed hashmap deleted. O.K.\n"); fflush(stdout);}
-  
-  infile.close();
 }
 
 
@@ -61,6 +60,7 @@ int main(int argc, char* argv[])
     MP_INIT(argc, argv);
     MP_PROCS(&nproc);
     MP_MYID(&me);
+    ifstream infile;
     
     if(me==0){
       printf("ARMCI Distributed Hashmap test program (%d processes)\n",nproc); 
@@ -68,17 +68,38 @@ int main(int argc, char* argv[])
       sleep(1);
     }
     
-    ARMCI_Init();
-    
-    
     if(me==0){
       printf("\nDistributed Hashmap using ARMCI's GPC calls\n");
       fflush(stdout);
     }
+
+    if (argc == 1) {
+        // look for file "sample.txt" in current directory
+        infile.open("sample.txt");
+        if (!infile) {
+            if (0 == me) {
+                printf("Could not open 'sample.txt'\n");
+            }
+            MP_FINALIZE();
+        }
+    } else if (argc == 2) {
+        // attempt to open command-line argument
+        infile.open(argv[1]);
+        if (!infile) {
+            if (0 == me) {
+                printf("Could not open '%s'\n", argv[1]);
+            }
+            MP_FINALIZE();
+        }
+    }
+    
+    ARMCI_Init();
     
     MP_BARRIER();
     
-    test_distHashmap();
+    test_distHashmap(infile);
+  
+    infile.close();
 
     ARMCI_AllFence();
     MP_BARRIER();

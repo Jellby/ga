@@ -3,14 +3,20 @@
 ###############################################################################
 # Init autoconf
 ###############################################################################
-AC_PREREQ([2.64])
-AC_INIT([Global Arrays (GA)],[5.0],[hpctools@pnl.gov], [ga],
+AC_PREREQ([2.67])
+AC_INIT([Global Arrays (GA)],[5.0.3],[hpctools@pnl.gov], [ga],
         [http://www.emsl.pnl.gov/docs/global/])
 AC_CONFIG_AUX_DIR([build-aux])
 AC_CONFIG_HEADER([config.h])
 AC_CONFIG_LIBOBJ_DIR([compat])
 AC_CONFIG_MACRO_DIR([m4])
-AC_CONFIG_SRCDIR([LinAlg/lapack+blas/dummy.c])
+AC_CONFIG_SRCDIR([global/src/ga.h])
+
+###############################################################################
+# Must occur before automake init
+###############################################################################
+GA_TARGET
+GA_CROSS_COMPILING
 
 ###############################################################################
 # Init automake
@@ -23,8 +29,6 @@ AM_MAINTAINER_MODE
 ###############################################################################
 # Misc. information and package setup.
 ###############################################################################
-GA_TARGET
-
 GA_WITH_HELP
 
 GA_TOP_BUILDDIR="`pwd`"
@@ -50,6 +54,12 @@ GA_ENABLE_PEIGS
 GA_ENABLE_TRACE
 GA_THREAD_SAFE
 GA_WITH_VAMPIR
+AC_ARG_ENABLE([tascel],
+    [AS_HELP_STRING([--enable-tascel],
+        [build tascel library and install alongside GA])],
+    [],
+    [enable_tascel=no])
+AM_CONDITIONAL([ENABLE_TASCEL], [test "x$enable_tascel" = xyes])
 
 # Unless we rename all preprocessor symbols of MPI and MPIPP
 # in the source code, this hack is necessary.
@@ -72,15 +82,15 @@ AC_MSG_NOTICE
 ga_save_CFLAGS="$CFLAGS"
 GA_PROG_MPICC
 CFLAGS="$ga_save_CFLAGS"
+AS_IF([test x$with_mpi_wrappers = xyes], [GA_MPI_UNWRAP])
 AC_USE_SYSTEM_EXTENSIONS
 AX_COMPILER_VENDOR
 # If F77 is enabled, only perform a simple compilation test.
-AS_IF([test "x$with_mpi" != xno],
-    [AS_IF([test "x$enable_f77" = xyes],
-        [GA_MPICC_TEST_COMPILE],
-        [AS_IF([test "x$enable_mpi_tests" = xyes],
-            [GA_MPICC_TEST_LINK],
-            [GA_MPICC_TEST_COMPILE])])])
+AS_IF([test "x$with_mpi" != xno], [
+    AS_CASE([$enable_f77:$enable_mpi_tests],
+        [yes:*], [GA_MPICC_TEST_COMPILE],
+        [no:yes],[GA_MPICC_TEST_LINK],
+        [no:no], [GA_MPICC_TEST_COMPILE])])
 # Hack to append .x to executables.
 AC_SUBST([EXEEXT], [.x$EXEEXT])
 
@@ -97,10 +107,17 @@ AC_HEADER_ASSERT
 AC_HEADER_DIRENT
 AC_HEADER_STDC
 AC_HEADER_SYS_WAIT
-GA_CHECK_HEADERS([assert.h errno.h fcntl.h ffio.h float.h inttypes.h limits.h malloc.h math.h memory.h netdb.h netinet/in.h netinet/tcp.h nx.h pfs/pfs.h setjmp.h signal.h stdarg.h stdint.h stdio.h stdlib.h string.h strings.h sys/cnx_types.h sys/errno.h sys/file.h sys/fsid.h sys/fstyp.h sys/ioctl.h sys/iosw.h sys/ipc.h sys/mman.h sys/mount.h sys/param.h sys/select.h sys/sem.h sys/shm.h sys/socket.h sys/stat.h sys/statfs.h sys/statvfs.h sys/systemcfg.h sys/time.h sys/types.h sys/vfs.h sys/wait.h time.h unistd.h windows.h rpc/rpc.h rpc/types.h rpc/xdr.h], [], [],
-[[#ifdef HAVE_RPC_TYPES_H
-#include <rpc/types.h>
-#endif]])
+GA_CHECK_HEADERS([assert.h errno.h fcntl.h ffio.h float.h inttypes.h limits.h malloc.h math.h memory.h netdb.h netinet/in.h netinet/tcp.h nx.h pfs/pfs.h setjmp.h signal.h stdarg.h stdint.h stdio.h stdlib.h string.h strings.h sys/types.h sys/cnx_types.h sys/errno.h sys/file.h sys/fsid.h sys/fstyp.h sys/ioctl.h sys/iosw.h sys/ipc.h sys/mman.h sys/mount.h sys/param.h sys/select.h sys/sem.h sys/shm.h sys/socket.h sys/stat.h sys/statfs.h sys/statvfs.h sys/systemcfg.h sys/time.h sys/vfs.h sys/wait.h time.h unistd.h windows.h rpc/rpc.h rpc/types.h rpc/xdr.h],
+[], [],
+[@%:@ifdef HAVE_RPC_TYPES_H
+@%:@include <rpc/types.h>
+@%:@endif
+@%:@ifdef HAVE_SYS_TYPES_H
+@%:@include <sys/types.h>
+@%:@endif
+@%:@ifdef HAVE_SYS_IPC_H
+@%:@include <sys/ipc.h>
+@%:@endif])
 
 # Checks for C typedefs, structures, and compiler characteristics.
 AC_C_CONST
@@ -120,8 +137,7 @@ AC_TYPE_UNSIGNED_LONG_LONG_INT
 AC_CHECK_TYPES([ptrdiff_t])
 #AC_CHECK_MEMBERS([struct stat.st_vfstype, struct statfs.f_secnfree, struct statvfs.f_secnfree, struct statfs.f_frsize, struct statvfs.f_frsize])
 GA_FUNCTION
-GA_PRAGMA_OPERATOR
-GA_SYS_WEAK_ALIAS
+#GA_PRAGMA_OPERATOR
 GA_UNION_SEMUN
 
 # Checks for C type sizes.
@@ -184,6 +200,7 @@ AC_LANG_PUSH([C++])
 ga_save_CXXFLAGS="$CXXFLAGS"
 GA_PROG_MPICXX
 CXXFLAGS="$ga_save_CXXFLAGS"
+AS_IF([test x$with_mpi_wrappers = xyes], [GA_MPI_UNWRAP])
 
 AS_IF([test "x$enable_cxx" = xyes], [
 
@@ -215,6 +232,7 @@ AC_MSG_NOTICE
 AC_MSG_NOTICE([Assembler])
 AC_MSG_NOTICE
 
+GA_AS
 AM_PROG_AS
 
 #########################################
@@ -230,25 +248,29 @@ AC_LANG_PUSH([Fortran 77])
 ga_save_FFLAGS="$FFLAGS"
 GA_PROG_MPIF77
 FFLAGS="$ga_save_FFLAGS"
+AS_IF([test x$with_mpi_wrappers = xyes], [GA_MPI_UNWRAP])
 
 # If Fortran 77 compiler was not found, we disable support for it.
 AS_IF([test "x$F77" = x], [enable_f77=no])
 
+# Perform Fortran 77 tests only if enabled.
+if test "x$enable_f77" = xyes; then :
+
 AX_COMPILER_VENDOR
-# If F77 is enabled, perform a simple link test.
+# Perform a simple link test for MPI.
 AS_IF([test "x$with_mpi" != xno],
-    [AS_IF([test "x$enable_f77" = xyes],
-        [AS_IF([test "x$enable_mpi_tests" = xyes],
-            [GA_MPIF77_TEST_LINK],
-            [GA_MPIF77_TEST_COMPILE])],
+    [AS_IF([test "x$enable_mpi_tests" = xyes],
+        [GA_MPIF77_TEST_LINK],
         [GA_MPIF77_TEST_COMPILE])])
 
 GA_SUPPRESS_MESSAGE
+GA_F77_LIBRARY_LDFLAGS
 GA_F77_MAYBE_UNDERSCORING
-GA_F77_DUMMY_MAIN
-GA_F77_WRAPPERS
+AC_F77_DUMMY_MAIN
+AC_F77_WRAPPERS
 GA_F77_CPP_SYMBOL
 GA_F77_FIXED
+GA_F77_MISMATCH_TYPE
 GA_F77_INTEGER_SIZE
 
 # Checks for Fortran typedefs, structures, and compiler characteristics.
@@ -261,21 +283,46 @@ GA_F77_CHECK_SIZEOF([REAL], [4])
 GA_F77_CHECK_SIZEOF([DOUBLE PRECISION], [8])
 
 # Checks for Fortran library functions.
-AS_IF([test "x$enable_f77" = xyes], [
 GA_CHECK_FUNCS([dtime etime])
 GA_F77_FLUSH
-])
 
 # The rest of the Fortran 77 to C compatibility checks.
-AS_IF([test "x$enable_f77" = xyes], [
 GA_F2C_NOMAIN
 GA_F77_OPT
-])
 GA_F2C_CMDARGS
 GA_F2C_HIDDEN_STRING_LENGTH_CONVENTION
 GA_F2C_MATCH_TYPES([INTEGER], [short, int, long, long long])
 GA_F2C_MATCH_TYPES([REAL], [float, double, long double])
 GA_F2C_MATCH_TYPES([DOUBLE PRECISION], [float, double, long double])
+
+else
+
+# enable_f77=no version of AC_F77_WRAPPERS
+AC_DEFINE([F77_FUNC(name,NAME)], [name @%:@@%:@ _])
+AC_DEFINE([F77_FUNC_(name,NAME)],[name @%:@@%:@ _])
+# enable_f77=no version of GA_F77_CHECK_SIZEOF
+AC_DEFINE_UNQUOTED(AS_TR_CPP(sizeof_f77_INTEGER), [$ac_cv_sizeof_voidp],
+    [The size of 'INTEGER' as computed by C's sizeof.])
+AC_DEFINE_UNQUOTED(AS_TR_CPP(sizeof_f77_REAL), [4],
+    [The size of 'REAL' as computed by C's sizeof.])
+AC_DEFINE_UNQUOTED(AS_TR_CPP(sizeof_f77_DOUBLE PRECISION), [8],
+    [The size of 'DOUBLE PRECISION' as computed by C's sizeof.])
+# enable_f77=no version of GA_F2C_NOMAIN
+AC_SUBST([FLD_NOMAIN], [])
+# enable_f77=no version of GA_F2C_CMDARGS
+F2C_GETARG="F2C_GETARG"
+F2C_IARGC="F2C_IARGC"
+AC_SUBST([F2C_GETARG])
+AC_SUBST([F2C_IARGC])
+# enable_f77=no version of GA_F2C_HIDDEN_STRING_LENGTH_CONVENTION
+AC_DEFINE([F2C_HIDDEN_STRING_LENGTH_AFTER_ARGS], [1],
+    [whether the hidden string length comes after all other args])
+# enable_f77=no version of GA_F2C_MATCH_TYPES
+AC_SUBST([F2C_INTEGER_C_TYPE], [long])
+AC_SUBST([F2C_REAL_C_TYPE], [float])
+AC_SUBST([F2C_DOUBLE_PRECISION_C_TYPE], [double])
+
+fi
 
 # This is required to override what automake does, if needed.
 GA_F77_LD_OVERRIDE
@@ -286,6 +333,10 @@ AC_LANG_POP([Fortran 77])
 # Checks for BLAS/LAPACK/SCALAPACK require both C and Fortran features to
 # have been detected. Further, they assume the current AC_LANG is C.
 ###############################################################################
+AC_MSG_NOTICE
+AC_MSG_NOTICE([Checks for BLAS,LAPACK,ScaLAPACK])
+AC_MSG_NOTICE
+
 GA_BLAS
 GA_LAPACK
 GA_SCALAPACK
@@ -293,11 +344,15 @@ GA_SCALAPACK
 ###############################################################################
 # Checks for programs.
 ###############################################################################
+AC_MSG_NOTICE
+AC_MSG_NOTICE([Checks for additional programs])
+AC_MSG_NOTICE
+
 AC_PROG_GREP
 AC_PROG_SED
 
 AM_PATH_PYTHON([],[],[:])
-AM_CONDITIONAL([HAVE_PYTHON], [test "$PYTHON" != :])
+AM_CONDITIONAL([HAVE_PYTHON], [test "x$PYTHON" != x])
 
 AC_PATH_PROG([M4], [m4], [notfound])
 AM_CONDITIONAL([HAVE_M4], [test "x$M4" != xnotfound])
@@ -309,8 +364,14 @@ AC_ARG_ENABLE([xregion],
     [enable_xregion=no])
 AS_IF([test "x$enable_xregion" = xyes],
     [AC_PATH_X
-     AC_SUBST([X_CPPFLAGS], [-I$x_includes])
-     AC_SUBST([X_LDFLAGS], [-L$x_libraries])])
+     AS_IF([test "x$x_includes" != x],
+        [X_CPPFLAGS="-I$x_includes"],
+        [X_CPPFLAGS=])
+     AC_SUBST([X_CPPFLAGS])
+     AS_IF([test "x$x_libraries" != x],
+        [X_LDFLAGS="-L$x_libraries"],
+        [X_LDFLAGS=])
+     AC_SUBST([X_LDFLAGS])])
 AM_CONDITIONAL([ENABLE_XREGION], [test "x$enable_xregion" = xyes])
 AM_CONDITIONAL([NO_X], [test "$no_x" = xyes])
 
@@ -324,18 +385,19 @@ AC_MSG_NOTICE
 # this works around a bug where libtool sadly relies on matching compiler
 # names in order to determine features (Fortran only, I think)
 # libtool doesn't recognize MPI compiler names, nor should it
-AS_IF([test x$with_mpi_wrappers = xyes], [
-    #AS_IF([test "x$ga_cv_mpicc_naked"  != xerror],[CC="$ga_cv_mpicc_naked"])
-    #AS_IF([test "x$ga_cv_mpicxx_naked" != xerror],[CXX="$ga_cv_mpicxx_naked"])
-    AS_IF([test "x$ga_cv_mpif77_naked" != xerror],[F77="$ga_cv_mpif77_naked"])
-])
+AS_IF([test x$with_mpi_wrappers = xyes], [GA_MPI_UNWRAP_PUSH])
+GA_AR
 LT_INIT([disable-shared])
 # and now that that's over, put the MPI compilers back
-AS_IF([test x$with_mpi_wrappers = xyes], [
-    #CC="$MPICC"
-    #CXX="$MPICXX"
-    F77="$MPIF77"
-])
+# also, the above hack incorrectly sets the base compiler as the linker
+AS_IF([test x$with_mpi_wrappers = xyes],
+    [GA_MPI_UNWRAP_POP
+     compiler="$CC"
+     LTCC="$CC"
+     lt_save_CC="$CC"
+     compiler_DEFAULT="$CC"
+     compiler_CXX="$CXX"
+     compiler_F77="$F77"])
 
 ###############################################################################
 # Remaining setup -- some tests, some individual components
@@ -344,8 +406,8 @@ AC_MSG_NOTICE
 AC_MSG_NOTICE([Miscellaneous remaining setup])
 AC_MSG_NOTICE
 
-# Establish the underlying network infrastructure (SOCKETS, OPENIB, etc)
-#GA_ARMCI_NETWORK
+# Establish some preprocessor symbols.
+ARMCI_SETUP
 
 # Set up TCGMSG.
 TCGMSG_REMOTE_SHELL
@@ -371,6 +433,27 @@ AC_SUBST([GA_ACCESS_INDEX_TYPE], [$ga_access_index_type])
 AC_SUBST([MA_ACCESS_INDEX_TYPE], [$ga_access_index_type])
 AC_SUBST([MA_ACCESS_INDEX_TYPE_C], [$ga_access_index_type_c])
 
+###############################################################################
+# Test suite setup
+###############################################################################
+AC_ARG_VAR([NPROCS], [number of procs to use for parallel tests (default 4)])
+AS_IF([test "x$NPROCS" = x], [NPROCS=4])
+AC_SUBST([NPROCS])
+AC_ARG_VAR([MPIEXEC],
+           [how to run parallel tests if built with MPI e.g. "mpiexec -np %NP%"])
+AS_CASE([$ga_msg_comms],
+    [TCGMSG],  [TCGEXEC="`pwd`/parallel.x"],
+    [TCGMSG5], [TCGEXEC=],
+    [MPI|TCGMSGMPI],
+        [AS_IF([test "x$MPIEXEC" = x],
+            [AC_PATH_PROGS([MPIEXEC], [mpirun mpiexec])
+             MPIEXEC="$MPIEXEC -n %NP%"])])
+AC_SUBST([MPIEXEC])
+AC_SUBST([TCGEXEC])
+
+###############################################################################
+# The End
+###############################################################################
 AC_CONFIG_FILES([Makefile
                  gaf2c/farg.h
                  gaf2c/typesf2c.h
@@ -378,6 +461,8 @@ AC_CONFIG_FILES([Makefile
                  ma/matypes.h
                  global/src/global.fh])
 AC_CONFIG_SUBDIRS([armci])
+AS_IF([test "x$enable_tascel" = xyes],
+      [AC_CONFIG_SUBDIRS([tascel])])
 AC_OUTPUT
 
 # Report on what we found.
@@ -397,30 +482,43 @@ AC_MSG_NOTICE([    ARMCI_NETWORK_LIBS=$ARMCI_NETWORK_LIBS])
 AC_MSG_NOTICE([ARMCI_NETWORK_CPPFLAGS=$ARMCI_NETWORK_CPPFLAGS])
 AS_IF([test "x$enable_f77" = xyes], [
 AC_MSG_NOTICE([                   F77=$F77])
+AS_IF([test "x$with_mpi_wrappers" = xyes], [
+AC_MSG_NOTICE([         unwrapped F77=$ga_cv_mpif77_naked])
+])
+AC_MSG_NOTICE([                FFLAGS=$FFLAGS])
+AC_MSG_NOTICE([             FFLAG_INT=$FFLAG_INT])
+AC_MSG_NOTICE([               GA_FOPT=$GA_FOPT])
 ])
 AC_MSG_NOTICE([                    CC=$CC])
+AS_IF([test "x$with_mpi_wrappers" = xyes], [
+AC_MSG_NOTICE([          unwrapped CC=$ga_cv_mpic_naked])
+])
+AC_MSG_NOTICE([                CFLAGS=$CFLAGS])
+AC_MSG_NOTICE([               GA_COPT=$GA_COPT])
 AS_IF([test "x$enable_cxx" = xyes], [
 AC_MSG_NOTICE([                   CXX=$CXX])
+AS_IF([test "x$with_mpi_wrappers" = xyes], [
+AC_MSG_NOTICE([         unwrapped CXX=$ga_cv_mpicxx_naked])
+])
+AC_MSG_NOTICE([              CXXFLAGS=$CXXFLAGS])
+AC_MSG_NOTICE([             GA_CXXOPT=$GA_CXXOPT])
 ])
 AC_MSG_NOTICE([                   CPP=$CPP])
 AC_MSG_NOTICE([              CPPFLAGS=$CPPFLAGS])
-AS_IF([test "x$enable_f77" = xyes], [
-AC_MSG_NOTICE([                FFLAGS=$FFLAGS])
-AC_MSG_NOTICE([             FFLAG_INT=$FFLAG_INT])
-])
-AC_MSG_NOTICE([                CFLAGS=$CFLAGS])
-AS_IF([test "x$enable_cxx" = xyes], [
-AC_MSG_NOTICE([              CXXFLAGS=$CXXFLAGS])
-])
-AS_IF([test "x$enable_f77" = xyes], [
-AC_MSG_NOTICE([               GA_FOPT=$GA_FOPT])
-])
-AC_MSG_NOTICE([               GA_COPT=$GA_COPT])
-AS_IF([test "x$enable_cxx" = xyes], [
-AC_MSG_NOTICE([             GA_CXXOPT=$GA_CXXOPT])
-])
 AC_MSG_NOTICE([               LDFLAGS=$LDFLAGS])
-AC_MSG_NOTICE([                  DEFS=$DEFS])
 AC_MSG_NOTICE([                  LIBS=$LIBS])
+AC_MSG_NOTICE([                 FLIBS=$FLIBS])
+AC_MSG_NOTICE([          BLAS_LDFLAGS=$BLAS_LDFLAGS])
+AC_MSG_NOTICE([             BLAS_LIBS=$BLAS_LIBS])
+AC_MSG_NOTICE([         BLAS_CPPFLAGS=$BLAS_CPPFLAGS])
+AC_MSG_NOTICE([                    AR=$AR])
+AC_MSG_NOTICE([              AR_FLAGS=$AR_FLAGS])
+AC_MSG_NOTICE([                  CCAS=$CCAS])
+AC_MSG_NOTICE([            CCAS_FLAGS=$CCAS_FLAGS])
+AC_MSG_NOTICE([                  DEFS=$DEFS])
 AC_MSG_NOTICE([                 SHELL=$SHELL])
+AS_CASE([$ga_msg_comms], [MPI|TCGMSGMPI], [
+AC_MSG_NOTICE([               MPIEXEC=$MPIEXEC])
+])
+AC_MSG_NOTICE([                NPROCS=$NPROCS])
 AC_MSG_NOTICE([])

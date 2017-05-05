@@ -416,7 +416,7 @@ static void sparse_multiply(int n, int non_zero, int *row_ind, int **col_ind,
     }
   }
   comp_time = MP_TIMER()-start_time;
-  printf("%d: %lf + %lf = %lf  (count = %d)\n", me, comm_time, comp_time, 
+  printf("%d: %f + %f = %f  (count = %d)\n", me, comm_time, comp_time, 
      comm_time+comp_time, count+1);
 #endif
 }
@@ -441,7 +441,7 @@ static void test_sparse() {
 
     start_time = MP_TIMER();
     sparse_multiply(n, non_zero, row_ind, col_ind, values, vec, svec);
-    /* printf("%d: Timetaken = %lf\n", me, MP_TIMER()-start_time); */
+    /* printf("%d: Timetaken = %f\n", me, MP_TIMER()-start_time); */
     MP_BARRIER();
     
     if(me==0) gather_solution_vector(svec);
@@ -469,7 +469,7 @@ int main(int argc, char* argv[])
        sleep(1);
     }
     
-    ARMCI_Init();
+    ARMCI_Init_args(&argc, &argv);
 
     if(me==0){
       printf("\n  Performing Sparse Matrix-Vector Multiplication ...\n\n");

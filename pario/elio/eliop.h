@@ -14,9 +14,9 @@
 #include <sys/stat.h>
 #include "typesf2c.h"
 
-#define PRINT_AND_ABORT(msg, val) gai_error(msg, (Integer)val)
+#define PRINT_AND_ABORT(msg, val) GA_Error(msg, (int)val)
 #ifndef GLOBAL_H
-extern void gai_error(char*, Integer);
+extern void GA_Error(char*, int);
 #endif
 
 #if (defined(SP) || defined(SP1))
@@ -27,7 +27,7 @@ extern void gai_error(char*, Integer);
 #if (defined(CRAY) && !defined(__crayx1)) || defined(NEC)
 #        include <sys/statfs.h>
 #        define  STATVFS statfs
-#elif defined(KSR) || defined(__FreeBSD__) || defined(MACX)
+#elif defined(__FreeBSD__) || defined(MACX)
 #        include <sys/param.h>
 #        include <sys/mount.h>
 #        define  STATVFS statfs
@@ -36,13 +36,10 @@ extern void gai_error(char*, Integer);
 #        define  STATVFS _stat 
 #        define  S_ISDIR(mode) ((mode&S_IFMT) == S_IFDIR)
 #        define  S_ISREG(mode) ((mode&S_IFMT) == S_IFREG)
-#elif defined(CYGNUS) ||  defined(LINUX)  ||  defined(CYGWIN) || defined(BGL) || defined(BGP)
+#elif defined(CYGNUS) ||  defined(LINUX)  ||  defined(CYGWIN) || defined(BGL) || defined(BGP) || defined(BGQ) || defined(HPUX)
 #        include <sys/vfs.h>
 #        define  STATVFS statfs
 #        define NO_F_FRSIZE 
-#elif !defined(PARAGON)
-#        include <sys/statvfs.h>
-#        define  STATVFS statvfs
 #endif
 
 #ifdef WIN32
@@ -52,10 +49,6 @@ extern void gai_error(char*, Integer);
 #endif
 
 #include <fcntl.h>
-#if defined(PARAGON)
-#  include <sys/mount.h>
-#  include <nx.h>
-#endif
 
 #if (defined(CRAY) && defined(FFIO))
 #        include <ffio.h>

@@ -47,3 +47,10 @@
         }
     }
 #endif
+#ifdef MPI_SPAWN
+#   define GA_INIT(argc,argv) GA_Initialize_args(&(argc),&(argv))
+#   define ARMCI_INIT(argc,argv) ARMCI_Init_args(&(argc),&(argv))
+#else
+#   define GA_INIT(argc,argv) GA_Initialize()
+#   define ARMCI_INIT(argc,argv) ARMCI_Init()
+#endif

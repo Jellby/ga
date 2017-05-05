@@ -1,5 +1,5 @@
-# GA_MSG_COMMS
-# ------------
+# GA_MSG_COMMS([any text here disables tcgmsg output])
+# ----------------------------------------------------
 # Establishes all things related to messageing libraries.
 # This includes the compilers to use (either standard or MPI wrappers)
 # or the proper linker flags (-L), libs (-l) or preprocessor directives (-I).
@@ -12,6 +12,7 @@ GA_MP_LIBS=
 GA_MP_LDFLAGS=
 GA_MP_CPPFLAGS=
 # First of all, which messaging library do we want?
+m4_ifblank([$1], [
 AC_ARG_WITH([mpi],
     [AS_HELP_STRING([--with-mpi[[=ARG]]],
         [select MPI as the messaging library (default); leave ARG blank to use MPI compiler wrappers])],
@@ -22,7 +23,15 @@ AC_ARG_WITH([tcgmsg],
         [select TCGMSG as the messaging library; if --with-mpi is also specified then TCGMSG over MPI is used])],
     [],
     [with_tcgmsg=no])
+],[
+AC_ARG_WITH([mpi],
+    [AS_HELP_STRING([--with-mpi[[=ARG]]],
+        [select MPI as the messaging library (default); leave ARG blank to use MPI compiler wrappers])],
+    [],
+    [with_mpi=yes])
+])
 need_parse=no
+m4_ifblank([$1], [
 AS_CASE([$with_mpi:$with_tcgmsg],
 [maybe:yes],[ga_msg_comms=TCGMSG; with_mpi=no],
 [maybe:no], [ga_msg_comms=MPI; with_mpi_wrappers=yes; with_mpi=yes],
@@ -34,38 +43,19 @@ AS_CASE([$with_mpi:$with_tcgmsg],
 [*:no],     [ga_msg_comms=MPI; need_parse=yes],
 [*:*],      [AC_MSG_ERROR([unknown messaging library settings])])
 # Hack. If TARGET=MACX and MSG_COMMS=TCGMSG, we really want TCGMSG5.
-AS_CASE([$ga_cv_target_base:$ga_msg_comms],
-    [MACX:TCGMSG], [ga_msg_comms=TCGMSG5])
-# Sanity check for --with-mpi and environment var interplay.
-AS_IF([test "x$with_mpi_wrappers" = xyes],
-    [AS_IF([test "x$CC" != x],
-      [AS_IF([test "x$CC" != "x$MPICC"],
-        [AC_MSG_ERROR([MPI compilers wanted (--with-mpi was specified without
-        arguments (or was assumed by default)), but CC was also specified and
-        CC != MPICC.  Perhaps you meant to set MPICC instead?  Or perhaps you
-        meant to specify the path to an MPI installation such as
-        --with-mpi=/path/to/mpi?  The easiest thing to try is to unset CC
-        (CC=) as part of the configure invocation.])])])
-     AS_IF([test "x$F77" != x],
-      [AS_IF([test "x$F77" != "x$MPIF77"],
-        [AC_MSG_ERROR([MPI compilers wanted (--with-mpi was specified without
-        arguments (or was assumed by default)), but F77 was also specified and
-        F77 != MPIF77.  Perhaps you meant to set MPIF77 instead?  Or perhaps you
-        meant to specify the path to an MPI installation such as
-        --with-mpi=/path/to/mpi?  The easiest thing to try is to unset F77
-        (F77=) as part of the configure invocation.])])])
-     AS_IF([test "x$enable_cxx" = xyes], [
-     AS_IF([test "x$CXX" != x],
-      [AS_IF([test "x$CXX" != "x$MPICXX"],
-        [AC_MSG_ERROR([MPI compilers wanted (--with-mpi was specified without
-        arguments (or was assumed by default)), but CXX was also specified and
-        CXX != MPICXX.  Perhaps you meant to set MPICXX instead?  Or perhaps you
-        meant to specify the path to an MPI installation such as
-        --with-mpi=/path/to/mpi?  The easiest thing to try is to unset CXX
-        (CXX=) as part of the configure invocation.])])])])
-    ])
+AS_IF([test "x$ga_msg_comms" = xTCGMSG], [
+AS_CASE([$ga_cv_target_base],
+    [MACX|LAPI|CYGNUS|CYGWIN|INTERIX], [ga_msg_comms=TCGMSG5])
+])
+],[
+AS_CASE([$with_mpi],
+    [yes],  [with_mpi_wrappers=yes],
+    [no],   [],
+    [*],    [need_parse=yes])
+])
 AS_IF([test x$need_parse = xyes],
     [GA_ARG_PARSE([with_mpi], [GA_MP_LIBS], [GA_MP_LDFLAGS], [GA_MP_CPPFLAGS])])
+m4_ifblank([$1], [
 # TCGMSG is no longer supported for ARMCI development.
 AS_IF([test "x$ARMCI_TOP_SRCDIR" != x],
     [AS_IF([test ! -d "$ARMCI_TOP_SRCDIR/../global"],
@@ -106,6 +96,7 @@ AS_CASE([$ga_msg_comms],
                     [Use TCGMSG over MPI for messaging])
                  AC_DEFINE([MSG_COMMS_MPI], [1],
                     [Use MPI for messaging])])
+])
 AC_SUBST([GA_MP_LIBS])
 AC_SUBST([GA_MP_LDFLAGS])
 AC_SUBST([GA_MP_CPPFLAGS])

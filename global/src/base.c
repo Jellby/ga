@@ -89,6 +89,16 @@
   of a GA when the region spans in more than 1 process within SMP */
 #define GA_ELEM_PADDING yes
 
+#define OLD_DISTRIBUTION 1
+#if OLD_DISTRIBUTION
+    extern void ddb_h2(Integer ndims, Integer dims[], Integer npes,
+                    double threshold, Integer bias, Integer blk[],
+                    Integer pedims[]);
+#else
+    extern void ddb(Integer ndims, Integer dims[], Integer npes,
+                    Integer blk[], Integer pedims[]);
+#endif
+
 global_array_t *_ga_main_data_structure;
 global_array_t *GA;
 proc_list_t *_proc_list_main_data_structure;
@@ -133,6 +143,7 @@ static Integer GA_memory_limit=0;
 Integer GAme, GAnproc;
 static Integer MPme;
 Integer *mapALL;
+static char err_string[ ERR_STR_LEN]; /* string for extended error reporting */
 
 #ifdef PERMUTE_PIDS
 char** ptr_array;
@@ -369,7 +380,7 @@ Integer  off_dbl, off_int, off_dcpl, off_flt,off_scpl;
 #   endif
 
     if(DEBUG) printf("%d INT_MB=%p DBL_MB=%p DCPL_MB=%p FLT_MB=%p SCPL_MB=%p\n",
-                     (int)GAme, INT_MB,DBL_MB, DCPL_MB, FLT_MB, SCPL_MB);
+                     (int)GAme, (void*)INT_MB, (void*)DBL_MB, (void*)DCPL_MB, (void*)FLT_MB, (void*)SCPL_MB);
 }
 
 
@@ -1280,6 +1291,8 @@ void FATR gai_set_array_name(Integer g_a, char *array_name)
   GA_PUSH_NAME("ga_set_array_name");
   if (GA[ga_handle].actv == 1)
     gai_error("Cannot set array name on array that has been allocated",0);
+  if (strlen(array_name) > FNAM)
+    gai_error("Array name exceeds maximum array name length",FNAM);
   strcpy(GA[ga_handle].name, array_name);
   GA_POP_NAME;
 }
@@ -1623,16 +1636,6 @@ logical FATR ga_allocate_( Integer *g_a)
   /* The data distribution has not been specified by the user. Create
      default distribution */
   if (GA[ga_handle].mapc[0] == -1 && GA[ga_handle].block_flag == 0) {
-#define OLD_DISTRIBUTION 1
-#if OLD_DISTRIBUTION
-    extern void ddb_h2(Integer ndims, Integer dims[], Integer npes,
-                    double threshold, Integer bias, Integer blk[],
-                    Integer pedims[]);
-#else
-    extern void ddb(Integer ndims, Integer dims[], Integer npes,
-                    Integer blk[], Integer pedims[]);
-#endif
-
     for (d=0; d<ndim; d++) {
       dims[d] = (Integer)GA[ga_handle].dims[d];
       chunk[d] = (Integer)GA[ga_handle].chunk[d];
@@ -1779,12 +1782,12 @@ logical FATR ga_allocate_( Integer *g_a)
     } else {
        i = GA[ga_handle].corner_flag;
     }
-    ga_set_ghost_corner_flag_(g_a, &i);
- 
     for( i = 0; i< ndim; i++){
        GA[ga_handle].scale[i] = (double)GA[ga_handle].nblock[i]
          / (double)GA[ga_handle].dims[i];
     }
+    ga_set_ghost_corner_flag_(g_a, &i);
+ 
     /*** determine which portion of the array I am supposed to hold ***/
     if (p_handle == 0) { /* for mirrored arrays */
        Integer me_local = (Integer)PGRP_LIST[p_handle].map_proc_list[GAme];
@@ -2416,8 +2419,10 @@ int i, nproc,grp_me=GAme;
 
     /* adjust all addresses if they are not alligned on corresponding nodes*/
 
-    /* we need storage for GAnproc*sizeof(Integer) -- _ga_map is bigger */
-    adjust = (Integer*)_ga_map;
+    /* we need storage for GAnproc*sizeof(Integer) */
+    /* JAD -- fixed bug where _ga_map was reused before gai_getmem was done
+     * with it. Now malloc/free needed memory. */
+    adjust = (Integer*)malloc(GAnproc*sizeof(Integer));
 
     diff = (GA_ABS( base - (char *) ptr_arr[grp_me])) % item_size; 
     for(i=0;i<nproc;i++)adjust[i]=0;
@@ -2432,6 +2437,7 @@ int i, nproc,grp_me=GAme;
     for(i=0;i<nproc;i++){
        ptr_arr[i] = adjust[i] + (char*)ptr_arr[i];
     }
+    free(adjust);
 
 #endif
     return status;
@@ -2666,17 +2672,24 @@ logical gai_duplicate(Integer *g_a, Integer *g_b, char* array_name)
   /*** copy content of the data structure ***/
   save_ptr = GA[ga_handle].ptr;
   save_mapc = GA[ga_handle].mapc;
-  GA[ga_handle] = GA[GA_OFFSET + *g_a];
+  GA[ga_handle] = GA[GA_OFFSET + *g_a]; /* <--- shallow copy */
   strcpy(GA[ga_handle].name, array_name);
   GA[ga_handle].ptr = save_ptr;
   GA[ga_handle].mapc = save_mapc;
   for(i=0;i<MAPLEN; i++)GA[ga_handle].mapc[i] = GA[GA_OFFSET+ *g_a].mapc[i];
 
-  /*** copy info for restricted arrays, if relevant ***/
+  /*** if ghost cells are used, initialize ghost cache data ***/
+  GA[ga_handle].cache = NULL;
+  ga_set_ghost_info_(g_b);
+
+  /*** initialize and copy info for restricted arrays, if relevant ***/
+  GA[ga_handle].rstrctd_list = NULL;
+  GA[ga_handle].rank_rstrctd = NULL;
+  GA[ga_handle].num_rstrctd = 0;
   if (GA[GA_OFFSET + *g_a].num_rstrctd > 0) {
     GA[ga_handle].num_rstrctd = GA[GA_OFFSET + *g_a].num_rstrctd;
-    ga_set_restricted_(g_a, GA[GA_OFFSET + *g_a].rstrctd_list,
-        &GA[GA_OFFSET + *g_a].num_rstrctd);
+    ga_set_restricted_(g_b, GA[GA_OFFSET + *g_a].rstrctd_list,
+        &(GA[GA_OFFSET + *g_a].num_rstrctd));
   }
 
   /*** Memory Allocation & Initialization of GA Addressing Space ***/
@@ -2952,9 +2965,9 @@ Integer i, handle;
     free(mapALL);
     ARMCI_Free_local(GA_Update_Signal);
 
+    ga_sync_();
     ARMCI_Finalize();
     GAinitialized = 0;
-    ga_sync_();
 
 #ifdef USE_VAMPIR
     vampir_end(GA_TERMINATE,__FILE__,__LINE__);
@@ -3460,6 +3473,159 @@ int use_blocks;
 }
 
 
+/*\
+ * RETURN HOW MANY PROCESSORS/OWNERS THERE ARE FOR THE SPECIFIED PATCH OF A
+ * GLOBAL ARRAY
+\*/
+logical FATR nga_locate_nnodes_( Integer *g_a,
+                                 Integer *lo,
+                                 Integer *hi,
+                                 Integer *np)
+/*    g_a      [input]  global array handle
+      lo       [input]  lower indices of patch in global array
+      hi       [input]  upper indices of patch in global array
+      np       [output] total number of processors containing a portion
+                        of the patch
+
+      For a block cyclic data distribution, this function returns a list of
+      blocks that cover the region along with the lower and upper indices of
+      each block.
+*/
+{
+  int  procT[MAXDIM], procB[MAXDIM], proc_subscript[MAXDIM];
+  Integer  proc, /*owner,*/ i, ga_handle;
+  Integer  d, dpos, ndim, elems, p_handle, use_blocks;
+
+  ga_check_handleM(g_a, "nga_locate_nnodes");
+
+  ga_handle = GA_OFFSET + *g_a;
+#ifdef __crayx1
+#pragma _CRI novector
+#endif
+  for(d = 0; d< GA[ga_handle].ndim; d++)
+    if((lo[d]<1 || hi[d]>GA[ga_handle].dims[d]) ||(lo[d]>hi[d]))return FALSE;
+
+  ndim = GA[ga_handle].ndim;
+  use_blocks = GA[ga_handle].block_flag;
+
+  if (!use_blocks) {
+    /* find "processor coordinates" for the top left corner and store them
+     * in ProcT */
+#ifdef __crayx1
+#pragma _CRI novector
+#endif
+    for(d = 0, dpos = 0; d< GA[ga_handle].ndim; d++){
+      findblock(GA[ga_handle].mapc + dpos, GA[ga_handle].nblock[d], 
+          GA[ga_handle].scale[d], lo[d], &procT[d]);
+      dpos += GA[ga_handle].nblock[d];
+    }
+
+    /* find "processor coordinates" for the right bottom corner and store
+     * them in procB */
+#ifdef __crayx1
+#pragma _CRI novector
+#endif
+    for(d = 0, dpos = 0; d< GA[ga_handle].ndim; d++){
+      findblock(GA[ga_handle].mapc + dpos, GA[ga_handle].nblock[d], 
+          GA[ga_handle].scale[d], hi[d], &procB[d]);
+      dpos += GA[ga_handle].nblock[d];
+    }
+
+    *np = 0;
+
+    /* Find total number of processors containing data and return the
+     * result in elems. Also find the lowest "processor coordinates" of the
+     * processor block containing data and return these in proc_subscript.
+     */
+    ga_InitLoopM(&elems, ndim, proc_subscript, procT,procB,GA[ga_handle].nblock);
+
+    p_handle = (Integer)GA[ga_handle].p_handle;
+    for(i= 0; i< elems; i++){ 
+      Integer _lo[MAXDIM], _hi[MAXDIM];
+      /*Integer  offset;*/
+
+      /* convert i to owner processor id using the current values in
+         proc_subscript */
+      ga_ComputeIndexM(&proc, ndim, proc_subscript, GA[ga_handle].nblock); 
+      /* get range of global array indices that are owned by owner */
+      ga_ownsM(ga_handle, proc, _lo, _hi);
+
+#if 0
+      offset = *np *(ndim*2); /* location in map to put patch range */
+
+#ifdef __crayx1
+#pragma _CRI novector
+#endif
+      for(d = 0; d< ndim; d++)
+        map[d + offset ] = lo[d] < _lo[d] ? _lo[d] : lo[d];
+#ifdef __crayx1
+#pragma _CRI novector
+#endif
+      for(d = 0; d< ndim; d++)
+        map[ndim + d + offset ] = hi[d] > _hi[d] ? _hi[d] : hi[d];
+
+      owner = proc;
+      if (GA[ga_handle].num_rstrctd == 0) {
+        proclist[i] = owner;
+      } else {
+        proclist[i] = GA[ga_handle].rstrctd_list[owner];
+      }
+#endif
+      /* Update to proc_subscript so that it corresponds to the next
+       * processor in the block of processors containing the patch */
+      ga_UpdateSubscriptM(ndim,proc_subscript,procT,procB,GA[ga_handle].nblock);
+      (*np)++;
+    }
+  } else {
+    Integer nblocks = GA[ga_handle].block_total;
+    Integer chk, j, tlo[MAXDIM], thi[MAXDIM], cnt;
+    /*Integer offset;*/
+    cnt = 0;
+    for (i=0; i<nblocks; i++) {
+      /* check to see if this block overlaps with requested block
+       * defined by lo and hi */
+      chk = 1;
+      /* get limits on block i */
+      nga_distribution_(g_a,&i,tlo,thi);
+      for (j=0; j<ndim && chk==1; j++) {
+        /* check to see if at least one end point of the interval
+         * represented by blo and bhi falls in the interval
+         * represented by lo and hi */
+        if (!((tlo[j] >= lo[j] && tlo[j] <= hi[j]) ||
+              (thi[j] >= lo[j] && thi[j] <= hi[j]))) {
+          chk = 0;
+        }
+      }
+      /* store blocks that overlap request region in proclist */
+      if (chk) {
+#if 0
+        proclist[cnt] = i;
+#endif
+        cnt++;
+      }
+    }
+    *np = cnt;
+
+#if 0
+    /* fill map array with block coordinates */
+    for (i=0; i<cnt; i++) {
+      offset = i*2*ndim;
+      j = proclist[i];
+      nga_distribution_(g_a,&j,tlo,thi);
+      for (j=0; j<ndim; j++) {
+        map[offset + j] = lo[j] < tlo[j] ? tlo[j] : lo[j];
+        map[offset + ndim + j] = hi[j] > thi[j] ? thi[j] : hi[j];
+      }
+    }
+#endif
+  }
+  return(TRUE);
+}
+#ifdef __crayx1
+#pragma _CRI inline nga_locate_nnodes_
+#endif
+
+
 /*\ LOCATE PROCESSORS/OWNERS OF THE SPECIFIED PATCH OF A GLOBAL ARRAY
 \*/
 logical FATR nga_locate_region_( Integer *g_a,
@@ -3711,17 +3877,23 @@ int i;
 
    if (GA[h_a].block_flag != GA[h_b].block_flag) return FALSE;
    if (GA[h_a].block_sl_flag != GA[h_b].block_sl_flag) return FALSE;
-   if (!GA[h_a].block_flag) {
+   if (GA[h_a].block_flag == 0) {
      for(i=0; i <MAPLEN; i++){
        if(GA[h_a].mapc[i] != GA[h_b].mapc[i]) return FALSE;
        if(GA[h_a].mapc[i] == -1) break;
      }
-   } else {
+   }
+   else if (GA[h_a].block_flag == 1) {
      for (i=0; i<GA[h_a].ndim; i++) {
        if (GA[h_a].block_dims[i] != GA[h_b].block_dims[i]) return FALSE;
      }
      for (i=0; i<GA[h_a].ndim; i++) {
-       if (GA[h_a].nblock[i] != GA[h_b].nblock[i]) return FALSE;
+       if (GA[h_a].num_blocks[i] != GA[h_b].num_blocks[i]) return FALSE;
+     }
+     if (GA[h_a].block_sl_flag == 1) {
+       for (i=0; i<GA[h_a].ndim; i++) {
+         if (GA[h_a].nblock[i] != GA[h_b].nblock[i]) return FALSE;
+       }
      }
    }
    if (GA[h_a].num_rstrctd == GA[h_b].num_rstrctd) {
@@ -4490,7 +4662,6 @@ void FATR ga_fast_merge_mirrored_(Integer *g_a)
   int next_nodel=0;
   int dummy=1, LnB, powof2nodes;
   int groupA, groupB, sizeB;
-  void armci_util_wait_int(volatile int *,int,int);
 
   local_sync_begin = _ga_sync_begin; local_sync_end = _ga_sync_end;
   _ga_sync_begin = 1; _ga_sync_end = 1; /*remove any previous masking */

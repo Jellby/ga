@@ -5,7 +5,7 @@
 
 #define GA_VERSION_MAJOR 5
 #define GA_VERSION_MINOR 0
-#define GA_VERSION_REVISION 0
+#define GA_VERSION_REVISION 3
 
 #define C_CHAR     MT_C_CHAR
 #define C_DBL      MT_C_DBL

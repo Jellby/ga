@@ -397,14 +397,20 @@ int main(int argc, char **argv) {
     int heap=20000000, stack=200000000;
     double *A=NULL;
     
-    if(argc != 2) 
+    if(argc == 1)
     {
-       printf("Usage Error\n\t Usage: <program> <matrix_size>\n");
+      matrix_size = 1234;
+    }
+    else if (argc == 2)
+    {
+      matrix_size = atoi(argv[1]);
+    }
+    else
+    {
+       printf("Usage Error\n\t Usage: <program> [matrix_size]\n");
        exit(0);
     }
 
-    matrix_size = atoi(argv[1]);
-    
     if(matrix_size <= 0) 
     {
        printf("Error: matrix size (%d) should be > 0\n",
@@ -417,7 +423,7 @@ int main(int argc, char **argv) {
      * *****************************************************************/
     MP_INIT(argc,argv);
     
-    GA_Initialize();        /* initialize GA */
+    GA_INIT(argc,argv);        /* initialize GA */
 
     me     = GA_Nodeid();
     nprocs = GA_Nnodes();

@@ -69,7 +69,7 @@
 #include "armci.h"
 
 #define NDEBUG
-#define LOG2FILE
+/*#define LOG2FILE*/
 
 typedef int t_elem; /* type of an array element */
 #define SIZE_ELEM   sizeof(t_elem)
@@ -131,18 +131,18 @@ FILE *log_file = NULL;
 
 void start_logging(const char *fname)
 {
+#ifdef  LOG2FILE
     char exe_name[255];
     char log_path[255];
-    size_t i;
+    int i;
     char k;
 
-#ifdef  LOG2FILE
     strcpy(exe_name, fname);
     if (exe_name[strlen(exe_name) - 2] == '.') /* remove .x */
         exe_name[strlen(exe_name) - 2] = 0;
 
     if (exe_name[0] == '/') { /* full path given */
-        for (i = strlen(exe_name) - 1, k = -1; i >= 0; i--)
+        for (i = ((int)strlen(exe_name)) - 1, k = -1; i >= 0; i--)
             if (exe_name[i] == '/') {
                 if (k == -1) k = i + 1;
                 else {
@@ -176,10 +176,10 @@ void finish_logging()
 /* prints formatted message to ../data/<prog>.dat */
 int log_printf(const char *fmt, ...)
 {
+    int r;
     va_list ap;
     va_start(ap, fmt);
 
-    int r;
     if (log_file)
         r = vfprintf(log_file, fmt, ap);
     else {
@@ -203,11 +203,14 @@ struct stats {
 
 void benchmark(int msg_size, struct stats *st)
 {
-    void *out_ptrs[size], *in_ptrs[size];
+    void **out_ptrs, **in_ptrs;
     double time_start, time_after_start, time_after_call, time_after_wait;
     double time2put, time2get;
     int i, j;
     armci_hdl_t handle;
+
+    out_ptrs = malloc(sizeof(void*)*size);
+    in_ptrs = malloc(sizeof(void*)*size);
 
     log_debug("testing message size %d bytes\n", msg_size);
 
@@ -358,6 +361,8 @@ void benchmark(int msg_size, struct stats *st)
     ARMCI_Free(out_ptrs[rank]);
     ARMCI_Free(in_ptrs[rank]);
 
+    free(out_ptrs);
+    free(in_ptrs);
 }
 
 
@@ -384,7 +389,7 @@ int main (int argc, char *argv[])
 
     if (!rank) start_logging(argv[0]);
 
-    ARMCI_ASSERT(ARMCI_Init());
+    ARMCI_ASSERT(ARMCI_Init_args(&argc, &argv));
     log_debug("ARMCI initialized\n");
 
     /* inialize PRNG, use seed generated on processor 0 for uniform sequence */
@@ -431,11 +436,16 @@ int main (int argc, char *argv[])
 
     for (i = 0; i < MSG_COUNT; i++) {
         benchmark(msg_sizes[i], st);
-        MP_ASSERT(MPI_Gather(st->nb_put_b + rank, 1, MPI_DOUBLE,
-                    st->nb_put_b, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD));
-        MP_ASSERT(MPI_Gather(st->nb_get_b + rank, 1, MPI_DOUBLE,
-                    st->nb_get_b, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD));
+        /* in MPI_Gather, buffers must not be aliased, so rank=0 is skipped */
+        if (rank != 0) {
+            MP_ASSERT(MPI_Gather(st->nb_put_b + rank, 1, MPI_DOUBLE,
+                        st->nb_put_b, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD));
+            MP_ASSERT(MPI_Gather(st->nb_get_b + rank, 1, MPI_DOUBLE,
+                        st->nb_get_b, 1, MPI_DOUBLE, 0, MPI_COMM_WORLD));
+        }
     if (!rank) {
+        double min_put, max_put, mean_put;
+        double min_get, max_get, mean_get;
         log_printf("msg_size = %d:\n", msg_sizes[i]);
         log_printf("Put = %.8f Get = %.8f\n", st->put, st->get);
 
@@ -447,9 +457,7 @@ int main (int argc, char *argv[])
                     j + 1, st->nb_get_a[j]);
 
         /* determine min, max and mean for phase B */
-        double min_put, max_put, mean_put;
         min_put = max_put = mean_put = st->nb_put_b[0];
-        double min_get, max_get, mean_get;
         min_get = max_get = mean_get = st->nb_get_b[0];
 
         for (j = 1; j < size; j++) {

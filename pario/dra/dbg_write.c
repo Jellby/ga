@@ -2,10 +2,12 @@
 #   include "config.h"
 #endif
 
+#include <stdlib.h>
+
 #include "macommon.h"
 #include "global.h"
-#include "DRA.h"
-#include "DRAp.h"
+#include "dra.h"
+#include "drap.h"
 
 #define LEN 10
 
@@ -13,7 +15,7 @@ int main(int argc, char **argv)
 {
     int from, to, type;
     Integer idata[LEN];
-    int fd;
+    /*int fd;*/
     Integer i, ii, imax, offset, status;
     DoublePrecision ddata[LEN];
 
@@ -29,7 +31,13 @@ int main(int argc, char **argv)
     to   = atoi(argv[4]);
 
     if(from < 0 || to < from) {printf("range error\n"); return 1;}
+#if 0
     if(!(fd = dra_el_open(argv[1],DRA_W))){printf("not found\n"); return 1;} 
+#else
+    /* TODO This must be an old test program using an old API...
+     * consider removing this program. */
+    return 1;
+#endif
 
     switch (type){
 
@@ -38,7 +46,11 @@ int main(int argc, char **argv)
                 imax = PARIO_MIN(i+LEN-1,to);
                 offset = sizeof(Integer)*i;
                 for(ii=0;ii<imax-i+1;ii++) idata[ii]=ii;
+#if 0
                 status=dra_el_write(idata, sizeof(Integer), imax-i+1, fd, offset);
+#else
+                status = 1;
+#endif
                 if(!status)printf("error write failed\n");
             }
             break;
@@ -47,7 +59,11 @@ int main(int argc, char **argv)
                 imax = PARIO_MIN(i+LEN-1,to);
                 offset = sizeof(DoublePrecision)*i;
                 for(ii=0;ii<imax-i+1;ii++) ddata[ii]=1.*ii;
+#if 0
                 status=dra_el_write(ddata,sizeof(DoublePrecision), imax -i+1, fd,offset);
+#else
+                status = 1;
+#endif
                 if(!status)printf("error write failed\n");
             }
             break;

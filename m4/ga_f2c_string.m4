@@ -8,17 +8,17 @@ AC_LANG_PUSH([C])
 AC_COMPILE_IFELSE([AC_LANG_SOURCE(
 [[#include <stdio.h>
 #include <string.h>
+#define LEN 80
 
 void fix_c_string_for_f(char *s, int len);
 void fix_f_string_for_c(char *s, int len);
 
 void $SUB($1)
 {
-    size_t len=80;
-    char result[len];
+    char result[LEN];
     fix_f_string_for_c(fname, fname_len);
     fix_f_string_for_c(lname, lname_len);
-    snprintf(result, len, "The names passed to C:  %s %s\n", fname, lname);
+    snprintf(result, LEN, "The names passed to C:  %s %s\n", fname, lname);
     fix_c_string_for_f(fname, fname_len);
     fix_c_string_for_f(lname, lname_len);
 }
@@ -73,7 +73,7 @@ AC_CACHE_CHECK([whether Fortran hidden string length convention is after args],
   [AS_IF([test "x$F2C_HIDDEN_STRING_LENGTH_AFTER_ARGS" != x],
     [ga_cv_f2c_string_after_args="$F2C_HIDDEN_STRING_LENGTH_AFTER_ARGS"])
   AS_IF([test "x$ga_cv_f2c_string_after_args" = x],
-    [AS_IF([test x$cross_compiling = xyes || test "x$enable_f77" = xno],
+    [AS_IF([test x$cross_compiling = xyes],
       [AS_IF([test "x$1" != x],
         [ga_cv_f2c_string_after_args="$1"],
         [ga_cv_f2c_string_after_args="yes"])])])

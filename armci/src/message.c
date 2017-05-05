@@ -57,6 +57,9 @@ static int _armci_gop_init=0;   /* tells us if we have a buffers allocated  */
 static int _armci_gop_shmem =0; /* tells us to use shared memory for gops */
 extern void armci_util_wait_int(volatile int *, int , int );
 static int empty=EMPTY,full=FULL;
+#if !defined(SGIALTIX) && defined(SYSV) || defined(MMAP) || defined(WIN32)
+static void **ptr_arr=NULL;
+#endif
 
 typedef struct {
         union {
@@ -172,6 +175,12 @@ static void _allocate_mem_for_work(){
 }
 
 
+static void _deallocate_mem_for_work(){
+    if (work) free(work);
+    work = NULL; lwork = NULL; iwork = NULL; fwork = NULL; llwork = NULL;
+}
+
+
 /*\ allocate and initialize buffers used for collective communication
 \*/
 void armci_msg_gop_init()
@@ -183,7 +192,6 @@ void armci_msg_gop_init()
 #if !defined(SGIALTIX) && defined(SYSV) || defined(MMAP) || defined(WIN32)
     if(ARMCI_Uses_shm()){
        char *tmp;
-       void **ptr_arr;
        double *work;
        int size = sizeof(bufstruct);
        int bytes = size * armci_clus_info[armci_clus_me].nslave;
@@ -240,6 +248,18 @@ void armci_msg_gop_init()
      /****************************************************/
 #endif
      _armci_gop_init=1;
+}
+
+
+void armci_msg_gop_finalize()
+{
+#if !defined(SGIALTIX) && defined(SYSV) || defined(MMAP) || defined(WIN32)
+    if(ARMCI_Uses_shm()){
+        PARMCI_Free(ptr_arr[armci_me]);
+        free(ptr_arr);
+    }
+#endif
+    _deallocate_mem_for_work();
 }
 
 
@@ -1747,7 +1767,7 @@ int len, lenmes, min;
 
     if(!x)armci_die("armci_msg_gop_info: NULL pointer", n);
 
-    if(n>INFO_BUF_SIZE)armci_die("armci_msg_gop_info: info too large",n);
+    if(n>((int)INFO_BUF_SIZE))armci_die("armci_msg_gop_info: info too large",n);
 
     len = lenmes = n;
 
@@ -1852,7 +1872,7 @@ void armci_exchange_address(void *ptr_ar[], int n)
 #  ifdef MPI
 void armci_msg_group_barrier(ARMCI_Group *group)
 {
-    ARMCI_iGroup *igroup = (ARMCI_iGroup *)group;
+    ARMCI_iGroup *igroup = armci_get_igroup_from_group(group);
 #ifdef ARMCI_PROFILE
     armci_profile_start(ARMCI_PROF_BARRIER);    
 #endif
@@ -1870,18 +1890,21 @@ void armci_msg_group_barrier(ARMCI_Group *group)
      armci_profile_stop(ARMCI_PROF_BARRIER);     
 #endif    
 }
+#ifdef ARMCI_GROUP
+extern void ARMCI_Bcast_(void *buffer, int len, int root, ARMCI_Group *group);
+#else
+extern void ARMCI_Bcast_(void *buffer, int len, int root, ARMCI_Comm comm);
+#endif
 void armci_grp_clus_brdcst(void *buf, int len, int grp_master,
                            int grp_clus_nproc, ARMCI_Group *mastergroup) {
-    ARMCI_iGroup *igroup = (ARMCI_iGroup *)mastergroup;
+    ARMCI_iGroup *igroup = armci_get_igroup_from_group(mastergroup);
     int i, *pid_list, root=0;
 #ifdef ARMCI_GROUP
     ARMCI_Group group;
-    void ARMCI_Bcast_(void *buffer, int len, int root, ARMCI_Group *group);
 #else
     MPI_Group group_world;
     MPI_Group group;
     MPI_Comm comm;
-    void ARMCI_Bcast_(void *buffer, int len, int root, ARMCI_Comm comm);
 #endif
  
     /* create a communicator for the processes with in a node */
@@ -1893,6 +1916,7 @@ void armci_grp_clus_brdcst(void *buf, int len, int grp_master,
     ARMCI_Group_create_child(grp_clus_nproc, pid_list, &group, mastergroup);
     ARMCI_Bcast_(buf, len, root, &group);
     ARMCI_Group_free(&group);
+    free(pid_list);
 #else
     /* why?*/
     MPI_Comm_group((MPI_Comm)(igroup->icomm), &group_world);
@@ -1963,10 +1987,12 @@ void armci_msg_group_bcast_scope(int scope, void *buf, int len, int root,
 {
     int up, left, right, Root;
     int grp_me;
+    ARMCI_iGroup *igroup = armci_get_igroup_from_group(group);
+
     if(!buf)armci_die("armci_msg_bcast: NULL pointer", len);
  
     if(!group)armci_msg_bcast_scope(scope,buf,len,root);
-    else grp_me = ((ARMCI_iGroup *)group)->grp_attr.grp_me;
+    else grp_me = igroup->grp_attr.grp_me;
     armci_msg_group_bintree(scope, &Root, &up, &left, &right,group);
  
     if(root !=Root){
@@ -1990,9 +2016,10 @@ armci_msg_group_gop_scope(int scope, void *x, int n, char* op, int type,
     int tag=ARMCI_TAG,grp_me;
     int ndo, len, lenmes, orign =n, ratio;
     void *origx =x;
+    ARMCI_iGroup *igroup = armci_get_igroup_from_group(group);
  
     if(!group)armci_msg_gop_scope(scope,x,n,op,type);
-    else grp_me = ((ARMCI_iGroup *)group)->grp_attr.grp_me;
+    else grp_me = igroup->grp_attr.grp_me;
     if(!x)armci_die("armci_msg_gop: NULL pointer", n);
     if(work==NULL)_allocate_mem_for_work();
  
@@ -2040,7 +2067,8 @@ armci_msg_group_gop_scope(int scope, void *x, int n, char* op, int type,
 void armci_exchange_address_grp(void *ptr_arr[], int n, ARMCI_Group *group)
 {
     int ratio = sizeof(void*)/sizeof(int);
-    int grp_me = ((ARMCI_iGroup *)group)->grp_attr.grp_me;
+    ARMCI_iGroup *igroup = armci_get_igroup_from_group(group);
+    int grp_me = igroup->grp_attr.grp_me;
     if(DEBUG_){
        printf("%d: exchanging %ld ratio=%d\n",armci_me,
 	      (long)ptr_arr[grp_me], ratio);

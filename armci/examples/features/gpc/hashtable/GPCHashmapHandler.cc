@@ -1,4 +1,8 @@
 /* $Id:  */
+#if HAVE_CONFIG_H
+#   include "config.h"
+#endif
+
 #include <stdio.h>
 
 #define DEBUG 0
@@ -11,7 +15,6 @@
 #endif
 
 #include "armci.h"
-#define ARMCI_ENABLE_GPC_CALLS
 #include "gpc.h"
 
 #include "Hash_common.h"

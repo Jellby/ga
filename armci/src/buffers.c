@@ -195,8 +195,8 @@ int smallbuf_size = sizeof(buf_smext_t)*(MAX_SMALL_BUFS);
 
      if(DEBUG2_){
 	printf("%d:armci_init_bufs: pointer %p, before align ptr=%p bufptr=%p end of region is %p  size=%lu extra=%d\n",
-               armci_me, _armci_buffers, tmp, _armci_buffers->buffer,
-               (_armci_buffers+MAX_BUFS),
+               armci_me, (void*)_armci_buffers, tmp, _armci_buffers->buffer,
+               (void*)(_armci_buffers+MAX_BUFS),
                (long unsigned)MAX_BUFS*sizeof(buf_ext_t), extra);
 	fflush(stdout);
      }
@@ -266,7 +266,7 @@ void _armci_buf_complete_index(int idx, int called)
 int count;
 buf_state_t *buf_state = _armci_buf_state->table +idx;
 
-/*  fprintf(stderr, "%d:: entered %s. called=%d\n", armci_me, __FUNCTION__); */
+/*  fprintf(stderr, "%d:: entered %s. called=%d\n", armci_me, FUNCTION_NAME); */
 
     count = buf_state->count;
     if(DEBUG_ ) {
@@ -908,7 +908,7 @@ buf_state_t *buf_state = _armci_buf_state->table +idx;
 /* fflush(stdout);*/
 
 /*  if(buf_state->op==GET) { */
-/*    printf("%d: %s(): op is get\n",armci_me,__FUNCTION__); */
+/*    printf("%d: %s(): op is get\n",armci_me,FUNCTION_NAME); */
 /*  } */
 
     count = buf_state->count;
@@ -937,7 +937,7 @@ buf_state_t *buf_state = _armci_buf_state->table +idx;
          int relidx;
          relidx = idx-MAX_BUFS; 
 
-/* 	 printf("%d:%s(): Calling clear_send_buf_field\n",armci_me,__FUNCTION__); */
+/* 	 printf("%d:%s(): Calling clear_send_buf_field\n",armci_me,FUNCTION_NAME); */
          CLEAR_SEND_BUF_FIELD(_armci_buf_state->smallbuf[relidx].field,buf_state->snd,buf_state->rcv,buf_state->to,buf_state->op);
 
        /*later, we might just need to do this for all operations, not just get*/
@@ -1075,7 +1075,7 @@ int buf_pend_count=0;
 	  buf_pend_count++;
 #endif
 	  if(buf_pend_count > max_pend_count-1) {
-/* 	    printf("%d:%s():complete largebuf %d\n",armci_me,__FUNCTION__,i); */
+/* 	    printf("%d:%s():complete largebuf %d\n",armci_me,FUNCTION_NAME,i); */
 	    _armci_buf_complete_index(i,0);
 	    _armci_buf_release_index(i);
 	    buf_pend_count--;
@@ -1101,7 +1101,7 @@ int buf_pend_count=0;
 	  buf_pend_count++;
 #endif
 	  if(buf_pend_count > max_pend_count-1) {
-/* 	    printf("%d:%s():complete smallbuf %d\n",armci_me,__FUNCTION__,i); */
+/* 	    printf("%d:%s():complete smallbuf %d\n",armci_me,FUNCTION_NAME,i); */
 	    _armci_buf_complete_index(i,0);
 	    _armci_buf_release_index(i);
 	    buf_pend_count--;

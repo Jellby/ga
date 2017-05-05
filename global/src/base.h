@@ -104,7 +104,6 @@ extern proc_list_t *PGRP_LIST;
 
 
 #define ERR_STR_LEN 256               /* length of string for error reporting */
-static char err_string[ ERR_STR_LEN]; /* string for extended error reporting */
 
 /**************************** MACROS ************************************/
 

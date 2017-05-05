@@ -251,5 +251,7 @@ DoublePrecision FATR ga_ddot_patch_dp_(g_a, t_a, alen, ailo, aihi, ajlo, ajhi,
      Integer *g_b, *bilo, *bihi, *bjlo, *bjhi;    /* patch of g_b */
      char    *t_a, *t_b;                          /* transpose operators */
      int alen, blen;
-{ return ga_ddot_patch_dp(g_a, t_a, ailo, aihi, ajlo, ajhi,
-                       g_b, t_b, bilo, bihi, bjlo, bjhi);}
+{
+    return ga_ddot_patch_dp(g_a, t_a, ailo, aihi, ajlo, ajhi,
+                       g_b, t_b, bilo, bihi, bjlo, bjhi);
+}

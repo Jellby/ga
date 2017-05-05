@@ -135,36 +135,8 @@ unsigned int   ehlen:8;       /* size of extra header and the end of descr */
 }request_header_t;
 
 /*******gpc call strctures*************/
-#if HAVE_SIGNAL_H
-#   include <signal.h>
-#endif
-#define MAX_GPC_REQ 1
 #define MAX_GPC_REPLY_LEN (64*1024)
 #define MAX_GPC_SEND_LEN (64*1024)
-#define GPC_COMPLETION_SIGNAL SIGUSR1
-
-typedef struct {
-  int hndl;
-  int hlen, dlen;
-  void *hdr, *data;
-  int rhlen, rdlen;
-  void *rhdr, *rdata;
-} gpc_call_t;
-
-typedef struct {
-  int active;
-/*    int zombie; */
-  request_header_t  msginfo;
-  gpc_call_t call;
-  char send[MAX_GPC_SEND_LEN];
-  char reply[MAX_GPC_REPLY_LEN];
-} gpc_buf_t;
-
-/*  gpc_buf_t *gpc_req; */
-extern gpc_buf_t *gpc_req;
-
-extern void block_pthread_signal(int signo);
-extern void unblock_pthread_signal(int signo);
 
 /*******structures copied from async.c for storing cmpl dscr for nb req*******/
 #define UBUF_LEN 112

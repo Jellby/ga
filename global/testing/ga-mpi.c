@@ -86,6 +86,9 @@ int root=0, grp_me=-1;
      if(ihi-ilo+1 >0){
         max_row=(DoublePrecision*)malloc(sizeof(DoublePrecision)*(ihi-ilo+1));
         if (!max_row) GA_Error("malloc 3 failed",(ihi-ilo+1));
+        for (i=0; i<(ihi-ilo+1); i++) {
+            max_row[i] = 0.0;
+        }
      }
      NGA_Proc_topology(g_a, me, coord);  /* block coordinates */
      prow = coord[0];
@@ -138,7 +141,7 @@ int root=0, grp_me=-1;
     lo[0]=ZERO; hi[0]=n-1;
         NGA_Get(g_b, lo, hi, buf, &n); 
         for(i=0; i< n; i++)if(buf[i] != (double)n+i){
-            fprintf(stderr,"error:%d max=%lf should be:%d\n",i,buf[i],n+i);
+            fprintf(stderr,"error:%d max=%f should be:%d\n",i,buf[i],n+i);
             GA_Error("terminating...",0);
         }
      }
@@ -158,20 +161,8 @@ char **argv;
 int heap=20000, stack=20000;
 int me, nproc;
 
-#ifdef MPI
-#   ifdef DCMF
-    int desired = MPI_THREAD_MULTIPLE;
-    int provided;
-    MPI_Init_thread(&argc, &argv, desired, &provided);
-    if ( provided != MPI_THREAD_MULTIPLE ) printf("provided != MPI_THREAD_MULTIPLE\n");
-#   else
-    MPI_Init (&argc, &argv);	/* initialize MPI */
-#   endif
-#else
-    tcg_pbegin(argc, argv);                        /* initialize TCGMSG */
-#endif
-
-    GA_Initialize();                            /* initialize GA */
+    MP_INIT(argc, argv);
+    GA_INIT(argc, argv);        /* initialize GA */
     me=GA_Nodeid();
     nproc=GA_Nnodes();
     if(me==0) printf("Using %ld processes\n",(long)nproc);
@@ -185,11 +176,7 @@ int me, nproc;
     if(me==0)printf("Terminating ..\n");
     GA_Terminate();
 
-#   ifdef MPI
-      MPI_Finalize();
-#   else
-      tcg_pend();
-#   endif
+    MP_FINALIZE();
 
     return 0;
 }

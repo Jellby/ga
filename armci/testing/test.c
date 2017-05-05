@@ -22,6 +22,9 @@
 #include "mp3.h"
 #include "armci.h"
 
+void armci_lockmem(void*, void*, int);
+void armci_unlockmem(void);
+
 #define DIM1 5
 #define DIM2 3
 #ifdef __sun
@@ -75,7 +78,7 @@
 
 /***************************** global data *******************/
 int me, nproc;
-void* work[MAXPROC]; /* work array for propagating addresses */
+int work[MAXPROC]; /* work array for propagating addresses */
 
 
 
@@ -257,7 +260,8 @@ void compare_patches(double eps, int ndim, double *patch1, int lo1[], int hi1[],
 {
 	int i,j, elems=1;	
 	int subscr1[MAXDIMS], subscr2[MAXDIMS];
-        double diff,max;
+    double diff,max;
+    int offset1, offset2;
 
 	for(i=0;i<ndim;i++){   /* count # of elements & verify consistency of both patches */
 		int diff = hi1[i]-lo1[i];
@@ -271,8 +275,8 @@ void compare_patches(double eps, int ndim, double *patch1, int lo1[], int hi1[],
 
 	
 	/* compare element values in both patches */ 
-    int offset1 = Index(ndim, subscr1, dims1);
-    int offset2 = Index(ndim, subscr2, dims2);
+    offset1 = Index(ndim, subscr1, dims1);
+    offset2 = Index(ndim, subscr2, dims2);
 	for(j=0; j< elems; j++){ 
 		int idx1, idx2;
 		
@@ -318,6 +322,7 @@ void scale_patch(double alpha, int ndim, double *patch1, int lo1[], int hi1[], i
 {
 	int i,j, elems=1;	
 	int subscr1[MAXDIMS];
+    int offset1;
 
 	for(i=0;i<ndim;i++){   /* count # of elements in patch */
 		int diff = hi1[i]-lo1[i];
@@ -327,7 +332,7 @@ void scale_patch(double alpha, int ndim, double *patch1, int lo1[], int hi1[], i
 	}
 
 	/* scale element values in both patches */ 
-    int offset1 = Index(ndim, subscr1, dims1);
+    offset1 = Index(ndim, subscr1, dims1);
 	for(j=0; j< elems; j++){ 
 		int idx1;
 		idx1 = Index(ndim, subscr1, dims1);	 /* calculate element Index from a subscript */
@@ -835,7 +840,7 @@ void test_acc(int ndim)
         void *a, *c;
         double alpha=0.1, scale;
 	int idx1, idx2;
-        int *proclist = (int*)work;
+        int *proclist = work;
 
         elems = 1;   
         strideA[0]=sizeof(double); 
@@ -1082,7 +1087,7 @@ void test_vector_acc()
         void *psrc[ELEMS/2], *pdst[ELEMS/2];
         void *a, *c;
         double alpha=0.1, scale;
-        int *proclist = (int*)work;
+        int *proclist = work;
         armci_giov_t dsc;
 
         elems = ELEMS;
@@ -1290,8 +1295,6 @@ void test_swap()
 }
 
 
-
-
 void test_memlock()
 {
         int dim,elems,bytes;
@@ -1299,12 +1302,10 @@ void test_memlock()
         double *b[MAXPROC];
         double *a, *c;
 #if 0
-        int *proclist = (int*)work;
+        int *proclist = work;
 #endif
                 void *pstart, *pend;
                 int first, last;
-                void armci_lockmem(void*, void*, int);
-                void armci_unlockmem(void);
 
         elems = ELEMS;
         dim =1;

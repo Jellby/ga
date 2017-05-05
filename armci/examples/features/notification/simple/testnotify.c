@@ -388,7 +388,7 @@ int ndim;
     MP_PROCS(&nproc);
     MP_MYID(&me);
 
-    ARMCI_Init();
+    ARMCI_Init_args(&argc, &argv);
 
     MP_BARRIER();
     if(me==0){

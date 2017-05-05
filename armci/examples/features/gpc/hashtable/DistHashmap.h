@@ -4,7 +4,6 @@
 
 #include <string>
 using std::string;
-#define ARMCI_ENABLE_GPC_CALLS
 #include "gpc.h"
 #include "Hash_common.h"
 

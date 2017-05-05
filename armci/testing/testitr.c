@@ -17,7 +17,7 @@
 #include "iterator.h"
 
 int main(int argc, char **argv) {
-  stride_itr_t sitr,ditr;
+  stride_info_t sitr,ditr;
   int a[10][10], b[11][11];
   int asr[1] = {10*sizeof(int)};
   int bsr[1]={11*sizeof(int)};
@@ -35,34 +35,32 @@ int main(int argc, char **argv) {
     }
   }
 
-  sitr = armci_stride_itr_init(&a[2][3],1,asr,count);
-  ditr = armci_stride_itr_init(&b[3][4],1,bsr,count);
+  armci_stride_info_init(&sitr, &a[2][3],1,asr,count);
+  armci_stride_info_init(&ditr, &b[3][4],1,bsr,count);
 
-  assert(sitr != NULL);
-  assert(ditr != NULL);
-  assert(armci_stride_itr_size(sitr) == 5);
-  assert(armci_stride_itr_size(ditr) == 5);
-  assert(armci_stride_itr_pos(sitr) == 0);
-  assert(armci_stride_itr_pos(ditr) == 0);
+  assert(armci_stride_info_size(&sitr) == 5);
+  assert(armci_stride_info_size(&ditr) == 5);
+  assert(armci_stride_info_pos(&sitr) == 0);
+  assert(armci_stride_info_pos(&ditr) == 0);
 
-  while(armci_stride_itr_has_more(sitr)) {
+  while(armci_stride_info_has_more(&sitr)) {
     int bytes;
     char *ap, *bp;
-    assert(armci_stride_itr_has_more(ditr));
+    assert(armci_stride_info_has_more(&ditr));
 
-    bytes = armci_stride_itr_seg_size(sitr);
-    assert(bytes == armci_stride_itr_seg_size(ditr));
+    bytes = armci_stride_info_seg_size(&sitr);
+    assert(bytes == armci_stride_info_seg_size(&ditr));
     
-    ap = armci_stride_itr_seg_ptr(sitr);
-    bp = armci_stride_itr_seg_ptr(ditr);
+    ap = armci_stride_info_seg_ptr(&sitr);
+    bp = armci_stride_info_seg_ptr(&ditr);
 
     memcpy(bp,ap,bytes);
 
-    armci_stride_itr_next(sitr);
-    armci_stride_itr_next(ditr);
+    armci_stride_info_next(&sitr);
+    armci_stride_info_next(&ditr);
   }
-  armci_stride_itr_destroy(&sitr);
-  armci_stride_itr_destroy(&ditr);
+  armci_stride_info_destroy(&sitr);
+  armci_stride_info_destroy(&ditr);
 
 #if 0
   for(i=0; i<10; i++) {

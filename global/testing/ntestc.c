@@ -208,7 +208,7 @@ double *buf;
              int p = NGA_Locate(g_a, lo);
              if((double)p != buf[i]) {
                 char msg[100];
-                sprintf(msg,"%d: wrong value: %d != %lf a",me, p, buf[i]);
+                sprintf(msg,"%d: wrong value: %d != %f a",me, p, buf[i]);
                 print_subscript(msg,ndim,lo,"\n");
                 GA_Error("Error - bye",i);  
              }
@@ -235,7 +235,7 @@ int me, nproc;
 
     MP_INIT(argc,argv);
 
-    GA_Initialize();                           /* initialize GA */
+    GA_INIT(argc,argv);                           /* initialize GA */
 
     nproc = GA_Nnodes();
     me = GA_Nodeid();

@@ -48,6 +48,10 @@
 #   include "ga_vampir.h"
 #endif
 
+#ifdef MPI
+extern ARMCI_Group* ga_get_armci_group_(int);
+#endif
+
 /**********************************************************
  *  n-dimensional utilities                               *
  **********************************************************/
@@ -1334,9 +1338,6 @@ void ngai_dot_patch(Integer *g_a, char *t_a, Integer *alo, Integer *ahi, Integer
   if (ga_is_mirrored_(g_a) && ga_is_mirrored_(g_b)) {
     armci_msg_gop_scope(SCOPE_NODE,retval,alen,"+",ctype);
   } else {
-#ifdef MPI
-    extern ARMCI_Group* ga_get_armci_group_(int);
-#endif
     if (a_grp == -1) {
       armci_msg_gop_scope(SCOPE_ALL,retval,alen,"+",ctype);
 #ifdef MPI
@@ -2428,7 +2429,7 @@ void *alpha, *beta;
       gai_error("g_b indices out of range ", *g_b);
   for(i=0; i<cndim; i++)
     if(clo[i] <= 0 || chi[i] > cdims[i])
-      gai_error("g_b indices out of range ", *g_c);
+      gai_error("g_c indices out of range ", *g_c);
 
   /* check if numbers of elements in patches match each other */
   n1dim = 1; for(i=0; i<cndim; i++) n1dim *= (chi[i] - clo[i] + 1);

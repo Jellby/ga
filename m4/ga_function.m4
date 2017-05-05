@@ -1,6 +1,6 @@
 # GA_FUNCTION
 # -----------
-# Define FUNCTION_NAME to either __func__ or __FUNCTION__ appropriately.
+# Define FUNCTION_NAME to either __func__ or FUNCTION_NAME appropriately.
 # If all else fails, #define FUNCTION_NAME <blank>.
 AC_DEFUN([GA_FUNCTION],
 [AC_CACHE_CHECK([for preprocessor symbol for function name],
@@ -13,10 +13,10 @@ AC_DEFUN([GA_FUNCTION],
 AS_IF([test x$ga_cv_cpp_function = x],
     [AC_COMPILE_IFELSE(
         [AC_LANG_PROGRAM([[extern int printf(const char *format, ...);]],
-            [[printf("__FUNCTION__ = %s\n", __FUNCTION__);]])],
-        [ga_cv_cpp_function=__FUNCTION__])])
+            [[printf("FUNCTION_NAME = %s\n", FUNCTION_NAME);]])],
+        [ga_cv_cpp_function=FUNCTION_NAME])])
 AS_IF([test x$ga_cv_cpp_function = x],
-    [ga_cv_cpp_function="FUNCTION_NAME_NOT_AVAILABLE"])])
+    [ga_cv_cpp_function='"Unknown"'])])
 AC_DEFINE_UNQUOTED([FUNCTION_NAME], [$ga_cv_cpp_function],
     [CPP symbol for function name, if available])
 ])# GA_FUNCTION

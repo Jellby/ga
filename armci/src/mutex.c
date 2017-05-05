@@ -2,6 +2,8 @@
 #   include "config.h"
 #endif
 
+#include <assert.h>
+
 /* $Id: mutex.c,v 1.24.10.1 2006-12-21 23:50:48 manoj Exp $ */
 #include "armcip.h"
 #include "copy.h"
@@ -143,7 +145,7 @@ int PARMCI_Destroy_mutexes()
      int proc, mutex, i,factor=0;
 #endif
      if(num_mutexes==0)armci_die("armci_destroy_mutexes: not created",0);
-     if(armci_nproc == 1) return(0);
+     if(armci_nproc == 1) { num_mutexes=0; return(0); }
 
      armci_msg_barrier();
 
@@ -263,6 +265,7 @@ int myturn;
 int *mutex_ticket, next_in_line, len=sizeof(int);
 int owner = armci_me;
         
+ assert(0);
 
       if(DEBUG)fprintf(stderr,"SLOCK=%d owner=%d p=%d m=%d\n",
                        armci_me,owner, proc,mutex);
@@ -307,6 +310,7 @@ int owner = armci_me;
 int i, p=NOBODY, *mutex_ticket= glob_mutex[owner].turn + mutex;
 int len=sizeof(int);
 
+ assert(0);
      if(DEBUG) fprintf(stderr,"SUNLOCK=%d node=%d mutex=%d ticket=%d\n",
                        armci_me,proc,mutex,Ticket);
 
@@ -358,7 +362,7 @@ int direct;
 
         if(!num_mutexes) armci_die("armci_lock: create mutexes first",0);
 
-        if(mutex > glob_mutex[proc].count)
+        if(mutex >= glob_mutex[proc].count)
            armci_die2("armci_lock: mutex not allocated", mutex,
                       glob_mutex[proc].count); 
 
@@ -382,7 +386,7 @@ void PARMCI_Unlock(int mutex, int proc)
         
         if(!num_mutexes) armci_die("armci_lock: create mutexes first",0);
 
-        if(mutex > glob_mutex[proc].count)
+        if(mutex >= glob_mutex[proc].count)
            armci_die2("armci_lock: mutex not allocated", mutex,
                       glob_mutex[proc].count); 
 

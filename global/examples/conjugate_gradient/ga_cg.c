@@ -21,11 +21,11 @@
 #include <fcntl.h>
 #endif
 
-#include <mpi.h>
-
+#include "armci.h"
 #include "ga.h"
 #include "macdecls.h"
 #include "finclude.h"
+#include "mp3.h"
 
 #define VERIFY_RESULT 1
 
@@ -41,7 +41,7 @@ static int niter;
 void read_and_create(int,char **);
 void computeminverser(double *,double *, double *);
 void computeminverse(double *,double *, int *,int *);
-void finalize_arrays();
+void finalize_arrays(int);
 extern void matvecmul(double *,int,double *,int,int *,int *);
 extern double *ga_vecptr;
 void conjugate_gradient(int nit,int dopreconditioning)
@@ -199,7 +199,6 @@ void **myptrarrx;
 void **myptrarrd;
 static void create_entire_vecs()
 {
-extern int ARMCI_Malloc(void **, size_t);
 int i,lo,hi;
     myptrarrx = (void **)malloc(sizeof(void*)*nproc);
     myptrarrd = (void **)malloc(sizeof(void*)*nproc);
@@ -217,7 +216,8 @@ int i,lo,hi;
     xvecptr=entirexvecptr+lo;
     dvecptr=entiredvecptr+lo;
 
-    printf("me: %d, entiredvecptr: %p, dvecptr: %p\n", me, entiredvecptr, dvecptr);
+    printf("me: %d, entiredvecptr: %p, dvecptr: %p\n",
+            me, (void*)entiredvecptr, (void*)dvecptr);
 }
 
 int main(argc, argv)
@@ -228,7 +228,7 @@ int heap=200000, stack=200000;
 int dopreconditioning=1;
 double time0,time1;
 
-    MPI_Init(&argc, &argv);                    /* initialize MPI */
+    MP_INIT(argc, argv);                    /* initialize message passing */
     GA_Initialize();                           /* initialize GA */
 
     me=GA_Nodeid(); 
@@ -254,7 +254,7 @@ double time0,time1;
          fflush(stdout);
        }
        GA_Terminate();
-       MPI_Finalize();
+       MP_FINALIZE();
        return 0;
     }
 
@@ -273,9 +273,9 @@ double time0,time1;
     if(me==0)printf("\n\nStarting Conjugate Gradient ....");
     initialize_arrays(dopreconditioning);
 
-    time0=MPI_Wtime();
+    time0=MP_TIMER();
     conjugate_gradient(30000/*2*/,dopreconditioning);
-    time1=MPI_Wtime();
+    time1=MP_TIMER();
 
     /* GA_Print(xvec); */
     /* GA_Print(dvec); */
@@ -283,18 +283,17 @@ double time0,time1;
     if(me==0)printf("\n%d:in %d iterations time to solution=%f-%f\n",me,niter,(time1-time0),time_get);
 
     finalize_arrays(dopreconditioning);
-    MPI_Barrier(MPI_COMM_WORLD);
+    MP_BARRIER();
 
     if(me==0)printf("Terminating ..\n");
     GA_Terminate();
-    MPI_Finalize();
+    MP_FINALIZE();
     return 0;
 }
 
 
 void finalize_arrays(int dpc)
 {
-     extern int ARMCI_Free(void*);
      GA_Destroy(bvec);
      GA_Destroy(dvec);
      if(isvectormirrored)

@@ -1,9 +1,22 @@
+# _GA_F77_INTEGER_4_KNOWN_FLAGS
+# -----------------------------
+# These are the known flags for promoting INTEGERs to 8 bytes.
+AC_DEFUN([_GA_F77_INTEGER_4_KNOWN_FLAGS],
+[-fdefault-integer-4 -qintsize=4 "-integer-size 32" -CcdII4 "-s integer32" -xtypemap=integer:32 -i4 +i4])dnl
+
+# _GA_F77_INTEGER_8_KNOWN_FLAGS
+# -----------------------------
+# These are the known flags for promoting INTEGERs to 8 bytes.
+AC_DEFUN([_GA_F77_INTEGER_8_KNOWN_FLAGS],
+[-fdefault-integer-8 -qintsize=8 "-integer-size 64" -CcdII8 "-s integer64" -xtypemap=integer:64 -i8 +i8])dnl
+
 # _GA_F77_INTEGER_4_FLAG(VARIABLE)
 # --------------------------------
 # What FFLAG, if any, forces INTEGER size to be 4 bytes?
 # Assign result to VARIABLE.
 AC_DEFUN([_GA_F77_INTEGER_4_FLAG],
-[for flag in none $FFLAG_INT -fdefault-integer-4 -qintsize=4 "-integer-size 32" -CcdII4 "-s integer32" -xtypemap=integer:32 -i4 ; do
+[for flag in none $FFLAG_INT _GA_F77_INTEGER_4_KNOWN_FLAGS
+do
     ga_save_FFLAGS="$FFLAGS"
     AS_IF([test "x$flag" != xnone], [FFLAGS="$flag $FFLAGS"])
     sizeof_integer=0
@@ -20,7 +33,8 @@ done
 # What FFLAG, if any, forces INTEGER size to be 8 bytes?
 # Assign result to VARIABLE.
 AC_DEFUN([_GA_F77_INTEGER_8_FLAG],
-[for flag in none $FFLAG_INT -fdefault-integer-8 -qintsize=8 "-integer-size 64" -CcdII8 "-s integer64" -xtypemap=integer:64 -i8 ; do
+[for flag in none $FFLAG_INT _GA_F77_INTEGER_8_KNOWN_FLAGS
+do
     ga_save_FFLAGS="$FFLAGS"
     AS_IF([test "x$flag" != xnone], [FFLAGS="$flag $FFLAGS"])
     sizeof_integer=0
@@ -56,13 +70,20 @@ AS_IF([test "x$FFLAG_INT" != x],
       end program]],
         [ga_result=$flag])])
 AS_IF([test "x$ga_result" = x],
-    [for flag in -fdefault-integer-4 -qintsize=4 "-integer-size 32" -CcdII4 "-s integer32" -xtypemap=integer:32 -i4 ; do
+    [for flag in _GA_F77_INTEGER_4_KNOWN_FLAGS
+     do
         FFLAGS="$ga_save_suppress_FFLAGS $flag"
         AC_LINK_IFELSE(
 [[      program main
       integer i
       end program]],
-            [ga_result=$flag; break])
+            [ac_ext=F
+             AC_LINK_IFELSE(
+[[      program main
+      integer i
+      end program]],
+             	[ga_result=$flag; break])
+             ac_ext=f])
      done])
 ac_f77_werror_flag=$ga_save_werror_flag
 FFLAGS="$ga_save_FFLAGS"
@@ -95,13 +116,20 @@ AS_IF([test "x$FFLAG_INT" != x],
       end program]],
         [ga_result=$flag])])
 AS_IF([test "x$ga_result" = x],
-    [for flag in -fdefault-integer-8 -qintsize=8 "-integer-size 64" -CcdII8 "-s integer64" -xtypemap=integer:64 -i8 ; do
+    [for flag in _GA_F77_INTEGER_8_KNOWN_FLAGS
+     do
         FFLAGS="$ga_save_suppress_FFLAGS $flag"
         AC_LINK_IFELSE(
 [[      program main
       integer i
       end program]],
-            [ga_result=$flag; break])
+            [ac_ext=F
+             AC_LINK_IFELSE(
+[[      program main
+      integer i
+      end program]],
+                [ga_result=$flag; break])
+             ac_ext=f])
      done])
 ac_f77_werror_flag=$ga_save_werror_flag
 FFLAGS="$ga_save_FFLAGS"
@@ -139,14 +167,12 @@ AC_CACHE_CHECK([for desired Fortran INTEGER size], [ga_cv_f77_integer_size],
             [ga_cv_f77_integer_size=8],
             [ga_cv_f77_integer_size=$ga_f77_integer_size])])])
 # Now determine the correct compiler flag to adjust the integer size.
-AS_IF([test "x$enable_f77" = xyes], [
 AC_CACHE_CHECK([for INTEGER size compile flag], [ga_cv_f77_integer_size_flag],
     [AS_CASE([$cross_compiling:$ga_cv_f77_integer_size],
         [yes:4],[_GA_F77_INTEGER_4_FLAG_CROSS([ga_cv_f77_integer_size_flag])],
         [yes:8],[_GA_F77_INTEGER_8_FLAG_CROSS([ga_cv_f77_integer_size_flag])],
         [*:4],  [_GA_F77_INTEGER_4_FLAG([ga_cv_f77_integer_size_flag])],
         [*:8],  [_GA_F77_INTEGER_8_FLAG([ga_cv_f77_integer_size_flag])])])
-])
 AS_IF([test "x$ga_cv_f77_integer_size_flag" != x],
     [AS_IF([test "x$ga_cv_f77_integer_size_flag" != xnone],
         [AC_SUBST([FFLAG_INT], [$ga_cv_f77_integer_size_flag])])])

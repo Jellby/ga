@@ -192,6 +192,9 @@ static void armci_perror_msg()
 #if defined(IBM) || defined(IBM64)
 int AR_caught_sigint;
 int AR_caught_sigterm;
+#else
+extern int AR_caught_sigint;
+extern int AR_caught_sigterm;
 #endif
 
 void armci_abort(int code)
@@ -461,11 +464,6 @@ int PARMCI_Init()
     dassertp(1,sizeof(armci_ireq_t) <= sizeof(armci_hdl_t),
 	     ("nb handle sizes: internal(%d) should be <= external(%d)\n",
 	      sizeof(armci_ireq_t), sizeof(armci_hdl_t)));
-#if defined(MPI)
-    dassertp(1,sizeof(ARMCI_iGroup) <= sizeof(ARMCI_Group),
-	     ("Group handle sizes: internal(%d) should be <= external(%d)\n",
-	      sizeof(ARMCI_iGroup), sizeof(ARMCI_Group)));
-#endif
 #ifdef MPI_SPAWN
     if(!_armci_initialized_args)
        armci_die("ARMCI is built w/ ARMCI_NETWORK=MPI-SPAWN. For this network "
@@ -650,10 +648,6 @@ int PARMCI_Init()
     armci_allocate_locks();
     armci_init_fence();
 
-#ifdef ARMCI_ENABLE_GPC_CALLS
-    gpc_init_signals();
-#endif
-
 #ifdef ALLOW_PIN
     armci_prot_switch_fence = malloc(sizeof(int*)*armci_nproc);
     armci_prot_switch_preproc = -1;
@@ -735,6 +729,7 @@ void PARMCI_Finalize()
 #ifdef ALLOW_PIN
     free(armci_prot_switch_fence);
 #endif
+    armci_msg_gop_finalize();
     ARMCI_Cleanup();
     armci_msg_barrier();
 #ifdef MPI
@@ -776,7 +771,6 @@ extern void cpu_yield();
 void armci_util_wait_int(volatile int *p, int val, int maxspin)
 {
 int count=0;
-extern void cpu_yield();
        while(*p != val)
             if((++count)<maxspin) armci_util_spin(count,(int *)p);
             else{
@@ -1100,7 +1094,7 @@ void ARMCI_Ckpt_finalize(int rid)
     armci_icheckpoint_finalize(rid);
 }
 #endif
-#ifdef ARMCI_ENABLE_GPC_CALLS
+#if ARMCI_ENABLE_GPC_CALLS
 int armci_gpc(int hndl, int proc, void  *hdr, int hlen,  void *data,  int dlen,
               void *rhdr, int rhlen, void *rdata, int rdlen,
               armci_hdl_t* nbh) {
@@ -1161,6 +1155,8 @@ char *ptr;
 
 #if defined(LAPI) || defined(GM) || defined(VAPI) || defined(QUADRICS)
     if(armci_rem_gpc(GET, darr, 2, &send, proc, 1, nb_handle))
+#else
+#  error "ARMCI_Gpc_exec not implemented for this platform.  Disable GPC to compile"
 #endif
       return FAIL2;
     return 0;
@@ -1294,8 +1290,6 @@ static int in_error_cleanup=0;
 
 void derr_printf(const char *format, ...) {
     
-  extern int AR_caught_sigint;
-  extern int AR_caught_sigterm;
   if(!in_error_cleanup) {
 #ifdef SYSV
     if((!AR_caught_sigterm && !AR_caught_sigint) || armci_me==0) 
@@ -1311,9 +1305,7 @@ void derr_printf(const char *format, ...) {
 
 
 int dassertp_fail(const char *cond_string, const char *file, 
-		  const char *func, unsigned int line) {
-  extern int AR_caught_sigint;
-  extern int AR_caught_sigterm;
+		  const char *func, unsigned int line, int code) {
   if(!in_error_cleanup) {
     in_error_cleanup=1;
 #ifdef SYSV
@@ -1327,7 +1319,7 @@ int dassertp_fail(const char *cond_string, const char *file,
       backtrace_symbols_fd(bt, backtrace(bt, 100), 2);
 #endif
     }
-    armci_abort(0);
+    armci_abort(code);
   }
-  return 0;
+  return code;
 }

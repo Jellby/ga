@@ -2,10 +2,10 @@
 #   include "config.fh"
 #endif
       subroutine input
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
 c.......................................................................
 c Input configuration from an XYZ format file call be.inpt and set up
 c initial data structures. Atomic numbers from XYZ file are ignored and

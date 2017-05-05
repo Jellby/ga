@@ -399,7 +399,7 @@ void armci_serv_register_req(void *ptr,long sz,ARMCI_MEMHDL_T *memhdl)
 {
 char *buf;
 int bufsize = sizeof(request_header_t)+sizeof(long)+sizeof(void *)+sizeof(ARMCI_MEMHDL_T);
-request_header_t *msginfo = (request_header_t*)GET_SEND_BUFFER(bufsize,ATTACH,armci_me);
+request_header_t *msginfo = (request_header_t*)GET_SEND_BUFFER(bufsize,REGISTER,armci_me);
     bzero(msginfo,sizeof(request_header_t));
 
     msginfo->from  = armci_me;
@@ -448,7 +448,6 @@ request_header_t *msginfo = (request_header_t*)GET_SEND_BUFFER(bufsize,ATTACH,ar
     *(int*)(buf+ sizeof(long)) =rlen;
     armci_send_req(armci_master, msginfo, bufsize);
     if(rlen){
-      msginfo->datalen = rlen;
       buf= armci_rcv_data(armci_master, msginfo);  /* receive response */
       armci_copy(buf, resp, rlen);
       FREE_SEND_BUFFER(msginfo);
@@ -484,7 +483,8 @@ int i;
                       (char*) memlock_table_array[armci_clus_last]);
     
     if(DEBUG_)
-      fprintf(stderr,"server initialized memlock %p\n",armci_use_memlock_table);
+      fprintf(stderr,"server initialized memlock %p\n",
+              (void*)armci_use_memlock_table);
 #endif
 }
 
@@ -509,12 +509,16 @@ void armci_server_ipc(request_header_t* msginfo, void* descr,
       server_alloc_memlock(ptr);
    }
    if(size>0)armci_set_mem_offset(ptr);
-   if(msginfo->datalen != sizeof(long)+sizeof(int))
+   if(msginfo->datalen != sizeof(long)+sizeof(int)) 
       armci_die("armci_server_ipc: bad msginfo->datalen ",msginfo->datalen);
 
    if(rlen==sizeof(ptr)){
-     msginfo->datalen = rlen;
+#if defined(PEND_BUFS)
+     memcpy(buffer, &ptr, sizeof(&ptr));
+     armci_send_data(msginfo, buffer);
+#else
      armci_send_data(msginfo, &ptr);
+#endif
    }else armci_die("armci_server_ipc: bad rlen",rlen);
 }
 
@@ -1462,7 +1466,10 @@ void armci_server(request_header_t *msginfo, char *dscr, char* buf, int buflen)
          armci_process_extheader(msginfo, dscr_save, buf, buflen);
 }
 
-
+#if ARMCI_ENABLE_GPC_CALLS && (defined(LAPI) || defined(GM) || defined(VAPI) || defined(DOELAN4) || defined(SOCKETS))
+static int gpc_call_process(request_header_t *msginfo, int len,
+                          char *dscr, char* buf, int buflen, char *sbuf);
+#endif
 
 void armci_server_vector( request_header_t *msginfo, 
                           char *dscr, char* buf, int buflen)
@@ -1495,7 +1502,7 @@ void armci_server_vector( request_header_t *msginfo,
     case GET:
 /*        fprintf(stderr, "%d:: Got a vector message!!\n", armci_me); */
       if(msginfo->ehlen) {
-#if defined(ARMCI_ENABLE_GPC_CALLS) && (defined(LAPI) || defined(GM) || defined(VAPI) || defined(DOELAN4))
+#if ARMCI_ENABLE_GPC_CALLS && (defined(LAPI) || defined(GM) || defined(VAPI) || defined(DOELAN4) || defined(SOCKETS))
 	gpc_call_process(msginfo, len, dscr, buf, buflen, sbuf);
 #else
 	armci_die("Unexpected vector message with non-zero ehlen. GPC call?",
@@ -1573,139 +1580,17 @@ void armci_server_vector( request_header_t *msginfo,
 
 /**Server side routine to handle a GPC call request**/
 /*===============Register this memory=====================*/
-#ifdef ARMCI_ENABLE_GPC_CALLS
-#if defined(LAPI) || defined(GM) || defined(VAPI) || defined(QUADRICS)
-gpc_buf_t *gpc_req;
-/*VT: I made the change below because DATA_SERVER is not defined for elan4
- *VT: This will only be invoked in case of GPC call and should not intefere
- *VT: with any other call
- */
-#if (defined(DOELAN4) || defined(DATA_SERVER)) && defined(SERVER_THREAD) 
-#  ifdef PTHREADS
-pthread_t data_server;
-#  else
-#    error Threading other than pthreads not yet implemented
-#  endif
-#endif
-#if defined(LAPI)
-pthread_t data_server;
-#endif
+#if ARMCI_ENABLE_GPC_CALLS
+#if defined(LAPI) || defined(GM) || defined(VAPI) || defined(QUADRICS) || defined(SOCKETS)
 
-void block_thread_signal(int signo) {
-  sigset_t mask;
-  sigemptyset(&mask);
-  sigaddset(&mask, SIGUSR1);
-  pthread_sigmask(SIG_BLOCK, &mask, NULL);
-}
-
-void unblock_thread_signal(int signo) {
-  sigset_t mask;
-  sigemptyset(&mask);
-  sigaddset(&mask, SIGUSR1);
-  pthread_sigmask(SIG_UNBLOCK, &mask, NULL);
-}
-
-void gpc_init() {
-  int i;
-  for(i=0; i<MAX_GPC_REQ; i++)
-    gpc_req[i].active = 0;
-}
-
-
-void gpc_free_buf_handle(int idx) {
-  gpc_req[idx].active = 0;
-}
-
-void gpc_completion_scan() {
-  int i;
-
-  /***run through gpc buffers and probe for completion**/
-  for(i=0;i<MAX_GPC_REQ; i++) {
-    gpc_call_t *gcall = &gpc_req[i].call;
-    
-    if(!gpc_req[i].active)
-      continue;
-
-    if(armci_gpc_local_exec(gcall->hndl, 
-			    gpc_req[i].msginfo.to, gpc_req[i].msginfo.from, 
-			    gcall->hdr, gcall->hlen, gcall->data, gcall->dlen, 
-			    gcall->rhdr, gcall->rhlen, gcall->rdata, gcall->rdlen,
-			    GPC_PROBE) == GPC_DONE) {
-      armci_send_data(&gpc_req[i].msginfo, gpc_req[i].reply);
-      gpc_free_buf_handle(i);
-    }
-  }
-}
-
-void gpc_completion_handler(int sig) {
-  if(sig != SIGUSR1) 
-    armci_die("gpc_completion_handler. Invoked with unexpected signal", sig);
-
-  if(!pthread_equal(pthread_self(), data_server)) 
-    armci_die("Signal in a thread other than the data server!!!", sig);
-
-/*    fprintf(stderr, "%d::SIGNAL\n", armci_me); */
-  gpc_completion_scan();
-}
-
-void gpc_init_signals() {
-  struct sigaction action;
-
-  /*register signal handler**/
-  action.sa_handler = gpc_completion_handler;
-  sigemptyset(&action.sa_mask);
-  action.sa_flags = SA_RESTART;
-  sigaction(SIGUSR1, &action, NULL);
-
-  /*Block the GPC completion signal. 
-    data server unblocks it later for itself*/
-/*    block_thread_signal(SIGUSR1); */
-
-#if 0
-  /*Mask this signal on main thread. Should only execute in the
-    context of the data server.*/ 
-  if(pthread_self() == armci_usr_tid) {
-    sigset_t mask;
-    sigemptyset(&mask);
-    sigaddset(&mask, SIGUSR1);
-    pthread_sigmask(SIG_BLOCK, &mask, NULL);
-  }
-#endif
-}
-
-int gpc_get_buf_handle() {
-  int i;
-  gpc_call_t *gcall;
-  
-  for(i=0; i<MAX_GPC_REQ && gpc_req[i].active==1; i++);
-
-  if(i==MAX_GPC_REQ) { /**wait for a buffer to be free**/
-    i = rand()%MAX_GPC_REQ;
-    gcall = &gpc_req[i].call;
-
-    if(armci_gpc_local_exec(gcall->hndl, 
-			    gpc_req[i].msginfo.to, gpc_req[i].msginfo.from, 
-			    gcall->hdr, gcall->hlen, gcall->data, gcall->dlen, 
-			    gcall->rhdr, gcall->rhlen, gcall->rdata, gcall->rdlen,
-			    GPC_WAIT) != GPC_DONE) 
-      armci_die("Wait on GPC call completion failed", 0);
-    armci_send_data(&gpc_req[i].msginfo, gpc_req[i].reply);
-    gpc_free_buf_handle(i);
-  }
-  
-  gpc_req[i].active = 1;
-  return i;
-}
-
-int gpc_call_process( request_header_t *msginfo, int len,
+static int gpc_call_process( request_header_t *msginfo, int len,
                           char *dscr, char* buf, int buflen, char *sbuf) {
   int h, hlen, dlen, rhlen, rdlen;
   int parlen;
   int rbuf;
   void *hdr, *data, *rhdr, *rdata;
-  gpc_buf_t *gbuf;
-  gpc_call_t *gcall;
-  /*printf("%d:%s dscr=%p buf=%p \n",armci_me,__FUNCTION__,dscr,buf);fflush(stdout);*/
+
+  /*printf("%d:%s dscr=%p buf=%p \n",armci_me,FUNCTION_NAME,dscr,buf);fflush(stdout);*/
   GETBUF(dscr, int, parlen);
   if(parlen != 1)
     armci_die("gpc_call_process: Invalid parlen in dscr", parlen);
@@ -1728,32 +1613,11 @@ int gpc_call_process( request_header_t *msginfo, int len,
   rhdr = buf;
   rdata = (char *)rhdr + rhlen;
 
-  rbuf = gpc_get_buf_handle();
-  gbuf = &gpc_req[rbuf];
-
-  gbuf->msginfo = *msginfo;
-  gbuf->call.hndl = h;
-  gbuf->call.hlen = hlen;
-  gbuf->call.dlen = dlen;
-  gbuf->call.rhlen = rhlen;
-  gbuf->call.rdlen = rdlen;
-
-  gbuf->call.hdr = gbuf->send;
-  gbuf->call.data = gbuf->send + hlen;
-  bcopy(hdr, gbuf->call.hdr, gbuf->call.hlen);
-  bcopy(data, gbuf->call.data, gbuf->call.dlen);
-
-  gbuf->call.rhdr = gbuf->reply;
-  gbuf->call.rdata = gbuf->reply + rhlen;
-
-  gcall = &gbuf->call;
-
-  if(armci_gpc_local_exec(gcall->hndl, gbuf->msginfo.to, gbuf->msginfo.from, 
-			  gcall->hdr, gcall->hlen, gcall->data, gcall->dlen, 
-			  gcall->rhdr, gcall->rhlen, gcall->rdata, gcall->rdlen,
+  if(armci_gpc_local_exec(h, msginfo->to, msginfo->from, 
+			  hdr, hlen, data, dlen, 
+			  rhdr, rhlen, rdata, rdlen,
 			  GPC_INIT) == GPC_DONE) {
-   armci_send_data(msginfo, gbuf->reply);
-   gpc_free_buf_handle(rbuf);
+   armci_send_data(msginfo, buf);
  }
   return 0;
 }
@@ -1845,14 +1709,6 @@ void *ptr;
     }
 #endif
 
-/* #ifdef VAPI */
-/*     if(op == GET) { */
-/*     if(msginfo->dscrlen < (bytes - sizeof(int))) */
-/*        *(int*)(((char*)(msginfo+1))+(bytes-sizeof(int))) = ARMCI_STAMP; */
-/*     else */
-/*        *(int*)(((char*)(msginfo+1))+(msginfo->dscrlen+bytes-sizeof(int))) = ARMCI_STAMP; */
-/*     } */
-/* #endif */
     armci_send_req(proc, msginfo, bufsize);
     if (nb_handle && op==GET) armci_save_vector_dscr(&buf0,darr,len,op,1);
     if (op == GET

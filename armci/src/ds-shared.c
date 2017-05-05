@@ -425,7 +425,7 @@ void armci_rcv_data_hdlr(int bufid)
     if(datalen > (MSG_BUFLEN-sizeof(request_header_t)-sizeof(long)))
         armci_die("armci_rcv_data_hdlr: data overflowing rcv buffer",datalen);
 
-    // fills msginfo buffer
+    /* fills msginfo buffer */
     buf = armci_ReadFromDirect(proc, msginfo, datalen);
 
     if ((char *)(msginfo+1) != buf)
@@ -476,14 +476,14 @@ void armci_rcv_vector_data_hdlr(int bufid)
     /* obtain buffer and buffer info associated with this receive */
     msginfo = (request_header_t *)_armci_buf_ptr_from_id(bufid);
     proc = msginfo->to;
-//    datalen = msginfo->datalen;
+    /*datalen = msginfo->datalen;*/
     buf = (char *)(msginfo + 1);
 
     /* receive vector as cont block, data is in buf */
     armci_rcv_data_hdlr(bufid);
 
     /* unpack vector */
-    // armci_giov_t darr[], int len)
+    /* armci_giov_t darr[], int len) */
      armci_vector_from_buf(darr, len, buf);
 }
 #endif
@@ -501,7 +501,7 @@ char *buf;
     }
 
     if(datalen == 0) armci_die("armci_rcv_data: no data to receive",datalen);
-    if(datalen > (MSG_BUFLEN-sizeof(request_header_t)-sizeof(long)))
+    if(datalen > (((int)MSG_BUFLEN)-((int)sizeof(request_header_t))-((int)sizeof(long))))
         armci_die("armci_rcv_data:data overflowing rcv buffer",datalen);
 
     buf = armci_ReadFromDirect(proc, msginfo, datalen);
@@ -682,16 +682,17 @@ void armci_rcv_strided_data(int proc, request_header_t* msginfo, int datalen,
     {
       int bytes_buf = 0, bytes_usr = 0, seg_off=0;
       int ctr=0;
+      stride_info_t sinfo;
       char *armci_ReadFromDirectSegment(int proc,request_header_t *msginfo,
 					int datalen, int *bytes_buf);
 
-      stride_itr_t sitr = armci_stride_itr_init(ptr,strides,stride_arr,count);
+      armci_stride_info_init(&sinfo,ptr,strides,stride_arr,count);
       do {
 	databuf = armci_ReadFromDirectSegment(proc,msginfo,datalen,&bytes_buf);
-	bytes_usr += armci_read_strided_inc(sitr,&databuf[bytes_usr],bytes_buf-bytes_usr, &seg_off);
+	bytes_usr += armci_read_strided_inc(&sinfo,&databuf[bytes_usr],bytes_buf-bytes_usr, &seg_off);
       } while(bytes_buf<datalen);
       dassert(1,bytes_buf == bytes_usr);
-      armci_stride_itr_destroy(&sitr);
+      armci_stride_info_destroy(&sinfo);
     }
 #endif
 }
@@ -1079,17 +1080,6 @@ void armci_start_server()
 
 void *armci_server_code(void *data)
 {
-#ifdef SERVER_THREAD
-#if (defined(GM) || defined(VAPI) || defined(QUADRICS)) && defined(ARMCI_ENABLE_GPC_CALLS)
-#  ifdef PTHREADS
-  extern pthread_t data_server;
-  data_server = pthread_self();
-#  else  
-  armci_die("armci_server_code: threaded data servers not using pthreads not supported by gpc", 0);
-#  endif
-#endif
-#endif
-
     if(DEBUG_)
         printf("%d: in server after creating thread.\n",armci_me);
 
@@ -1100,9 +1090,6 @@ void *armci_server_code(void *data)
         printf("%d(server): connected to all computing processes\n",armci_me);
         fflush(stdout);
     }
-#ifdef ARMCI_ENABLE_GPC_CALLS
-    gpc_init();
-#endif
     armci_call_data_server();
 
     armci_transport_cleanup();

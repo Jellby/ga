@@ -68,6 +68,7 @@ extern void armci_read_strided(void *ptr, int stride_levels, int stride_arr[], i
 #define BYTE_ADDRESSABLE_MEMORY
 #endif
 
+static char err_string[ ERR_STR_LEN]; /* string for extended error reporting */
 
 /*uncomment line below to verify consistency of MA in every sync */
 /*#define CHECK_MA yes */
@@ -1097,6 +1098,9 @@ logical FATR ga_update3_ghosts_(Integer *g_a)
   ndim = GA[handle].ndim;
   p_handle = GA[handle].p_handle;
 
+  /* obtain range of data that is held by local processor */
+  nga_distribution_(g_a,&me,lo_loc,hi_loc);
+
   /* initialize range increments and get array dimensions */
   for (idx=0; idx < ndim; idx++) {
     increment[idx] = 0;
@@ -1114,8 +1118,6 @@ logical FATR ga_update3_ghosts_(Integer *g_a)
 
   /* Get pointer to local memory */
   ptr_loc = GA[handle].ptr[me];
-  /* obtain range of data that is held by local processor */
-  nga_distribution_(g_a,&me,lo_loc,hi_loc);
 
   /* loop over dimensions for sequential update using shift algorithm */
   for (idx=0; idx < ndim; idx++) {

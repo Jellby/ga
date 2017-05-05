@@ -4,10 +4,9 @@
       program scf
 C$Id: scf.F,v 1.18 2007/03/23 19:24:36 d3g293 Exp $
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
 c
       integer*8 nints, maxint                                           !cste
 c
@@ -35,12 +34,7 @@ c
 c     
 c     initalize the parallel message passing environment
 c     
-#ifdef MPI
-      integer ierr
-      call mpi_init(ierr)
-#else
-      call pbeginf
-#endif
+#include "mp3.fh"
       call ga_initialize()
 c
 c   Allocate memory
@@ -198,7 +192,11 @@ c
             write(6,*)'Note: largest 32-bit integer is 2,147,483,647'   !cste
        write(6,*)'Probably due to insufficient integer precision in GA.'!cste
          endif                                                          !cste
+#ifdef MPI
+         call ga_print_stats()
+#else
          call stats
+#endif
       endif
 c     
       call closearrays
@@ -213,10 +211,10 @@ c
 c
       subroutine makesz(schwmax)
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       dimension work(ichunk,ichunk)
       integer lo(2),hi(2),i,j,iloc,jloc,ld
       logical dotask, next_chunk
@@ -252,10 +250,10 @@ c
 c
       subroutine ininrm
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       integer*8 maxint          
 c
 c     write a little welcome message
@@ -294,10 +292,10 @@ c
       end
       double precision function h(i,j)
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
 cvd$r novector
 cvd$r noconcur
 c
@@ -335,10 +333,10 @@ c
       end
       double precision function s(i,j)
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
 c
 c     generate the overlap matrix element between the normalized
 c     primitve gaussian 1s functions i and j
@@ -351,10 +349,10 @@ c
       end
       subroutine makden
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
 c      dimension work(maxnbfn,maxnbfn), torbs(maxnbfn,maxnbfn)
       dimension work(ichunk,ichunk), orbsi(ichunk,maxnbfn)
       dimension orbsj(ichunk,maxnbfn)
@@ -395,10 +393,10 @@ c
 c
       subroutine oneel(schwmax, eone)
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       integer lo(2), hi(2), i, j, iloc, jloc, ld
       dimension work(ichunk,ichunk),tfock(ichunk,ichunk)
       logical dotask, next_chunk
@@ -430,6 +428,7 @@ c
       eone = 0.5d00*contract_matrices(g_fock,g_dens)
 c
       end
+#if 0
       integer function nxtask(nproc)
       parameter (ichunk = 10)
       save icount, nleft
@@ -440,7 +439,11 @@ c     and thus reduce no. of requests to shared counter
 c
       if(nproc.gt.0) then
          if(nleft.eq.0) then
+#ifdef MPI
+            icount = nxtval_ga(nproc) * ichunk
+#else
             icount = nxtval(nproc) * ichunk
+#endif
             nleft = ichunk
          endif
          nxtask = icount
@@ -449,7 +452,11 @@ c
       else
           nleft = 0
           nxtask = 0
+#ifdef MPI
+          junk = nxtval_ga(nproc)
+#else
           junk = nxtval(nproc)
+#endif
       endif
 c
 c     following does dumb static load balancing
@@ -466,9 +473,10 @@ c$$$          nleft = 0
 c$$$          nxtask = 0
 c$$$      endif
       end
+#endif
 c
       logical function next_chunk(lo,hi)
-      include 'cscf.h'
+#include "cscf.h"
       integer one
       parameter (one = 1)
       integer imax, lo(2), hi(2), ilo, jlo
@@ -490,7 +498,7 @@ c
       end
 c
       logical function next_4chunk(lo,hi,ilo,jlo,klo,llo)
-      include 'cscf.h'
+#include "cscf.h"
       integer one
       parameter (one = 1)
       integer*8 imax, itask                                     !cste
@@ -530,7 +538,7 @@ c
       end
 c
       subroutine clean_chunk(chunk)
-      include 'cscf.h'
+#include "cscf.h"
       double precision chunk(ichunk,ichunk)
       integer i,j
       do j = 1, ichunk
@@ -543,10 +551,10 @@ c
 c
       subroutine twoel(schwmax, etwo)
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       double precision f_ij(ichunk,ichunk),d_kl(ichunk,ichunk)
       double precision f_ik(ichunk,ichunk),d_jl(ichunk,ichunk)
       double precision s_ij(ichunk,ichunk),s_kl(ichunk,ichunk)
@@ -643,10 +651,10 @@ cste  stop 'twoel computed no integrals'                        !cste
 c
       subroutine damp(fac)
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
 c
 c    create damped density matrix as a linear combination of
 c    old density matrix and density matrix formed from new orbitals
@@ -658,10 +666,10 @@ c
 c
       subroutine prnout(iter, energy, deltad, tester)
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
 c
 c     printout results of each iteration
 c
@@ -675,10 +683,10 @@ c
 c
       double precision function dendif()
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       double precision xdiff
       dimension dens_c(ichunk,ichunk),work_c(ichunk,ichunk)
       integer lo(2), hi(2), i, j, ld
@@ -708,10 +716,10 @@ c
 c
       double precision function testfock()
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       double precision xmax, xtmp
       dimension work(ichunk,ichunk)
       integer lo(2), hi(2), i, j, iloc, jloc, ld
@@ -744,10 +752,10 @@ c
 c
       subroutine shiftfock(shift)
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       double precision shift
       dimension work(ichunk,ichunk)
       integer lo(2), hi(2), i, j, iloc, jloc, ld, icnt
@@ -779,10 +787,10 @@ c
 c
       subroutine prnfin(energy)
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       dimension orbs(maxnbfn, maxnbfn)
       integer lo(2),hi(2),ld
 c
@@ -797,10 +805,10 @@ c
       end
       subroutine g(value,i,j,k,l)
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
 c
 c     compute the two electon integral (ij|kl) over normalized
 c     primitive 1s gaussians
@@ -833,10 +841,10 @@ c
       subroutine diagon(tester, iter)
 c      subroutine diagon(fock, orbs, evals, work, tester, iter)
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       double precision r_zero, r_one, shift, tester
 c
 #if USE_TRANSFORM
@@ -890,10 +898,10 @@ c
 c
       subroutine makeob
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       double precision work(ichunk,ichunk),orbs(ichunk,ichunk)
       double precision eval(maxnbfn)
       integer lo(2),hi(2),ld,me,i,j,iloc,jloc
@@ -913,7 +921,7 @@ c
           do i = lo(1), hi(1)
             iloc = i - lo(1) + 1
             work(iloc,jloc) = s(i,j)
-            orbs(iloc,jloc) = drand48(0)
+            orbs(iloc,jloc) = drand(0)
           end do
         end do
         call nga_put(g_ident,lo,hi,work,ld)
@@ -928,10 +936,10 @@ c
 c
       subroutine denges
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
 c
 c     Form guess density from superposition of atomic densities in the AO
 c     basis set ... instead of doing the atomic SCF hardwire for this
@@ -1007,10 +1015,10 @@ c
 c
       subroutine setarrays
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       integer one, two, dims(2)
       logical status
       one = 1
@@ -1062,10 +1070,10 @@ c
       end
       subroutine closearrays
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       logical status
 c
       status = ga_destroy(g_counter)
@@ -1082,10 +1090,10 @@ c
 c
       subroutine makoverlap
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       integer me, lo(2), hi(2), ptr, ld(2)
       integer ld1, ld2
       me = ga_nodeid()
@@ -1099,10 +1107,10 @@ c
       end
 c
       subroutine setoverlap(a,lo,hi,ld1,ld2)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       integer lo(2), hi(2)
       integer ld1, ld2, ii, jj
       double precision a(ld1,ld2)
@@ -1126,10 +1134,10 @@ c
 c
       subroutine print_ga_block(g_a)
       implicit double precision(a-h,o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       integer lo(2), hi(2), ptr, ld1, ld2
 c
       me = ga_nodeid()
@@ -1145,10 +1153,10 @@ c
 c
       subroutine print_ga_block_ij(g_a,tlo)
       implicit double precision(a-h,o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       integer lo(2), hi(2), ptr, ld1, ld2
 c
       me = ga_nodeid()
@@ -1164,10 +1172,10 @@ c
 c
       subroutine dump_chunk(a,ld1,ld2)
       implicit double precision (a-h, o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       integer ld1, ld2
       double precision a(ld1, ld2)
       do i = 1, min(10,ld1)
@@ -1185,10 +1193,10 @@ c
 c
       double precision function contract_matrices(g_a,g_b)
       implicit double precision(a-h,o-z)
-      include 'cscf.h'
+#include "cscf.h"
 #include "mafdecls.fh"
 #include "global.fh"
-#include "tcgmsg.fh"
+#include "mp3def.fh"
       integer lo(2), hi(2), ptr_a, ptr_b, ld, ld1, ld2
       double precision a(ichunk,ichunk),b(ichunk,ichunk)
       double precision value

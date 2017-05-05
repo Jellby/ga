@@ -222,7 +222,7 @@ double max_time,min_time,avg_time,time_start,time_stop,total_time;
     MP_INIT(argc,argv);
     MP_PROCS(&nproc);
     MP_MYID(&me);
-    ARMCI_Init();      /* initialize ARMCI */
+    ARMCI_Init_args(&argc, &argv);      /* initialize ARMCI */
 
     if(me==0)printf("\n                          RANDOM ACCESS EXAMPLE\n");
     if(argc<2){

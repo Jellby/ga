@@ -20,6 +20,13 @@
 #define DGETRF F77_FUNC(dgetrf,DGETRF)
 #define DGETRS F77_FUNC(dgetrs,DGETRS)
 
+extern void DGETRF( Integer *M, Integer *N, DoublePrecision *A, Integer *LDA, Integer *IPIV, Integer *INFO );
+#if F2C_HIDDEN_STRING_LENGTH_AFTER_ARGS
+extern void DGETRS( char *TRANS, Integer *N, Integer *NRHS, DoublePrecision *A, Integer *LDA, Integer *IPIV, DoublePrecision *B, Integer *LDB, Integer *INFO, int len );
+#else
+extern void DGETRS( char *TRANS, int len, Integer *N, Integer *NRHS, DoublePrecision *A, Integer *LDA, Integer *IPIV, DoublePrecision *B, Integer *LDB, Integer *INFO );
+#endif
+
 #define REAL double
 #define ZERO 0.0e0
 #define ONE 1.0e0
@@ -301,7 +308,7 @@ function, references to a[i][j] are written a[lda*i+j].  */
 /*     internal variables	*/
 
   REAL t;
-  int LP_idamax(),j,k,kp1,l,nm1;
+  int j,k,kp1,l,nm1;
 
 
 /*     gaussian elimination with partial pivoting	*/
@@ -421,7 +428,7 @@ function, references to a[i][j] are written a[lda*i+j].  */
 {
 /*     internal variables	*/
 
-	REAL LP_ddot(),t;
+	REAL t;
 	int k,kb,l,nm1;
 
 	nm1 = n - 1;
@@ -522,13 +529,14 @@ void gai_lu_solve_seq(char *trans, Integer *g_a, Integer *g_b) {
   oactive = (me == 0);
 
   if (oactive) {
-    DoublePrecision *adra, *adrb, *adri;
+    DoublePrecision *adra, *adrb;
+    Integer *adri;
     Integer one=1; 
 
     /** allocate a,b, and work and ipiv arrays */
     adra = (DoublePrecision*) ga_malloc(dimA1*dimA2, C_DBL, "a");
     adrb = (DoublePrecision*) ga_malloc(dimB1*dimB2, C_DBL, "b");
-    adri = (DoublePrecision*) ga_malloc(GA_MIN(dimA1,dimA2), C_DBL, "ipiv");
+    adri = (Integer*) ga_malloc(GA_MIN(dimA1,dimA2), F_INT, "ipiv");
 
     /** Fill local arrays from global arrays */   
     ga_get_(g_a, &one, &dimA1, &one, &dimA2, adra, &dimA1);
