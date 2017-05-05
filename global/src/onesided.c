@@ -69,7 +69,9 @@
 #define INVALID_MA_HANDLE -1 
 #define NEAR_INT(x) (x)< 0.0 ? ceil( (x) - 0.5) : floor((x) + 0.5)
 
+#if !defined(CRAY_YMP)
 #define BYTE_ADDRESSABLE_MEMORY
+#endif
 
 #ifdef PROFILE_OLD
 #include "ga_profile.h"
@@ -116,6 +118,9 @@ void pnga_pgroup_sync(Integer grp_id)
        /* fence on all processes in this group */
        { int p; for(p=0;p<PGRP_LIST[grp_id].map_nproc;p++)
           ARMCI_Fence(ARMCI_Absolute_id(&PGRP_LIST[grp_id].group, p)); }
+#ifdef BGML 
+       ARMCI_Barrier();
+#endif
        pnga_msg_pgroup_sync(grp_id);
        if(GA_fence_set)bzero(fence_array,(int)GAnproc);
        GA_fence_set=0;
@@ -125,6 +130,9 @@ void pnga_pgroup_sync(Integer grp_id)
     } else {
       /* printf("p[%d] calling regular sync in ga_pgroup_sync\n",GAme); */
        ARMCI_AllFence();
+#ifdef BGML 
+       ARMCI_Barrier();
+#endif
        pnga_msg_pgroup_sync(grp_id);
        if(GA_fence_set)bzero(fence_array,(int)GAnproc);
        GA_fence_set=0;
@@ -149,11 +157,17 @@ Integer status;
        
        if (GA_Default_Proc_Group == -1) {
 	  ARMCI_AllFence();
+#ifdef BGML
+          ARMCI_Barrier();
+#endif
 	  pnga_msg_sync();
 	  if(GA_fence_set)bzero(fence_array,(int)GAnproc);
 	  GA_fence_set=0;
        } else {
          Integer grp_id = (Integer)GA_Default_Proc_Group;
+#ifdef BGML
+          ARMCI_Barrier();
+#endif
          pnga_pgroup_sync(grp_id);
        }
 #ifdef CHECK_MA
@@ -1146,7 +1160,7 @@ static int putn_verify_element_in_buf(Integer g_a, Integer *lo, Integer *hi, voi
 				      Integer elemSize)
 {
   int i, ndims;
-#if HAVE_STDDEF_H
+#ifdef HAVE_STDDEF_H
   ptrdiff_t off = (char *)bufn - (char *)buf;
 #else
   Integer off = (char *)bufn - (char *)buf;
@@ -4781,6 +4795,17 @@ void *pval;
        /*printf("\n%d:proc=%d",GAme,proc);fflush(stdout);*/
     }
 
+    /**
+     * On BGL, when datatype is C_LONGLONG or if USE_INTEGER8 is defined,
+     * (i.e. default Fortran integer is C_LONGLONG), there is no support for
+     * 64-bit integers in ARMCI_Rmw. Therefore, offset by 4 bytes as BGL uses
+     * Big-endian format, and increment only the 32-bit value.
+     * NOTE: On BGL, ARMCI/BGML doesnot support 64-bit integer increment.
+     */
+#ifdef BGML
+    if(GA[handle].type==C_LONGLONG) ptr = ((char*)ptr) + 4 ;
+#endif
+    
     ARMCI_Rmw(optype, pval, (int*)ptr, (int)inc, (int)proc);
 
    GA_POP_NAME;

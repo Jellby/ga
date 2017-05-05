@@ -4,20 +4,14 @@
 #ifdef WIN32
 #include <io.h>
 #ifndef __MINGW32__
-/* #include "winutil.h" */
+#include "winutil.h"
 #endif
 #define F_OK 00
 #endif
 
 #include <errno.h>
-
-#if HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-#if HAVE_STRING_H
 #include <string.h>
-#endif
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include "typesf2c.h"
@@ -32,10 +26,10 @@ extern void GA_Error(char*, int);
 #endif
 
 
-#if (defined(CRAY) && !defined(__crayx1))
+#if (defined(CRAY) && !defined(__crayx1)) || defined(NEC)
 #        include <sys/statfs.h>
 #        define  STATVFS statfs
-#elif defined(__FreeBSD__)
+#elif defined(__FreeBSD__) || defined(MACX)
 #        include <sys/param.h>
 #        include <sys/mount.h>
 #        define  STATVFS statfs
@@ -44,7 +38,7 @@ extern void GA_Error(char*, int);
 #        define  STATVFS _stat 
 #        define  S_ISDIR(mode) ((mode&S_IFMT) == S_IFDIR)
 #        define  S_ISREG(mode) ((mode&S_IFMT) == S_IFREG)
-#elif defined(LINUX)  ||  defined(CYGWIN) || defined(BGQ)
+#elif defined(CYGNUS) ||  defined(LINUX)  ||  defined(CYGWIN) || defined(BGL) || defined(BGP) || defined(BGQ) || defined(HPUX)
 #        include <sys/vfs.h>
 #        define  STATVFS statfs
 #        define NO_F_FRSIZE 
@@ -77,7 +71,7 @@ extern int                   elio_pending_error;
 
 
 #if !defined(PRINT_AND_ABORT)
-#   if defined(SUN)
+#   if defined(SUN) && !defined(SOLARIS)
       extern int fprintf();
       extern void fflush();
 #   endif

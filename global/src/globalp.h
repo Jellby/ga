@@ -9,20 +9,24 @@
 #undef CRAY
 #endif
 
-#if HAVE_WINDOWS_H
-#   include <windows.h>
-#   define sleep(x) Sleep(1000*(x))
-#endif
-
 #ifdef FALSE
 #undef FALSE
 #endif
 #ifdef TRUE
 #undef TRUE
 #endif
+#ifdef CRAY_YMP
+#define FALSE _btol(0)
+#define TRUE  _btol(1)
+#else
 #define FALSE (logical) 0
 #define TRUE  (logical) 1
+#endif
 
+#if HAVE_WINDOWS_H
+#   include <windows.h>
+#   define sleep(x) Sleep(1000*(x))
+#endif
 #include "macdecls.h"
 
 #define GA_OFFSET   1000           /* offset for handle numbering */

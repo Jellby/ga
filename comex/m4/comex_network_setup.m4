@@ -124,23 +124,6 @@ AS_IF([test "x$happy" = xyes],
     [$2])
 ])dnl
 
-# _COMEX_NETWORK_MPI3([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
-# ---------------------------------------------------------------------
-AC_DEFUN([_COMEX_NETWORK_MPI3], [
-AC_MSG_NOTICE([searching for MPI3...])
-happy=yes
-CPPFLAGS="$CPPFLAGS $MPI_CPPFLAGS"
-LDFLAGS="$LDFLAGS $MPI_LDFLAGS"
-LIBS="$LIBS $MPI_LIBS"
-AS_IF([test "x$happy" = xyes],
-    [AC_CHECK_HEADER([mpi.h], [], [happy=no])])
-AS_IF([test "x$happy" = xyes],
-    [AC_SEARCH_LIBS([MPI_Init], [], [], [happy=no])])
-AS_IF([test "x$happy" = xyes],
-    [comex_network=MPI3; with_mpi3=yes; $1],
-    [$2])
-])dnl
-
 # _COMEX_NETWORK_OFA([ACTION-IF-FOUND], [ACTION-IF-NOT-FOUND])
 # ------------------------------------------------------------------
 AC_DEFUN([_COMEX_NETWORK_OFA], [
@@ -223,14 +206,14 @@ AS_IF([test "x$happy" = xyes],
     [AC_SEARCH_LIBS([fi_strerror], [fabric], [], [happy=no])])
 AS_IF([test "x$happy" = xyes],
     [AC_SEARCH_LIBS([fi_tostr], [fabric], [], [happy=no])])
-AS_IF([test "x$happy" = xyes], 
-    [AS_CASE([$ac_cv_search_fi_getinfo], 
-            ["none required"], [], 
-            [no], [], 
-            [# add missing lib to COMEX_NETWORK_LIBS if not there 
-             AS_CASE([$COMEX_NETWORK_LIBS], 
-                     [*$ac_cv_search_fi_getinfo*], [], 
-                     [COMEX_NETWORK_LIBS="$COMEX_NETWORK_LIBS $ac_cv_search_fi_getinfo"])])]) 
+AS_IF([test "x$happy" = xyes],
+    [AS_CASE([$ac_cv_search_fi_getinfo],
+            ["none required"], [],
+            [no], [],
+            [# add missing lib to COMEX_NETWORK_LIBS if not there
+             AS_CASE([$COMEX_NETWORK_LIBS],
+                     [*$ac_cv_search_fi_getinfo*], [],
+                     [COMEX_NETWORK_LIBS="$COMEX_NETWORK_LIBS $ac_cv_search_fi_getinfo"])])])
 AS_IF([test "x$happy" = xyes],
     [comex_network=OFI; with_ofi=yes; $1],
     [$2])
@@ -255,7 +238,6 @@ _COMEX_NETWORK_WITH([mpi-ts],    [MPI-1 two-sided])
 _COMEX_NETWORK_WITH([mpi-mt],    [MPI-2 multi-threading])
 _COMEX_NETWORK_WITH([mpi-pt],    [MPI-2 multi-threading with progress thread])
 _COMEX_NETWORK_WITH([mpi-pr],    [MPI-1 two-sided with progress rank])
-_COMEX_NETWORK_WITH([mpi3],      [MPI-3 one-sided])
 _COMEX_NETWORK_WITH([ofa],       [Infiniband OpenIB])
 _COMEX_NETWORK_WITH([portals4],  [Portals4])
 _COMEX_NETWORK_WITH([dmapp],     [Cray DMAPP])
@@ -298,9 +280,6 @@ AS_IF([test "x$enable_autodetect" = xyes],
               AS_IF([test "x$comex_network" = xMPI_PR],
                  [_COMEX_NETWORK_MPI_PR([],
                     [AC_MSG_ERROR([test for COMEX_NETWORK=MPI_PR failed])])])
-              AS_IF([test "x$comex_network" = xMPI3],
-                 [_COMEX_NETWORK_MPI3([],
-                    [AC_MSG_ERROR([test for COMEX_NETWORK=MPI3 failed])])])
               AS_IF([test "x$comex_network" = xOFA],
                  [_COMEX_NETWORK_OFA([],
                     [AC_MSG_ERROR([test for COMEX_NETWORK=OFA failed])])])
@@ -320,7 +299,6 @@ AS_IF([test "x$enable_autodetect" = xyes],
          _COMEX_NETWORK_WARN([mpi-mt])
          _COMEX_NETWORK_WARN([mpi-pt])
          _COMEX_NETWORK_WARN([mpi-pr])
-         _COMEX_NETWORK_WARN([mpi3])
          _COMEX_NETWORK_WARN([ofa])
          _COMEX_NETWORK_WARN([portals4])
          _COMEX_NETWORK_WARN([dmapp])
@@ -336,7 +314,6 @@ _COMEX_NETWORK_AM_CONDITIONAL([mpi-ts])
 _COMEX_NETWORK_AM_CONDITIONAL([mpi-mt])
 _COMEX_NETWORK_AM_CONDITIONAL([mpi-pt])
 _COMEX_NETWORK_AM_CONDITIONAL([mpi-pr])
-_COMEX_NETWORK_AM_CONDITIONAL([mpi3])
 _COMEX_NETWORK_AM_CONDITIONAL([ofa])
 _COMEX_NETWORK_AM_CONDITIONAL([portals4])
 _COMEX_NETWORK_AM_CONDITIONAL([dmapp])
@@ -345,7 +322,6 @@ _COMEX_NETWORK_AC_DEFINE([mpi-ts])
 _COMEX_NETWORK_AC_DEFINE([mpi-mt])
 _COMEX_NETWORK_AC_DEFINE([mpi-pt])
 _COMEX_NETWORK_AC_DEFINE([mpi-pr])
-_COMEX_NETWORK_AC_DEFINE([mpi3])
 _COMEX_NETWORK_AC_DEFINE([ofa])
 _COMEX_NETWORK_AC_DEFINE([portals4])
 _COMEX_NETWORK_AC_DEFINE([dmapp])

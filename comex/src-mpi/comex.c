@@ -3,30 +3,12 @@
 #endif
 
 /* C and/or system headers */
-
-#if HAVE_STDIO_H
 #include <stdio.h>
-#endif
-
-#if HAVE_STDLIB_H
 #include <stdlib.h>
-#endif
-
-#if HAVE_ASSERT_H
 #include <assert.h>
-#endif
-
-#if HAVE_STRING_H
 #include <string.h>
-#endif
-
-#if HAVE_STRINGS_H
 #include <strings.h>
-#endif
-
-#if HAVE_UNISTD_H
 #include <unistd.h>
-#endif
 
 /* 3rd party headers */
 #include <mpi.h>
@@ -1143,7 +1125,6 @@ int comex_barrier(comex_group_t comex_group)
     char *response_received_mask; /* which procs did we get ack from */
     int request_received_count = 0;
     int response_received_count = 0;
-    int ring_proc;
 
 #if DEBUG
     printf("[%d] comex_barrier(%d)\n", l_state.rank, comex_group);
@@ -1177,6 +1158,7 @@ int comex_barrier(comex_group_t comex_group)
     /* send out barrier requests to all procs in default group */
 #define USE_RING 1
 #if USE_RING
+    int ring_proc;
     for (ring_proc=0; ring_proc<group_size; ++ring_proc)
 #else
     for (group_proc=0; group_proc<group_size; ++group_proc)
@@ -2137,7 +2119,7 @@ int comex_malloc(void **ptrs, size_t size, comex_group_t group)
   
     /* exchange buffer address */
     comex_barrier(group); /* end ARMCI epoch, enter MPI epoch */
-    rc = MPI_Allgather(MPI_IN_PLACE, 0, MPI_CHAR, ptrs, SIZEOF_VOIDP, MPI_CHAR, comm);
+    rc = MPI_Allgather(MPI_IN_PLACE, 0, MPI_LONG, ptrs, 1, MPI_LONG, comm);
     assert(MPI_SUCCESS == rc);
 #if DEBUG
     {

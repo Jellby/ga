@@ -375,7 +375,7 @@ extern void Error();
 
 void ga_debug_suspend()
 {
-#if HAVE_PAUSE
+#ifdef HAVE_PAUSE
    fprintf(stdout,"ga_debug: process %ld ready for debugging\n",
            (long)getpid());
    fflush(stdout);
