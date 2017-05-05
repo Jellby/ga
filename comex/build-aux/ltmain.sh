@@ -5655,7 +5655,7 @@ func_mode_link ()
 	continue
 	;;
 
-      -mt|-mthreads|-kthread|-Kthread|-pthread|-pthreads|--thread-safe \
+      -mkl*|-mt|-mthreads|-kthread|-Kthread|-pthread|-pthreads|--thread-safe \
       |-threads|-fopenmp|-openmp|-mp|-xopenmp|-omp|-qsmp=*)
 	func_append compiler_flags " $arg"
 	func_append compile_command " $arg"
@@ -6160,7 +6160,7 @@ func_mode_link ()
 	lib=
 	found=no
 	case $deplib in
-	-mt|-mthreads|-kthread|-Kthread|-pthread|-pthreads|--thread-safe \
+	-mkl*|-mt|-mthreads|-kthread|-Kthread|-pthread|-pthreads|--thread-safe \
         |-threads|-fopenmp|-openmp|-mp|-xopenmp|-omp|-qsmp=*)
 	  if test "$linkmode,$pass" = "prog,link"; then
 	    compile_deplibs="$deplib $compile_deplibs"

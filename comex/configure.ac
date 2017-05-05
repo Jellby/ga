@@ -34,6 +34,10 @@ COMEX_TOP_SRCDIR="`pwd`"
 cd "$COMEX_TOP_BUILDDIR"
 AS_IF([test "$COMEX_TOP_BUILDDIR" != "$COMEX_TOP_SRCDIR"],
       [AC_MSG_NOTICE([Detected VPATH build])])
+AS_IF([test -d "../global" && test -d "../LinAlg"],
+      [comex_standalone=no
+       AC_MSG_NOTICE([Detected Global Arrays build])],
+      [comex_standalone=yes])
 
 # We use the MPI compiler wrappers instead of the standard compilers.
 COMEX_WITH_MPI
@@ -54,9 +58,10 @@ AC_USE_SYSTEM_EXTENSIONS
 AS_IF([test x$with_mpi_wrappers = xyes],
     [COMEX_MPI_UNWRAP],
     [COMEX_ARG_PARSE([with_mpi], [MPI_LIBS], [MPI_LDFLAGS], [MPI_CPPFLAGS])])
-AS_CASE([$enable_mpi_tests],
-    [yes],[COMEX_MPICC_TEST_LINK],
-    [no], [COMEX_MPICC_TEST_COMPILE])
+AS_IF([test "x$with_mpi" != xno],
+    [AS_CASE([$enable_mpi_tests],
+        [yes],[COMEX_MPICC_TEST_LINK],
+        [no], [COMEX_MPICC_TEST_COMPILE])])
 
 AM_CONDITIONAL([CROSS_COMPILING], [test "x$cross_compiling" = xyes])
 

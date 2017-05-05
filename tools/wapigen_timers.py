@@ -138,7 +138,9 @@ static int nproc;
         func = functions[name]
         if 'terminate' in name:
             continue
-        if 'initialize' in name:
+        elif 'initialized' in name:
+            pass # don't skip pnga_initialized
+        elif 'initialize' in name:
             continue
         func = functions[name]
         wnga_name = name.replace('pnga_','wnga_')

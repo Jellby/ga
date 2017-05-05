@@ -31,6 +31,7 @@ static long count_pnga_add_constant = 0;
 static long count_pnga_add_constant_patch = 0;
 static long count_pnga_add_diagonal = 0;
 static long count_pnga_add_patch = 0;
+static long count_pnga_alloc_gatscat_buf = 0;
 static long count_pnga_allocate = 0;
 static long count_pnga_bin_index = 0;
 static long count_pnga_bin_sorter = 0;
@@ -84,6 +85,7 @@ static long count_pnga_error = 0;
 static long count_pnga_fence = 0;
 static long count_pnga_fill = 0;
 static long count_pnga_fill_patch = 0;
+static long count_pnga_free_gatscat_buf = 0;
 static long count_pnga_gather = 0;
 static long count_pnga_gather2d = 0;
 static long count_pnga_get = 0;
@@ -103,6 +105,7 @@ static long count_pnga_has_ghosts = 0;
 static long count_pnga_init_fence = 0;
 static long count_pnga_initialize = 0;
 static long count_pnga_initialize_ltd = 0;
+static long count_pnga_initialized = 0;
 static long count_pnga_inquire = 0;
 static long count_pnga_inquire_memory = 0;
 static long count_pnga_inquire_name = 0;
@@ -139,8 +142,10 @@ static long count_pnga_nbget_ghost_dir = 0;
 static long count_pnga_nblock = 0;
 static long count_pnga_nbput = 0;
 static long count_pnga_nbput_field = 0;
+static long count_pnga_nbput_notify = 0;
 static long count_pnga_nbtest = 0;
 static long count_pnga_nbwait = 0;
+static long count_pnga_nbwait_notify = 0;
 static long count_pnga_ndim = 0;
 static long count_pnga_nnodes = 0;
 static long count_pnga_nodeid = 0;
@@ -254,6 +259,7 @@ static long count_pnga_update6_ghosts = 0;
 static long count_pnga_update7_ghosts = 0;
 static long count_pnga_update_ghost_dir = 0;
 static long count_pnga_update_ghosts = 0;
+static long count_pnga_update_ghosts_nb = 0;
 static long count_pnga_uses_ma = 0;
 static long count_pnga_uses_proc_grid = 0;
 static long count_pnga_valid_handle = 0;
@@ -283,6 +289,7 @@ static double time_pnga_add_constant = 0;
 static double time_pnga_add_constant_patch = 0;
 static double time_pnga_add_diagonal = 0;
 static double time_pnga_add_patch = 0;
+static double time_pnga_alloc_gatscat_buf = 0;
 static double time_pnga_allocate = 0;
 static double time_pnga_bin_index = 0;
 static double time_pnga_bin_sorter = 0;
@@ -336,6 +343,7 @@ static double time_pnga_error = 0;
 static double time_pnga_fence = 0;
 static double time_pnga_fill = 0;
 static double time_pnga_fill_patch = 0;
+static double time_pnga_free_gatscat_buf = 0;
 static double time_pnga_gather = 0;
 static double time_pnga_gather2d = 0;
 static double time_pnga_get = 0;
@@ -355,6 +363,7 @@ static double time_pnga_has_ghosts = 0;
 static double time_pnga_init_fence = 0;
 static double time_pnga_initialize = 0;
 static double time_pnga_initialize_ltd = 0;
+static double time_pnga_initialized = 0;
 static double time_pnga_inquire = 0;
 static double time_pnga_inquire_memory = 0;
 static double time_pnga_inquire_name = 0;
@@ -391,8 +400,10 @@ static double time_pnga_nbget_ghost_dir = 0;
 static double time_pnga_nblock = 0;
 static double time_pnga_nbput = 0;
 static double time_pnga_nbput_field = 0;
+static double time_pnga_nbput_notify = 0;
 static double time_pnga_nbtest = 0;
 static double time_pnga_nbwait = 0;
+static double time_pnga_nbwait_notify = 0;
 static double time_pnga_ndim = 0;
 static double time_pnga_nnodes = 0;
 static double time_pnga_nodeid = 0;
@@ -506,6 +517,7 @@ static double time_pnga_update6_ghosts = 0;
 static double time_pnga_update7_ghosts = 0;
 static double time_pnga_update_ghost_dir = 0;
 static double time_pnga_update_ghosts = 0;
+static double time_pnga_update_ghosts_nb = 0;
 static double time_pnga_uses_ma = 0;
 static double time_pnga_uses_proc_grid = 0;
 static double time_pnga_valid_handle = 0;
@@ -733,6 +745,17 @@ void wnga_add_patch(void *alpha, Integer g_a, Integer *alo, Integer *ahi, void *
     pnga_add_patch(alpha, g_a, alo, ahi, beta, g_b, blo, bhi, g_c, clo, chi);
     local_stop = MPI_Wtime();
     time_pnga_add_patch += local_stop - local_start;
+}
+
+
+void wnga_alloc_gatscat_buf(Integer nelems)
+{
+    double local_start, local_stop;
+    ++count_pnga_alloc_gatscat_buf;
+    local_start = MPI_Wtime();
+    pnga_alloc_gatscat_buf(nelems);
+    local_stop = MPI_Wtime();
+    time_pnga_alloc_gatscat_buf += local_stop - local_start;
 }
 
 
@@ -1367,12 +1390,23 @@ void wnga_fill_patch(Integer g_a, Integer *lo, Integer *hi, void *val)
 }
 
 
-void wnga_gather(Integer g_a, void *v, Integer subscript[], Integer nv)
+void wnga_free_gatscat_buf()
+{
+    double local_start, local_stop;
+    ++count_pnga_free_gatscat_buf;
+    local_start = MPI_Wtime();
+    pnga_free_gatscat_buf();
+    local_stop = MPI_Wtime();
+    time_pnga_free_gatscat_buf += local_stop - local_start;
+}
+
+
+void wnga_gather(Integer g_a, void *v, void *subscript, Integer c_flag, Integer nv)
 {
     double local_start, local_stop;
     ++count_pnga_gather;
     local_start = MPI_Wtime();
-    pnga_gather(g_a, v, subscript, nv);
+    pnga_gather(g_a, v, subscript, c_flag, nv);
     local_stop = MPI_Wtime();
     time_pnga_gather += local_stop - local_start;
 }
@@ -1561,6 +1595,19 @@ void wnga_init_fence()
     pnga_init_fence();
     local_stop = MPI_Wtime();
     time_pnga_init_fence += local_stop - local_start;
+}
+
+
+int wnga_initialized()
+{
+    int return_value;
+    double local_start, local_stop;
+    ++count_pnga_initialized;
+    local_start = MPI_Wtime();
+    return_value = pnga_initialized();
+    local_stop = MPI_Wtime();
+    time_pnga_initialized += local_stop - local_start;
+    return return_value;
 }
 
 
@@ -1980,6 +2027,17 @@ void wnga_nbput_field(Integer g_a, Integer *lo, Integer *hi, Integer foff, Integ
 }
 
 
+void wnga_nbput_notify(Integer g_a, Integer *lo, Integer *hi, void *buf, Integer *ld, Integer g_b, Integer *ecoords, void *bufn, Integer *nbhandle)
+{
+    double local_start, local_stop;
+    ++count_pnga_nbput_notify;
+    local_start = MPI_Wtime();
+    pnga_nbput_notify(g_a, lo, hi, buf, ld, g_b, ecoords, bufn, nbhandle);
+    local_stop = MPI_Wtime();
+    time_pnga_nbput_notify += local_stop - local_start;
+}
+
+
 Integer wnga_nbtest(Integer *nbhandle)
 {
     Integer return_value;
@@ -2001,6 +2059,17 @@ void wnga_nbwait(Integer *nbhandle)
     pnga_nbwait(nbhandle);
     local_stop = MPI_Wtime();
     time_pnga_nbwait += local_stop - local_start;
+}
+
+
+void wnga_nbwait_notify(Integer *nbhandle)
+{
+    double local_start, local_stop;
+    ++count_pnga_nbwait_notify;
+    local_start = MPI_Wtime();
+    pnga_nbwait_notify(nbhandle);
+    local_stop = MPI_Wtime();
+    time_pnga_nbwait_notify += local_stop - local_start;
 }
 
 
@@ -2663,12 +2732,12 @@ void wnga_scan_copy(Integer g_a, Integer g_b, Integer g_sbit, Integer lo, Intege
 }
 
 
-void wnga_scatter(Integer g_a, void *v, Integer *subscript, Integer nv)
+void wnga_scatter(Integer g_a, void *v, void *subscript, Integer c_flag, Integer nv)
 {
     double local_start, local_stop;
     ++count_pnga_scatter;
     local_start = MPI_Wtime();
-    pnga_scatter(g_a, v, subscript, nv);
+    pnga_scatter(g_a, v, subscript, c_flag, nv);
     local_stop = MPI_Wtime();
     time_pnga_scatter += local_stop - local_start;
 }
@@ -2685,12 +2754,12 @@ void wnga_scatter2d(Integer g_a, void *v, Integer *i, Integer *j, Integer nv)
 }
 
 
-void wnga_scatter_acc(Integer g_a, void *v, Integer subscript[], Integer nv, void *alpha)
+void wnga_scatter_acc(Integer g_a, void *v, void *subscript, Integer c_flag, Integer nv, void *alpha)
 {
     double local_start, local_stop;
     ++count_pnga_scatter_acc;
     local_start = MPI_Wtime();
-    pnga_scatter_acc(g_a, v, subscript, nv, alpha);
+    pnga_scatter_acc(g_a, v, subscript, c_flag, nv, alpha);
     local_stop = MPI_Wtime();
     time_pnga_scatter_acc += local_stop - local_start;
 }
@@ -3304,6 +3373,17 @@ void wnga_update_ghosts(Integer g_a)
 }
 
 
+void wnga_update_ghosts_nb(Integer g_a, Integer *nbhandle)
+{
+    double local_start, local_stop;
+    ++count_pnga_update_ghosts_nb;
+    local_start = MPI_Wtime();
+    pnga_update_ghosts_nb(g_a, nbhandle);
+    local_stop = MPI_Wtime();
+    time_pnga_update_ghosts_nb += local_stop - local_start;
+}
+
+
 logical wnga_uses_ma()
 {
     logical return_value;
@@ -3524,6 +3604,11 @@ void wnga_terminate()
         MPI_Reduce(&time_pnga_add_patch, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         if (me == 0) {
             printf("pnga_add_patch,%ld,%lf\n", count_pnga_add_patch, recvbuf);
+        }
+
+        MPI_Reduce(&time_pnga_alloc_gatscat_buf, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        if (me == 0) {
+            printf("pnga_alloc_gatscat_buf,%ld,%lf\n", count_pnga_alloc_gatscat_buf, recvbuf);
         }
 
         MPI_Reduce(&time_pnga_allocate, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -3791,6 +3876,11 @@ void wnga_terminate()
             printf("pnga_fill_patch,%ld,%lf\n", count_pnga_fill_patch, recvbuf);
         }
 
+        MPI_Reduce(&time_pnga_free_gatscat_buf, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        if (me == 0) {
+            printf("pnga_free_gatscat_buf,%ld,%lf\n", count_pnga_free_gatscat_buf, recvbuf);
+        }
+
         MPI_Reduce(&time_pnga_gather, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         if (me == 0) {
             printf("pnga_gather,%ld,%lf\n", count_pnga_gather, recvbuf);
@@ -3884,6 +3974,11 @@ void wnga_terminate()
         MPI_Reduce(&time_pnga_initialize_ltd, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         if (me == 0) {
             printf("pnga_initialize_ltd,%ld,%lf\n", count_pnga_initialize_ltd, recvbuf);
+        }
+
+        MPI_Reduce(&time_pnga_initialized, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        if (me == 0) {
+            printf("pnga_initialized,%ld,%lf\n", count_pnga_initialized, recvbuf);
         }
 
         MPI_Reduce(&time_pnga_inquire, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -4066,6 +4161,11 @@ void wnga_terminate()
             printf("pnga_nbput_field,%ld,%lf\n", count_pnga_nbput_field, recvbuf);
         }
 
+        MPI_Reduce(&time_pnga_nbput_notify, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        if (me == 0) {
+            printf("pnga_nbput_notify,%ld,%lf\n", count_pnga_nbput_notify, recvbuf);
+        }
+
         MPI_Reduce(&time_pnga_nbtest, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         if (me == 0) {
             printf("pnga_nbtest,%ld,%lf\n", count_pnga_nbtest, recvbuf);
@@ -4074,6 +4174,11 @@ void wnga_terminate()
         MPI_Reduce(&time_pnga_nbwait, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         if (me == 0) {
             printf("pnga_nbwait,%ld,%lf\n", count_pnga_nbwait, recvbuf);
+        }
+
+        MPI_Reduce(&time_pnga_nbwait_notify, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        if (me == 0) {
+            printf("pnga_nbwait_notify,%ld,%lf\n", count_pnga_nbwait_notify, recvbuf);
         }
 
         MPI_Reduce(&time_pnga_ndim, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
@@ -4639,6 +4744,11 @@ void wnga_terminate()
         MPI_Reduce(&time_pnga_update_ghosts, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
         if (me == 0) {
             printf("pnga_update_ghosts,%ld,%lf\n", count_pnga_update_ghosts, recvbuf);
+        }
+
+        MPI_Reduce(&time_pnga_update_ghosts_nb, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);
+        if (me == 0) {
+            printf("pnga_update_ghosts_nb,%ld,%lf\n", count_pnga_update_ghosts_nb, recvbuf);
         }
 
         MPI_Reduce(&time_pnga_uses_ma, &recvbuf, 1, MPI_DOUBLE, MPI_SUM, 0, MPI_COMM_WORLD);

@@ -3245,6 +3245,13 @@ if test "$COMEX_TOP_BUILDDIR" != "$COMEX_TOP_SRCDIR"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: Detected VPATH build" >&5
 $as_echo "$as_me: Detected VPATH build" >&6;}
 fi
+if test -d "../global" && test -d "../LinAlg"; then :
+  comex_standalone=no
+       { $as_echo "$as_me:${as_lineno-$LINENO}: Detected Global Arrays build" >&5
+$as_echo "$as_me: Detected Global Arrays build" >&6;}
+else
+  comex_standalone=yes
+fi
 
 # We use the MPI compiler wrappers instead of the standard compilers.
 
@@ -4966,6 +4973,8 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $arg of with_mpi not parsed" >&5
 $as_echo "$as_me: WARNING: $arg of with_mpi not parsed" >&2;}
 fi ;; #(
+  -mkl*) :
+    MPI_LIBS="$MPI_LIBS $arg" ;; #(
   *) :
     comex_arg_parse_ok=no ;;
 esac
@@ -5014,7 +5023,8 @@ $as_echo "$as_me: WARNING: $arg of with_mpi not parsed" >&2;}
 fi
 done
 fi
-case $enable_mpi_tests in #(
+if test "x$with_mpi" != xno; then :
+  case $enable_mpi_tests in #(
   yes) :
 
 ac_ext=c
@@ -5271,6 +5281,7 @@ fi
   *) :
      ;;
 esac
+fi
 
  if test "x$cross_compiling" = xyes; then
   CROSS_COMPILING_TRUE=
@@ -5385,6 +5396,8 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $arg of with_mpi_ts not parsed" >&5
 $as_echo "$as_me: WARNING: $arg of with_mpi_ts not parsed" >&2;}
 fi ;; #(
+  -mkl*) :
+    COMEX_NETWORK_LIBS="$COMEX_NETWORK_LIBS $arg" ;; #(
   *) :
     comex_arg_parse_ok=no ;;
 esac
@@ -5530,6 +5543,8 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $arg of with_ofa not parsed" >&5
 $as_echo "$as_me: WARNING: $arg of with_ofa not parsed" >&2;}
 fi ;; #(
+  -mkl*) :
+    COMEX_NETWORK_LIBS="$COMEX_NETWORK_LIBS $arg" ;; #(
   *) :
     comex_arg_parse_ok=no ;;
 esac
@@ -5675,6 +5690,8 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $arg of with_dmapp not parsed" >&5
 $as_echo "$as_me: WARNING: $arg of with_dmapp not parsed" >&2;}
 fi ;; #(
+  -mkl*) :
+    COMEX_NETWORK_LIBS="$COMEX_NETWORK_LIBS $arg" ;; #(
   *) :
     comex_arg_parse_ok=no ;;
 esac
@@ -8347,6 +8364,8 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: WARNING: $arg of with_blas not parsed" >&5
 $as_echo "$as_me: WARNING: $arg of with_blas not parsed" >&2;}
 fi ;; #(
+  -mkl*) :
+    BLAS_LIBS="$BLAS_LIBS $arg" ;; #(
   *) :
     comex_arg_parse_ok=no ;;
 esac

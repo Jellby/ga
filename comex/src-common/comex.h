@@ -47,7 +47,7 @@ typedef int comex_group_t;
  *
  * @return COMEX_SUCCESS on sucess
  */
-extern int comex_init(void);
+extern int comex_init();
 
 /**
  * Initialize comex with command line arguments.
@@ -583,7 +583,7 @@ extern int comex_create_mutexes(int num);
  * @param[in] num number of locks to create locally
  * @return COMEX_SUCCESS on success
  */
-extern int comex_destroy_mutexes(void);
+extern int comex_destroy_mutexes();
 
 /**
  * Lock the given mutex on the given proc.

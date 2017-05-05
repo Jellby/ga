@@ -545,7 +545,7 @@ int ARMCI_Uses_shm_grp(ARMCI_Group *group)
 }
 
 
-void ARMCI_Cleanup(void)
+void ARMCI_Cleanup()
 {
     comex_finalize();
 }

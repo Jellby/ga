@@ -1083,7 +1083,7 @@ int comex_finalize()
 {
     /* it's okay to call multiple times -- extra calls are no-ops */
     if (!initialized) {
-        return;
+        return COMEX_SUCCESS;
     }
 
     initialized = 0;
@@ -1677,7 +1677,16 @@ static void check_envs(void)
     }
 
     if (malloc_is_using_huge_pages || comex_is_using_huge_pages) {
-        comex_page_size = hugepagesize;
+        if (hugepagesize > 0) {
+            comex_page_size = hugepagesize;
+        }
+        else if (hugetlb_default_page_size > 0) {
+            comex_page_size = hugetlb_default_page_size;
+        }
+        else {
+            /* no alternative provided by libhugetlbfs */
+            comex_page_size = 0;
+        }
     }
 
 #endif /* HAVE_LIBHUGETLBFS */
@@ -1700,6 +1709,12 @@ static void check_envs(void)
         printf("malloc_is_using_huge_pages=%d\n", malloc_is_using_huge_pages);
     }
 #endif
+
+    /* by this point comex_page_size should be set to something appropriate */
+    if (comex_page_size <= 0) {
+        fprintf(stderr, "no appropriate comex_page_size found\n");
+        MPI_Abort(l_state.world_comm, -1);
+    }
 }
 
 
@@ -1711,6 +1726,9 @@ static void dmapp_initialize(void)
   
     memset(&requested_attrs, 0, sizeof(requested_attrs));
     memset(&actual_attrs, 0, sizeof(actual_attrs));
+
+    status = dmapp_get_rma_attrs_ext(&requested_attrs);
+    assert(status == DMAPP_RC_SUCCESS);
 
     // Check envs
     check_envs();
